@@ -1,0 +1,8 @@
+## Example config file.
+
+# The bot's token.
+bot_token: mfa.syfydwefbvwet
+
+# The cogs to load.
+autoload:
+  - joku.cogs.debug
