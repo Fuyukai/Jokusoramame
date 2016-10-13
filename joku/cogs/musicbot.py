@@ -45,6 +45,23 @@ class MusicInstance:
         # The current information about this track.
         self.current_info = {}
 
+    async def disconnect(self):
+        """
+        Disconnects the current voice player.
+        """
+        self.player_task.cancel()
+        self.player.stop()
+
+        try:
+            await self.voice_client.disconnect()
+            # Manually send a VOICE_STATE_UPDATE.
+            await self.voice_client.main_ws.voice_state(self.voice_client.guild_id, None, self_mute=True)
+        except Exception:
+            # o well
+            pass
+
+        return
+
     async def download_information(self, ctx, video_url: str, echo: bool = True):
         """
         Downloads video information.
@@ -178,11 +195,33 @@ class Music(object):
         await self.bot.say("Currently playing: `{}` `{}`".format(title, fmt))
 
     @commands.command(pass_context=True)
+    async def disconnect(self, ctx):
+        """
+        Disconnect from the current voice channel.
+        """
+        if ctx.message.server.id not in self.musics:
+            await self.bot.say(":x: I am not connected to voice.")
+            return
+
+        m = self.get_server_music(ctx.message.server)
+        await m.disconnect()
+        await self.bot.say(":skull_and_crossbones:")
+
+    @commands.command(pass_context=True)
     async def play(self, ctx, *, query: str):
         """
         Plays a track.
         """
+        if not ctx.message.author.voice.voice_channel:
+            await self.bot.say(":x: You must be in a voice channel.")
+            return
+
         m = self.get_server_music(ctx.message.server)
+
+        if ctx.message.server.me.voice.voice_channel \
+                and ctx.message.server.me.voice.voice_channel != ctx.message.author.voice_channel:
+            await self.bot.say(":x: I am already playing elsewhere in this server.")
+            return
 
         info = await m.download_information(ctx, query)
 
@@ -211,7 +250,6 @@ class Music(object):
         # Get the voice client.
         m.voice_client = await m.ensure_voice_connected(ctx, ctx.message.author.voice.voice_channel)
         if not m.voice_client:
-            await self.bot.say(":x: Unable to connect to voice.")
             return
         # Pass in the data for it to construct the appropriate tuples.
         added = m.construct_voice_data(track_data, is_playlist)
@@ -222,7 +260,10 @@ class Music(object):
             t = self.bot.loop.create_task(m.run(ctx))
             m.player_task = t
 
-            await t
+            try:
+                await t
+            except asyncio.CancelledError:
+                pass
 
 
 def setup(bot):
