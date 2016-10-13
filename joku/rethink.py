@@ -81,8 +81,16 @@ class RethinkAdapter(object):
         :param setting_name: The name to use.
         :param value: The value to insert.
         """
+        # Try and find the ID.
+        setting = await self.get_setting(server, setting_name)
+        if not setting:
+            d = {"server_id": server.id, "name": setting_name, "value": value}
+        else:
+            # Use the ID we have.
+            d = {"server_id": server.id, "name": setting_name, "value": value, "id": setting["id"]}
+
         d = await r.table("settings")\
-            .insert({"server_id": server.id, "name": setting_name, "value": value}, conflict="update")\
+            .insert(d, conflict="update")\
             .run(self.connection)
 
         return d
@@ -105,4 +113,4 @@ class RethinkAdapter(object):
             return None
 
         i = await d.next()
-        return i["value"]
+        return i
