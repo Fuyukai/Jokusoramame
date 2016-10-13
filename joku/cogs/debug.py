@@ -21,7 +21,7 @@ class Debug(object):
         try:
             d = eval(cmd)
             if inspect.isawaitable(d):
-                await d
+                d = await d
         except Exception:
             await self.bot.say(''.join(traceback.format_exc()))
             return
