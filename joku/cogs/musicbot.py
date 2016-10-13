@@ -103,7 +103,7 @@ class MusicInstance:
                     voice_client = await ctx.bot.join_voice_channel(channel=channel)
                 except (discord.ClientException, TimeoutError, asyncio.TimeoutError):
                     await ctx.bot.send_message(ctx.message.channel, ":x: Unable to join voice channel.")
-                    return False
+                    return None
 
         return voice_client
 
@@ -210,6 +210,9 @@ class Music(object):
 
         # Get the voice client.
         m.voice_client = await m.ensure_voice_connected(ctx, ctx.message.author.voice.voice_channel)
+        if not m.voice_client:
+            await self.bot.say(":x: Unable to connect to voice.")
+            return
         # Pass in the data for it to construct the appropriate tuples.
         added = m.construct_voice_data(track_data, is_playlist)
         await self.bot.say(":heavy_check_mark: Added {} track(s) to the queue.".format(added))
