@@ -13,10 +13,7 @@ class RethinkAdapter(object):
     An adapter to RethinkDB.
     """
 
-    def __init__(self, ip: str, port: int):
-        self.ip = ip
-        self.port = port
-
+    def __init__(self):
         self.connection = None
 
         self.logger = logbook.Logger("Jokusoramame")
@@ -50,11 +47,11 @@ class RethinkAdapter(object):
         await self._reql_safe(r.table("tags").index_create("server_id"))
         await self._reql_safe(r.table("tags").index_create("name"))
 
-    async def connect(self):
+    async def connect(self, **connection_settings):
         """
         Connects the adapter.
         """
-        self.connection = await r.connect(self.ip, self.port, db="jokusoramame")
+        self.connection = await r.connect(**connection_settings)
         await self._setup()
 
     async def get_info(self):

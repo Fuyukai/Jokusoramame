@@ -6,3 +6,9 @@ bot_token: mfa.syfydwefbvwet
 # The cogs to load.
 autoload:
   - joku.cogs.debug
+
+# The RethinkDB data.
+rethinkdb:
+  host: localhost
+  port: 28015
+  db: jokusoramame

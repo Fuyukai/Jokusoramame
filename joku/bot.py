@@ -68,7 +68,7 @@ class Jokusoramame(Bot):
 
         self.startup_time = time.time()
 
-        self.rethinkdb = RethinkAdapter("127.0.0.1", 28015)
+        self.rethinkdb = RethinkAdapter()
 
     def __del__(self):
         self.loop.set_exception_handler(lambda *args, **kwargs: None)
@@ -106,7 +106,7 @@ class Jokusoramame(Bot):
         self.logger.info("Invite link: {}".format(discord.utils.oauth_url(self.app_id)))
 
         try:
-            await self.rethinkdb.connect()
+            await self.rethinkdb.connect(**self.config.get("rethinkdb", {}))
         except ReqlDriverError:
             self.logger.error("Unable to connect to RethinkDB!")
             await self.logout()
