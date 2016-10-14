@@ -76,7 +76,7 @@ class RethinkAdapter(object):
             d = await iterator.next()
             return d
 
-    async def update_user_xp(self, user: discord.User, exp=None) -> dict:
+    async def update_user_xp(self, user: discord.User, xp=None) -> dict:
         """
         Updates the user's current experience.
         """
