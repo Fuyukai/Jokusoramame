@@ -106,6 +106,18 @@ class RethinkAdapter(object):
 
         return d
 
+    async def delete_tag(self, server: discord.Server, name: str):
+        """
+        Deletes a tag.
+        """
+        d = await r.table("tags")\
+            .get_all(server.id, index="server_id")\
+            .filter({"name": name})\
+            .delete()\
+            .run(self.connection)
+
+        return d
+
     async def _create_or_get_user(self, user: discord.User) -> dict:
         iterator = await r.table("users").get_all(user.id, index="user_id").run(self.connection)
 
