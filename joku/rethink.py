@@ -49,7 +49,6 @@ class RethinkAdapter(object):
         await self._reql_safe(r.table("settings").index_create("server_id"))
         await self._reql_safe(r.table("users").index_create("user_id"))
         await self._reql_safe(r.table("tags").index_create("server_id"))
-        await self._reql_safe(r.table("tags").index_create("name"))
 
     async def connect(self, **connection_settings):
         """
@@ -57,6 +56,55 @@ class RethinkAdapter(object):
         """
         self.connection = await r.connect(**connection_settings)
         await self._setup()
+
+    async def get_tag(self, server: discord.Server, name: str):
+        """
+        Gets a tag from the database.
+        """
+        iterator = await r.table("tags") \
+            .get_all(server.id, index="server_id") \
+            .filter({"name": name}).run(self.connection)
+
+        exists = await iterator.fetch_next()
+        if not exists:
+            return None
+
+        tag = await iterator.next()
+
+        return tag
+
+    async def save_tag(self, server: discord.Server, name: str, content: str, *, owner: discord.User = None):
+        """
+        Saves a tag to the database.
+
+        Will overwrite the tag if applicable.
+        """
+        if isinstance(owner, discord.User):
+            owner_id = owner.id
+        else:
+            owner_id = owner
+
+        current_tag = await self.get_tag(server, name)
+        if current_tag is None:
+            d = {
+                "name": name,
+                "content": content,
+                "owner_id": owner_id if owner_id else None,
+                "server_id": server.id,
+                "last_modified": datetime.datetime.now(tz=pytz.timezone("UTC"))
+            }
+
+        else:
+            # Edit the current_tag dict with the new data.
+            d = current_tag
+            d["content"] = content
+            d["last_modified"] = datetime.datetime.now(tz=pytz.timezone("UTC"))
+
+        d = await r.table("tags")\
+            .insert(d, conflict="update")\
+            .run(self.connection)
+
+        return d
 
     async def _create_or_get_user(self, user: discord.User) -> dict:
         iterator = await r.table("users").get_all(user.id, index="user_id").run(self.connection)
