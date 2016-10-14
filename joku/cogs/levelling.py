@@ -12,6 +12,14 @@ class Levelling(object):
     def __init__(self, bot: Jokusoramame):
         self.bot = bot
 
+    async def on_message(self, message: discord.Message):
+        # Add XP, and show if they levelled up.
+        if message.author.bot:
+            return
+
+        await self.bot.rethinkdb.update_user_xp(message.author)
+        # todo: levelling up
+
     @commands.command(pass_context=True, aliases=["exp"])
     async def xp(self, ctx, *, target: discord.Member=None):
         """
