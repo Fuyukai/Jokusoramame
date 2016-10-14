@@ -84,8 +84,8 @@ class RethinkAdapter(object):
 
         # Add a random amount of exp.
         # lol rng
-        if exp:
-            added = exp
+        if xp:
+            added = xp
         else:
             added = random.randint(0, 3)
 
