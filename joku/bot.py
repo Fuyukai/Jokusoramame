@@ -73,6 +73,13 @@ class Jokusoramame(Bot):
     def __del__(self):
         self.loop.set_exception_handler(lambda *args, **kwargs: None)
 
+    # Utility functions.
+    def get_member(self, id: str):
+        """
+        Gets a member from all members.
+        """
+        return discord.utils.get(self.get_all_members(), id=id)
+
     @staticmethod
     async def get_command_prefix(self: 'Jokusoramame', message: discord.Message):
         return "j!"
