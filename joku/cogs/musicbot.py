@@ -50,7 +50,8 @@ class MusicInstance:
         Disconnects the current voice player.
         """
         self.player_task.cancel()
-        self.player.stop()
+        if self.player:
+            self.player.stop()
 
         try:
             await self.voice_client.disconnect()
