@@ -1,6 +1,7 @@
 """
 Generic tag bot, yay.
 """
+import shlex
 
 import discord
 from discord.ext import commands
@@ -114,7 +115,47 @@ class Tags(object):
         # Get the content from the tag.
         content = tag["content"]
 
-        # TODO: Allow chaining commands.
+        # Left strip any whtiespace.
+        content = content.lstrip(" ")
+
+        # Check if it starts with `{`.
+        if content.startswith("{") and content.endswith("}"):
+            # lstrip the {, and rstrip the }.
+            clean_content = content.lstrip("{ ")[:-1]
+            # Create a temporary dict to pass to the message.
+            # Shlex split the message.
+            # TODO: make this nicer.
+
+            message_args = shlex.split(ctx.message.content)[1:]
+
+            tmp = {
+                "message": ctx.message,
+                "server": ctx.message.server,
+                "author": ctx.message.author,
+                "channel": ctx.message.channel,
+                "all": ' '.join(message_args)
+            }
+
+            # Format the string.
+            try:
+                formatted = clean_content.format(*message_args, **tmp)
+            except (ValueError, KeyError, IndexError) as e:
+                await self.bot.send_message(
+                    ctx.message.channel,
+                    ":x: Tag failed to compile -> {}".format(' '.join(e.args))
+                )
+                return
+
+            # Add the prefix to the string and call `process_commands`.
+            prefix = await self.bot.get_command_prefix(ctx.bot, ctx.message)
+            final = prefix + formatted
+
+            # Update the message.
+            ctx.message.content = final
+
+            await self.bot.process_commands(ctx.message)
+            return
+
         try:
             await self.bot.send_message(ctx.message.channel, content)
         except Exception as e:
