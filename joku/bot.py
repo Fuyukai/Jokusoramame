@@ -19,6 +19,7 @@ from logbook.compat import redirect_logging
 from logbook import StreamHandler
 from rethinkdb import ReqlDriverError
 
+from joku.redis import RedisAdapter
 from joku.rethink import RethinkAdapter
 from joku import threadmanager
 
@@ -57,7 +58,7 @@ class Jokusoramame(Bot):
 
         self.rethinkdb = RethinkAdapter(self)
 
-        #self.redis = RedisAdapter()
+        self.redis = RedisAdapter(self)
 
         # Re-assign commands and extensions.
         self.commands = OrderedDict()
@@ -110,6 +111,13 @@ class Jokusoramame(Bot):
             await self.rethinkdb.connect(**self.config.get("rethinkdb", {}))
         except ReqlDriverError:
             self.logger.error("Unable to connect to RethinkDB!")
+            await self.logout()
+            return
+
+        try:
+            await self.redis.connect(**self.config.get("redis", {}))
+        except ConnectionRefusedError:
+            self.logger.error("Unable to connect to Redis!")
             await self.logout()
             return
 
