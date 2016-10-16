@@ -17,10 +17,10 @@ class RethinkAdapter(object):
     An adapter to RethinkDB.
     """
 
-    def __init__(self):
+    def __init__(self, bot):
         self.connection = None
 
-        self.logger = logbook.Logger("Jokusoramame")
+        self.logger = bot.logger  # type: logbook.Logger
 
     async def _reql_safe(self, awaitable):
         """

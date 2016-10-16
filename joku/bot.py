@@ -33,8 +33,11 @@ StreamHandler(sys.stderr).push_application()
 
 class Jokusoramame(Bot):
     def __init__(self, *args, **kwargs):
-        # Logging shit
-        self.logger = logbook.Logger("Jokusoramame")
+        # Get the shard ID.
+        shard_id = kwargs.get("shard_id", 0)
+
+        # Logging stuff
+        self.logger = logbook.Logger("Jokusoramame:Shard-{}".format(shard_id))
         self.logger.level = logbook.INFO
 
         logging.root.setLevel(logging.INFO)
@@ -45,21 +48,17 @@ class Jokusoramame(Bot):
         except IndexError:
             cfg = "config.yml"
 
-        # Copy the default config file.
-        if not os.path.exists(cfg):
-            shutil.copy("config.example.yml", cfg)
-
         with open(cfg) as f:
             self.config = yaml.load(f)
 
-        if self.config.get("use_uvloop", False):
-            import uvloop
-            self.logger.info("Switching to uvloop.")
-            policy = uvloop.EventLoopPolicy()
-            self.logger.info("Created event loop policy `{}`.".format(policy))
-            asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
-        else:
-            self.logger.info("Using base selector event loop.")
+        #if self.config.get("use_uvloop", False):
+        #    import uvloop
+        #    self.logger.info("Switching to uvloop.")
+        #    policy = uvloop.EventLoopPolicy()
+        #    self.logger.info("Created event loop policy `{}`.".format(policy))
+        #    asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+        #else:
+        #    self.logger.info("Using base selector event loop.")
 
         # Call init.
         super().__init__(command_prefix=self.get_command_prefix, *args, **kwargs)
@@ -69,7 +68,9 @@ class Jokusoramame(Bot):
 
         self.startup_time = time.time()
 
-        self.rethinkdb = RethinkAdapter()
+        self.rethinkdb = RethinkAdapter(self)
+
+        #self.redis = RedisAdapter()
 
         # Re-assign commands and extensions.
         self.commands = OrderedDict()
@@ -151,3 +152,25 @@ class Jokusoramame(Bot):
     def run(self):
         token = self.config["bot_token"]
         super().run(token)
+
+    async def login(self):
+        token = self.config["bot_token"]
+        return await super().login(token)
+
+
+def run_threaded(shard_id, shard_count):
+    print("Starting thread #{}.".format(shard_id))
+    new_event_loop = asyncio.new_event_loop()
+    print("Created new event loop {} in thread #{}.".format(new_event_loop, shard_id))
+    asyncio.set_event_loop(new_event_loop)
+
+    # Start the bot with this loop.
+    bot = Jokusoramame(shard_id=shard_id, shard_count=shard_count)
+    new_event_loop.run_until_complete(bot.login())
+    asyncio.ensure_future(bot.connect(), loop=new_event_loop)
+
+    try:
+        new_event_loop.run_forever()
+    except KeyboardInterrupt:
+        new_event_loop.run_until_complete(bot.logout())
+        return
