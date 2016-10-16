@@ -132,6 +132,16 @@ class Manager(object):
         except KeyboardInterrupt:
             self.kill_all_threads()
 
+    def get_server(self, server_id: str):
+        """
+        Helper function to get a server.
+        """
+        for server in self.get_all_servers():
+            if server.id == server_id:
+                return server
+
+        return None
+
     def get_all_members(self):
         """
         Helper function to get all members across all shards.

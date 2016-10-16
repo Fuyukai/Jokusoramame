@@ -12,3 +12,11 @@ rethinkdb:
   host: localhost
   port: 28015
   db: jokusoramame
+
+# The redis configuration.
+redis:
+  address: !!python/tuple ["127.0.0.1", 6432]
+
+# If the bot is in developer mode or not.
+# If it is, the bot will be booted in non-sharded mode, beware!
+developer_mode: false
