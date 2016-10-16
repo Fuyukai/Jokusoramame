@@ -7,6 +7,7 @@ from discord.ext import commands
 from discord.ext.commands import Command, CheckFailure
 
 from joku.bot import Jokusoramame
+from joku.redis import with_redis_cooldown
 
 
 class Core(object):
@@ -30,6 +31,26 @@ class Core(object):
             return False
         else:
             return can_run
+
+    @commands.command(pass_context=True)
+    async def stats(self, ctx):
+        """
+        Shows stats about the bot.
+        """
+        tmp = {
+            "shards": self.bot.manager.max_shards,
+            "servers": sum(1 for _ in self.bot.manager.get_all_servers()),
+            "members": sum(1 for _ in self.bot.manager.get_all_members()),
+            "unique_members": self.bot.manager.unique_member_count,
+            "channels": sum(1 for _ in self.bot.manager.get_all_channels()),
+            "shard": self.bot.shard_id
+        }
+
+        await self.bot.say("Currently connected to `{servers}` servers, "
+                           "with `{channels}` channels "
+                           "and `{members}` members (`{unique_members}` unique) "
+                           "across `{shards}` shards.\n\n"
+                           "This is shard ID **{shard}**.".format(**tmp))
 
     @commands.command(pass_context=True)
     async def help(self, ctx, command: str = None):
