@@ -42,8 +42,9 @@ class Debug(object):
         """
         Reloads all modules.
         """
-        for extension in self.bot.extensions:
+        for extension in self.bot.extensions.copy():
             self.bot.unload_extension(extension)
+            self.bot.logger.info("Reloaded {}.".format(extension))
             self.bot.load_extension(extension)
 
         await self.bot.say("Reloaded all.")
