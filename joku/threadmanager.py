@@ -156,6 +156,10 @@ class Manager(object):
         for bot in self.bots.values():
             yield from bot.get_all_members()
 
+    @property
+    def unique_member_count(self):
+        return len({x.id for x in self.get_all_members()})
+
     def get_all_servers(self):
         """
         Helper function to get all servers across all shards.
