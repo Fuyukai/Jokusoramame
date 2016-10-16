@@ -20,6 +20,7 @@ class RethinkAdapter(object):
     def __init__(self, bot):
         self.connection = None
 
+        self.bot = bot
         self.logger = bot.logger  # type: logbook.Logger
 
     async def _reql_safe(self, awaitable):
@@ -38,6 +39,9 @@ class RethinkAdapter(object):
         """
         Ugh.
         """
+        if self.bot.shard_id != 0:
+            # Only create on shard 0.
+            return
         # Make the DB.
         await self._reql_safe(r.db_create("jokusoramame"))
         # Make the tables.

@@ -20,6 +20,7 @@ from logbook import StreamHandler
 from rethinkdb import ReqlDriverError
 
 from joku.rethink import RethinkAdapter
+from joku import threadmanager
 
 try:
     import yaml
@@ -32,33 +33,19 @@ StreamHandler(sys.stderr).push_application()
 
 
 class Jokusoramame(Bot):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, config: dict, *args, **kwargs):
         # Get the shard ID.
         shard_id = kwargs.get("shard_id", 0)
+
+        self.manager = kwargs.get("manager")  # type: threadmanager.Manager
+
+        self.config = config
 
         # Logging stuff
         self.logger = logbook.Logger("Jokusoramame:Shard-{}".format(shard_id))
         self.logger.level = logbook.INFO
 
         logging.root.setLevel(logging.INFO)
-
-        # Load the config
-        try:
-            cfg = sys.argv[1]
-        except IndexError:
-            cfg = "config.yml"
-
-        with open(cfg) as f:
-            self.config = yaml.load(f)
-
-        #if self.config.get("use_uvloop", False):
-        #    import uvloop
-        #    self.logger.info("Switching to uvloop.")
-        #    policy = uvloop.EventLoopPolicy()
-        #    self.logger.info("Created event loop policy `{}`.".format(policy))
-        #    asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
-        #else:
-        #    self.logger.info("Using base selector event loop.")
 
         # Call init.
         super().__init__(command_prefix=self.get_command_prefix, *args, **kwargs)
@@ -157,20 +144,13 @@ class Jokusoramame(Bot):
         token = self.config["bot_token"]
         return await super().login(token)
 
+    def die(self):
+        """
+        Kills all tasks the bot is running.
+        """
+        self.loop.stop()
+        all_tasks = asyncio.gather(*asyncio.Task.all_tasks(), loop=self.loop)
+        all_tasks.cancel()
 
-def run_threaded(shard_id, shard_count):
-    print("Starting thread #{}.".format(shard_id))
-    new_event_loop = asyncio.new_event_loop()
-    print("Created new event loop {} in thread #{}.".format(new_event_loop, shard_id))
-    asyncio.set_event_loop(new_event_loop)
-
-    # Start the bot with this loop.
-    bot = Jokusoramame(shard_id=shard_id, shard_count=shard_count)
-    new_event_loop.run_until_complete(bot.login())
-    asyncio.ensure_future(bot.connect(), loop=new_event_loop)
-
-    try:
-        new_event_loop.run_forever()
-    except KeyboardInterrupt:
-        new_event_loop.run_until_complete(bot.logout())
-        return
+        # Get rid of the exceptions.
+        all_tasks.exception()
