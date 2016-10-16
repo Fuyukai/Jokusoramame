@@ -6,6 +6,7 @@ import functools
 import aioredis
 import discord
 import logbook
+import time
 
 
 class RedisAdapter(object):
@@ -30,6 +31,19 @@ class RedisAdapter(object):
         Gets a new connection from the pool.
         """
         return self.pool.get()
+
+    async def ttl(self, key: str):
+        async with self.get_redis() as redis:
+            return await redis.ttl(key)
+
+    async def get_cooldown_expiration(self, user: discord.User, bucket: str):
+        built_field = "exp:{}:{}".format(user.id, bucket).encode()
+
+        ttl = await self.ttl(built_field)
+        if ttl < 0:
+            return None
+
+        return ttl
 
     async def set_bucket_with_expiration(self, user: discord.User, bucket: str, expiration: int):
         """
@@ -74,12 +88,16 @@ def with_redis_cooldown(bucket: str, type_="DAILY"):
             on_cooldown = await ctx.bot.redis.is_on_cooldown(user, bucket)
 
             if on_cooldown:
-                await ctx.bot.say(":x: This command is on cooldown.")
+                ttl = await ctx.bot.redis.get_cooldown_expiration(user, bucket)
+                t = time.strftime('%-H hour(s) %-M minutes', time.gmtime(ttl))
+                await ctx.bot.say(":x: You can run this command again in `{}`.".format(t))
                 return
 
             # It's not on cooldown, so set cooldown.
             if type_ == "DAILY":
                 await ctx.bot.redis.set_daily_expiration(user, bucket)
+            elif type_ == "HOURLY":
+                await ctx.bot.redis.set_bucket_with_expiration(user, bucket, expiration=3600)
 
             # Await the inner function.
             return await func(self, ctx, *args, **kwargs)
