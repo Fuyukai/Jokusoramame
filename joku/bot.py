@@ -6,6 +6,7 @@ import os
 import shutil
 import sys
 import traceback
+from collections import OrderedDict
 
 import discord
 import logbook
@@ -69,6 +70,11 @@ class Jokusoramame(Bot):
         self.startup_time = time.time()
 
         self.rethinkdb = RethinkAdapter()
+
+        # Re-assign commands and extensions.
+        self.commands = OrderedDict()
+        self.extensions = OrderedDict()
+        self.cogs = OrderedDict()
 
     def __del__(self):
         self.loop.set_exception_handler(lambda *args, **kwargs: None)
