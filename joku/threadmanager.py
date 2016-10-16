@@ -113,6 +113,13 @@ class Manager(object):
         with open(cfg) as f:
             self.config = yaml.load(f)
 
+        # Check if dev mode.
+        if self.config.get("developer_mode", False):
+            self.max_shards = 1
+            self.logger.info("Starting single-shard instance of the bot.")
+            self._run_bot_threaded(0)
+            return
+
         token = self.config["bot_token"]
 
         # Get the shards endpoint.
