@@ -32,13 +32,15 @@ class Tags(object):
         tmp = {
             "name": tag_obb["name"],
             "owner": owner.name if owner else "<Unknown>",
-            "lm": tag_obb["last_modified"]
+            "lm": tag_obb["last_modified"],
+            "content": tag_obb["content"]
         }
 
         # Display the tag info.
         await self.bot.say("**Tag name:** `{name}`\n"
                            "**Owner:** `{owner}`\n"
-                           "**Last modified:** `{lm}`".format(**tmp))
+                           "**Last modified:** `{lm}`\n"
+                           "**Value:** `{content}`".format(**tmp))
 
     @tag.command(pass_context=True)
     async def create(self, ctx, name: str, *, content: str):
