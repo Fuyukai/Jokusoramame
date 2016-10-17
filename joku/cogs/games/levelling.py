@@ -1,7 +1,7 @@
 """
 cancer
 """
-from math import floor
+from math import floor, ceil
 
 import discord
 import rethinkdb as r
@@ -24,6 +24,14 @@ def get_level_from_exp(exp: int):
     if exp < 50:
         return 0
     return floor(-0.5 + ((-4375 + 100 * exp) ** 0.5) / 50)
+
+
+def get_next_level(exp: int):
+    if exp < 50:
+        return 0
+
+    l = ceil(-0.5 + ((-4375 + 100 * exp) ** 0.5) / 50)
+    return l, levels[l] - exp
 
 
 class Levelling(object):
@@ -49,10 +57,10 @@ class Levelling(object):
                 message.author, new_level
             ))
 
-    @commands.command(pass_context=True)
+    @commands.group(pass_context=True, invoke_without_command=True)
     async def level(self, ctx, *, target: discord.Member = None):
         """
-         Shows the current level for somebody.
+        Shows the current level for somebody.
 
         If no user is passed, this will show your level.
         """
@@ -65,6 +73,25 @@ class Levelling(object):
 
         await self.bot.say("User **{}** is level `{}`.".format(user.name, level))
 
+    @level.command(pass_context=True)
+    async def next(self, ctx, *, target: discord.Member = None):
+        """
+        Shows the next level for somebody.
+
+        If no user is passed, this will show yours.
+        """
+        user = target or ctx.message.author
+        if user.bot:
+            await self.bot.say(":no_entry_sign: **Bots cannot have XP.**")
+            return
+
+        level = await self.bot.rethinkdb.get_level(user)
+        xp = await self.bot.rethinkdb.get_user_xp(user)
+
+        exp_required = get_next_level(xp)[1]
+
+        await self.bot.say("**{}** needs need `{}` XP to advance to level `{}`.".format(user.name, exp_required,
+                                                                                       level+1))
 
     @commands.command(pass_context=True, aliases=["exp"])
     async def xp(self, ctx, *, target: discord.Member = None):
