@@ -61,6 +61,8 @@ class RethinkAdapter(object):
         self.connection = await r.connect(**connection_settings)
         await self._setup()
 
+    # Tags
+
     async def get_tag(self, server: discord.Server, name: str):
         """
         Gets a tag from the database.
@@ -122,6 +124,8 @@ class RethinkAdapter(object):
 
         return d
 
+    # XP
+
     async def _create_or_get_user(self, user: discord.User) -> dict:
         iterator = await r.table("users").get_all(user.id, index="user_id").run(self.connection)
 
@@ -132,6 +136,7 @@ class RethinkAdapter(object):
                 "user_id": user.id,
                 "xp": 0,
                 "rep": 0,
+                "currency": 200
             }
 
         else:
@@ -170,22 +175,40 @@ class RethinkAdapter(object):
 
         return user_dict["xp"]
 
-    async def get_info(self) -> dict:
+    # Currency
+
+    async def update_user_currency(self, user: discord.User, currency=None) -> dict:
         """
-        :return: Stats about the current cluster.
+        Updates the user's current currency.
         """
-        serv_info = await (await r.db("rethinkdb").table("server_config").run(self.connection)).next()
-        cluster_stats = await r.db("rethinkdb").table("stats").get(["cluster"]).run(self.connection)
+        user_dict = await self._create_or_get_user(user)
 
-        jobs = []
+        if currency:
+            added = currency
+        else:
+            added = 50
 
-        iterator = await r.db("rethinkdb").table("jobs").run(self.connection)
+        # Failsafe
+        if 'currency' not in user_dict:
+            user_dict['currency'] = 200
 
-        while await iterator.fetch_next():
-            data = await iterator.next()
-            jobs.append(data)
+        user_dict["currency"] += added
 
-        return {"server_info": serv_info, "stats": cluster_stats, "jobs": jobs}
+        d = await r.table("users") \
+            .insert(user_dict, conflict="update") \
+            .run(self.connection)
+
+        return d
+
+    async def get_user_currency(self, user: discord.User) -> dict:
+        """
+        Gets the user's current currency.
+        """
+        user_dict = await self._create_or_get_user(user)
+
+        return user_dict.get("currency", 200)
+
+    # Settings
 
     async def set_setting(self, server: discord.Server, setting_name: str, value: str) -> dict:
         """
@@ -227,3 +250,22 @@ class RethinkAdapter(object):
 
         i = await d.next()
         return i
+
+    # Internals
+
+    async def get_info(self) -> dict:
+        """
+        :return: Stats about the current cluster.
+        """
+        serv_info = await (await r.db("rethinkdb").table("server_config").run(self.connection)).next()
+        cluster_stats = await r.db("rethinkdb").table("stats").get(["cluster"]).run(self.connection)
+
+        jobs = []
+
+        iterator = await r.db("rethinkdb").table("jobs").run(self.connection)
+
+        while await iterator.fetch_next():
+            data = await iterator.next()
+            jobs.append(data)
+
+        return {"server_info": serv_info, "stats": cluster_stats, "jobs": jobs}
