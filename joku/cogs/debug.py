@@ -2,8 +2,10 @@
 Debug cog.
 """
 import inspect
+import pprint
 import traceback
 
+import discord
 from discord.ext import commands
 from discord.ext.commands import Context
 
@@ -64,6 +66,13 @@ class Debug(object):
         """
         Command group to inspect the RethinkDB status.
         """
+
+    @rdb.command(pass_context=True)
+    async def inspect(self, ctx, *, user: discord.Member):
+        obb = await self.bot.rethinkdb._create_or_get_user(user)
+
+        p = pprint.pformat(obb)
+        await self.bot.say("```json\n{}\n```".format(p))
 
     @rdb.command(pass_context=True)
     async def info(self, ctx):

@@ -53,7 +53,7 @@ class Core(object):
                            "This is shard ID **{shard}**.".format(**tmp))
 
     @commands.command(pass_context=True)
-    async def help(self, ctx, command: str = None):
+    async def help(self, ctx, *, command: str = None):
         """
         Help command.
         """
@@ -85,6 +85,7 @@ class Core(object):
             await self.bot.say(base)
         else:
             # Check if the command is in the commands dict.
+            # TODO: Allow subcommand checking
             if command not in self.bot.commands:
                 await self.bot.say(":x: This command does not exist.")
                 return
