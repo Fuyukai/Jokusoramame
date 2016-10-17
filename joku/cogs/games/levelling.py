@@ -14,7 +14,7 @@ INCREASING_FACTOR = 50
 # Generate levels.
 levels = []
 current_factor = 50
-for x in range(0, 1000):
+for x in range(0, 10000):
     levels.append(current_factor)
     current_factor += INCREASING_FACTOR + (x * INCREASING_FACTOR)
 
