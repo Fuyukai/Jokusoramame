@@ -93,14 +93,16 @@ def with_redis_cooldown(bucket: str, type_="DAILY"):
                 await ctx.bot.say(":x: You can run this command again in `{}`.".format(t))
                 return
 
+            # Await the inner function.
+            f = await func(self, ctx, *args, **kwargs)
+
             # It's not on cooldown, so set cooldown.
             if type_ == "DAILY":
                 await ctx.bot.redis.set_daily_expiration(user, bucket)
             elif type_ == "HOURLY":
                 await ctx.bot.redis.set_bucket_with_expiration(user, bucket, expiration=3600)
 
-            # Await the inner function.
-            return await func(self, ctx, *args, **kwargs)
+            return f
 
         return _redis_inner
 
