@@ -83,10 +83,10 @@ class Tags(object):
             return
 
         # Check the owner_id
-        if not ctx.message.author.server_permissions.administrator or existing_tag["owner_id"] != \
-                ctx.message.author.id:
-            await self.bot.say(":x: You do not have permission to edit this tag.")
-            return
+        if not ctx.message.author.server_permissions.administrator:
+            if existing_tag["owner_id"] != ctx.message.author.id:
+                await self.bot.say(":x: You do not have permission to edit this tag.")
+                return
 
         # Now, delete the tag.
         await self.bot.rethinkdb.delete_tag(ctx.message.server, name)
