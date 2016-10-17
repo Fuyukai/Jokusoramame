@@ -136,7 +136,8 @@ class RethinkAdapter(object):
                 "user_id": user.id,
                 "xp": 0,
                 "rep": 0,
-                "currency": 200
+                "currency": 200,
+                "level": 1
             }
 
         else:
@@ -144,6 +145,10 @@ class RethinkAdapter(object):
             # Hopefully, this is the right one.
             d = await iterator.next()
             return d
+
+    async def get_level(self, user: discord.User):
+        u = await self._create_or_get_user(user)
+        return u["level"]
 
     async def update_user_xp(self, user: discord.User, xp=None) -> dict:
         """
@@ -165,7 +170,7 @@ class RethinkAdapter(object):
             .insert(user_dict, conflict="update") \
             .run(self.connection)
 
-        return d
+        return user_dict
 
     async def get_user_xp(self, user: discord.User) -> int:
         """
@@ -193,6 +198,7 @@ class RethinkAdapter(object):
             user_dict['currency'] = 200
 
         user_dict["currency"] += added
+        user_dict["last_modified"] = datetime.datetime.now(tz=pytz.timezone("UTC"))
 
         d = await r.table("users") \
             .insert(user_dict, conflict="update") \
