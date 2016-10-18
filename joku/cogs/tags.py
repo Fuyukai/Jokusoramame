@@ -43,6 +43,19 @@ class Tags(object):
                            "**Value:** `{content}`".format(**tmp))
 
     @tag.command(pass_context=True)
+    async def all(self, ctx):
+        """
+        Shows all the tags for the current server
+        """
+        # looks kinda bleak but i try my best *shrug*
+        server_tags = await ctx.bot.rethinkdb.get_all_tags_for_server(ctx.message.server)
+        if not server_tags:
+            await ctx.bot.say("This server has no tags.")
+            return
+
+        await ctx.bot.say(", ".join([x['name'] for x in server_tags]))
+
+    @tag.command(pass_context=True)
     async def create(self, ctx, name: str, *, content: str):
         """
         Creates a new tag.

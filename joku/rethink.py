@@ -62,6 +62,21 @@ class RethinkAdapter(object):
         await self._setup()
 
     # Tags
+    async def get_all_tags_for_server(self, server: discord.Server):
+        """
+        Returns all tags for a server
+        """
+        iterator = await r.table("tags") \
+            .get_all(server.id, index="server_id").run(self.connection)
+
+        exists = iterator.fetch_next()
+        if not exists:
+            return None
+
+        tags = []
+        while await iterator.fetch_next():
+            tags.append(await iterator.next())
+        return tags
 
     async def get_tag(self, server: discord.Server, name: str):
         """
