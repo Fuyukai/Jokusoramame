@@ -28,7 +28,7 @@ def get_level_from_exp(exp: int):
 
 def get_next_level(exp: int):
     if exp < 50:
-        return 0, 0
+        return 0, 50 - exp
 
     l = ceil(-0.5 + ((-4375 + 100 * exp) ** 0.5) / 50)
     return l, levels[l] - exp
