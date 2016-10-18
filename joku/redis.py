@@ -32,6 +32,36 @@ class RedisAdapter(object):
         """
         return self.pool.get()
 
+    async def prevent_spam(self, user: discord.User):
+        """
+        Prevents spam by only counting 15 messages per second.
+        """
+        b = "antispam:{}".format(user.id)
+
+        async with self.get_redis() as redis:
+            assert isinstance(redis, aioredis.Redis)
+
+            # Check if it exists.
+            if not (await redis.exists(b)):
+                # Just LPUSH and EXPIRE the key.
+                await redis.lpush(b, b"A")
+                await redis.expire(b, 60)
+                return False
+
+            # Since it does exist, check the length.
+            l_len = await redis.llen(b)
+
+            if l_len >= 15:
+                # Too much spam, return False.
+                return False
+
+            # Add 1 to it and return True.
+            # Each b"A" represents a message sent.
+            # If it's 15 b"A"s in the list, !
+            # They've spammed too much and don't get to get XP anymore.
+            await redis.lpush(b, b"A")
+            return True
+
     async def ttl(self, key: str):
         async with self.get_redis() as redis:
             return await redis.ttl(key)

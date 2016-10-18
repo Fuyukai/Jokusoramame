@@ -44,6 +44,11 @@ class Levelling(object):
         if message.author.bot:
             return
 
+        # Check the spam quotient.
+        if not await self.bot.redis.prevent_spam(message.author):
+            # The user said more than 15 messages in the last 60 seconds, so don't add XP.
+            return
+
         user = await self.bot.rethinkdb.update_user_xp(message.author)
         # Get the level.
         new_level = get_level_from_exp(user["xp"])
