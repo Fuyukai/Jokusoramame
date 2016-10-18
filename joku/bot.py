@@ -13,8 +13,11 @@ import logbook
 import logging
 
 import time
+
+import threading
 from discord.ext.commands import Bot, CommandError, CommandInvokeError, CheckFailure, MissingRequiredArgument
 from discord.ext.commands import Context
+from discord.ext.commands.bot import _get_variable
 from logbook.compat import redirect_logging
 from logbook import StreamHandler
 from rethinkdb import ReqlDriverError

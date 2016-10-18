@@ -22,12 +22,12 @@ class Tags(object):
         They are made with `tag create`, and deleted with `tag delete`.
         To be accessed, they are simply called like commands are.
         """
-        tag_obb = await self.bot.rethinkdb.get_tag(ctx.message.server, name)
+        tag_obb = await ctx.bot.rethinkdb.get_tag(ctx.message.server, name)
         if not tag_obb:
-            await self.bot.say("Tag not found.")
+            await ctx.bot.say("Tag not found.")
             return
 
-        owner = self.bot.get_member(tag_obb["owner_id"])
+        owner = ctx.bot.get_member(tag_obb["owner_id"])
 
         tmp = {
             "name": tag_obb["name"],
@@ -37,7 +37,7 @@ class Tags(object):
         }
 
         # Display the tag info.
-        await self.bot.say("**Tag name:** `{name}`\n"
+        await ctx.bot.say("**Tag name:** `{name}`\n"
                            "**Owner:** `{owner}`\n"
                            "**Last modified:** `{lm}`\n"
                            "**Value:** `{content}`".format(**tmp))
@@ -49,14 +49,14 @@ class Tags(object):
 
         This will overwrite other tags with the same name, if you are the owner or an administrator.
         """
-        existing_tag = await self.bot.rethinkdb.get_tag(ctx.message.server, name)
+        existing_tag = await ctx.bot.rethinkdb.get_tag(ctx.message.server, name)
 
         if existing_tag:
             # Check for the admin perm.
             if not ctx.message.author.server_permissions.administrator:
                 # Check if the owner_id matches the author id.
                 if ctx.message.author.id != existing_tag["owner_id"]:
-                    await self.bot.say(":x: You cannot edit somebody else's tag.")
+                    await ctx.bot.say(":x: You cannot edit somebody else's tag.")
                     return
 
             # Don't overwrite the owner_id.
@@ -68,8 +68,8 @@ class Tags(object):
         content = content.replace("@everyone", "@\u200beveryone").replace("@here", "@\u200bhere")
 
         # Set the tag.
-        await self.bot.rethinkdb.save_tag(ctx.message.server, name, content, owner=owner_id)
-        await self.bot.say(":heavy_check_mark: Tag **{}** saved.".format(name))
+        await ctx.bot.rethinkdb.save_tag(ctx.message.server, name, content, owner=owner_id)
+        await ctx.bot.say(":heavy_check_mark: Tag **{}** saved.".format(name))
 
     @tag.command(pass_context=True)
     async def delete(self, ctx, *, name: str):
@@ -78,21 +78,21 @@ class Tags(object):
 
         You must be the owner of the tag, or an administrator.
         """
-        existing_tag = await self.bot.rethinkdb.get_tag(ctx.message.server, name)
+        existing_tag = await ctx.bot.rethinkdb.get_tag(ctx.message.server, name)
 
         if not existing_tag:
-            await self.bot.say(":x: This tag does not exist.")
+            await ctx.bot.say(":x: This tag does not exist.")
             return
 
         # Check the owner_id
         if not ctx.message.author.server_permissions.administrator:
             if existing_tag["owner_id"] != ctx.message.author.id:
-                await self.bot.say(":x: You do not have permission to edit this tag.")
+                await ctx.bot.say(":x: You do not have permission to edit this tag.")
                 return
 
         # Now, delete the tag.
-        await self.bot.rethinkdb.delete_tag(ctx.message.server, name)
-        await self.bot.say(":skull_and_crossbones: Tag deleted.")
+        await ctx.bot.rethinkdb.delete_tag(ctx.message.server, name)
+        await ctx.bot.say(":skull_and_crossbones: Tag deleted.")
 
     # Unlike other bots, tags are registered like full commands.
     # So, they're entirely handled inside on_command_error.
@@ -108,7 +108,7 @@ class Tags(object):
         cmd = ctx.invoked_with
 
         # Load the tag.
-        tag = await self.bot.rethinkdb.get_tag(ctx.message.server, cmd)
+        tag = await ctx.bot.rethinkdb.get_tag(ctx.message.server, cmd)
 
         if not tag:
             # The tag doesn't exist.
@@ -142,29 +142,29 @@ class Tags(object):
             try:
                 formatted = clean_content.format(*message_args, **tmp)
             except (ValueError, KeyError, IndexError) as e:
-                await self.bot.send_message(
+                await ctx.bot.send_message(
                     ctx.message.channel,
                     ":x: Tag failed to compile -> {}".format(' '.join(e.args))
                 )
                 return
 
             # Add the prefix to the string and call `process_commands`.
-            prefix = await self.bot.get_command_prefix(ctx.bot, ctx.message)
+            prefix = await ctx.bot.get_command_prefix(ctx.bot, ctx.message)
             final = prefix + formatted
 
             # Update the message.
             ctx.message.content = final
 
-            await self.bot.process_commands(ctx.message)
+            await ctx.bot.process_commands(ctx.message)
             return
 
         try:
-            await self.bot.send_message(ctx.message.channel, content)
+            await ctx.bot.send_message(ctx.message.channel, content)
         except Exception as e:
             # Panic, and dispatch on_command_error.
             new_e = CommandInvokeError(e)
             new_e.__cause__ = e
-            self.bot.dispatch("command_error", new_e, ctx)
+            ctx.bot.dispatch("command_error", new_e, ctx)
 
 
 def setup(bot):

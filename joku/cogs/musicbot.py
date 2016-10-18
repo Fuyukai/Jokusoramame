@@ -175,7 +175,7 @@ class Music(object):
         """
         m = self.get_server_music(ctx.message.server)
         if not m.playing:
-            await self.bot.say("**Not currently playing any tracks.**")
+            await ctx.bot.say("**Not currently playing any tracks.**")
             return
 
         title = m.current_info.get("title")
@@ -193,7 +193,7 @@ class Music(object):
             m1, m2, s1, s2 = floor(m1), floor(m2), floor(s1), floor(s2)
             fmt = "[{:02d}:{:02d}/{:02d}:{:02d}]".format(m1, s1, m2, s2)
 
-        await self.bot.say("Currently playing: `{}` `{}`".format(title, fmt))
+        await ctx.bot.say("Currently playing: `{}` `{}`".format(title, fmt))
 
     @commands.command(pass_context=True)
     async def disconnect(self, ctx):
@@ -201,12 +201,12 @@ class Music(object):
         Disconnect from the current voice channel.
         """
         if ctx.message.server.id not in self.musics:
-            await self.bot.say(":x: I am not connected to voice.")
+            await ctx.bot.say(":x: I am not connected to voice.")
             return
 
         m = self.get_server_music(ctx.message.server)
         await m.disconnect()
-        await self.bot.say(":skull_and_crossbones:")
+        await ctx.bot.say(":skull_and_crossbones:")
 
     @commands.command(pass_context=True)
     async def play(self, ctx, *, query: str):
@@ -214,20 +214,20 @@ class Music(object):
         Plays a track.
         """
         if not ctx.message.author.voice.voice_channel:
-            await self.bot.say(":x: You must be in a voice channel.")
+            await ctx.bot.say(":x: You must be in a voice channel.")
             return
 
         m = self.get_server_music(ctx.message.server)
 
         if ctx.message.server.me.voice.voice_channel \
                 and ctx.message.server.me.voice.voice_channel != ctx.message.author.voice_channel:
-            await self.bot.say(":x: I am already playing elsewhere in this server.")
+            await ctx.bot.say(":x: I am already playing elsewhere in this server.")
             return
 
         info = await m.download_information(ctx, query)
 
         if info is None:
-            await self.bot.say(":x: No results found.")
+            await ctx.bot.say(":x: No results found.")
             return
 
         # Check for a playlist.
@@ -254,11 +254,11 @@ class Music(object):
             return
         # Pass in the data for it to construct the appropriate tuples.
         added = m.construct_voice_data(track_data, is_playlist)
-        await self.bot.say(":heavy_check_mark: Added {} track(s) to the queue.".format(added))
+        await ctx.bot.say(":heavy_check_mark: Added {} track(s) to the queue.".format(added))
 
         # Create the run() task.
         if not m.player_task:
-            t = self.bot.loop.create_task(m.run(ctx))
+            t = ctx.bot.loop.create_task(m.run(ctx))
             m.player_task = t
 
             try:

@@ -16,8 +16,8 @@ class Currency(object):
         """
         Gives you your daily credits.
         """
-        await self.bot.rethinkdb.update_user_currency(ctx.message.author, 50)
-        await self.bot.say(":money_with_wings: **You have been given your daily `§50`.**")
+        await ctx.bot.rethinkdb.update_user_currency(ctx.message.author, 50)
+        await ctx.bot.say(":money_with_wings: **You have been given your daily `§50`.**")
 
     @commands.command(pass_context=True)
     async def currency(self, ctx, *, target: discord.User=None):
@@ -28,11 +28,11 @@ class Currency(object):
         """
         user = target or ctx.message.author
         if user.bot:
-            await self.bot.say(":x: Bots cannot earn money.")
+            await ctx.bot.say(":x: Bots cannot earn money.")
             return
 
-        currency = await self.bot.rethinkdb.get_user_currency(user)
-        await self.bot.say("User **{}** has `§{}`.".format(user, currency))
+        currency = await ctx.bot.rethinkdb.get_user_currency(user)
+        await ctx.bot.say("User **{}** has `§{}`.".format(user, currency))
 
 
 def setup(bot):

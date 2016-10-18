@@ -24,6 +24,17 @@ class ManagerLocal(threading.local):
     """
     bot = None
 
+# I didn't want to have to do this.
+from async_timeout import timeout
+
+
+def unfucked__enter__(self):
+    if self._timeout is not None:
+        self._cancel_handler = self._loop.call_later(
+            self._timeout, self._cancel_task)
+    return self
+
+timeout.__enter__ = unfucked__enter__
 
 class Manager(object):
     def __init__(self):
@@ -60,7 +71,8 @@ class Manager(object):
         policy.set_event_loop(loop)
 
         # Make a new bot instance.
-        bot = Jokusoramame(config=self.config, shard_id=shard_id, shard_count=self.max_shards, manager=self)
+        bot = Jokusoramame(config=self.config, shard_id=shard_id, shard_count=self.max_shards, manager=self,
+                           loop=loop)
         # Login with the bot.
         loop.run_until_complete(bot.login())
         self.bots[shard_id] = bot
@@ -128,7 +140,11 @@ class Manager(object):
         r = requests.get(endpoint, headers={"Authorization": "Bot {}".format(token)})
 
         number_of_shards = r.json()["shards"]
+        number_of_shards = 2
         self.max_shards = number_of_shards
+
+        # Nuke our current event loop.
+        asyncio.set_event_loop(None)
 
         # Create a bunch of threads, one for each shard.
         for x in range(0, number_of_shards):

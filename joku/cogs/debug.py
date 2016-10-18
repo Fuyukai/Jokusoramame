@@ -25,10 +25,10 @@ class Debug(object):
             if inspect.isawaitable(d):
                 d = await d
         except Exception:
-            await self.bot.say(''.join(traceback.format_exc()))
+            await ctx.bot.say(''.join(traceback.format_exc()))
             return
 
-        await self.bot.say("`" + repr(d) + "`")
+        await ctx.bot.say("`" + repr(d) + "`")
 
     @commands.group()
     @commands.check(is_owner)
@@ -44,22 +44,22 @@ class Debug(object):
         """
         Reloads all modules.
         """
-        for extension in self.bot.extensions.copy():
-            self.bot.unload_extension(extension)
-            self.bot.logger.info("Reloaded {}.".format(extension))
-            self.bot.load_extension(extension)
+        for extension in ctx.bot.extensions.copy():
+            ctx.bot.unload_extension(extension)
+            ctx.bot.logger.info("Reloaded {}.".format(extension))
+            ctx.bot.load_extension(extension)
 
-        await self.bot.say("Reloaded all.")
+        await ctx.bot.say("Reloaded all.")
 
     @debug.command()
     async def reload(self, module: str):
         try:
-            self.bot.unload_extension(module)
-            self.bot.load_extension(module)
+            ctx.bot.unload_extension(module)
+            ctx.bot.load_extension(module)
         except Exception as e:
-            await self.bot.say(e)
+            await ctx.bot.say(e)
         else:
-            await self.bot.say("Reloaded `{}`.".format(module))
+            await ctx.bot.say("Reloaded `{}`.".format(module))
 
     @debug.group()
     async def rdb(self):
@@ -69,17 +69,17 @@ class Debug(object):
 
     @rdb.command(pass_context=True)
     async def inspect(self, ctx, *, user: discord.Member):
-        obb = await self.bot.rethinkdb._create_or_get_user(user)
+        obb = await ctx.bot.rethinkdb._create_or_get_user(user)
 
         p = pprint.pformat(obb)
-        await self.bot.say("```json\n{}\n```".format(p))
+        await ctx.bot.say("```json\n{}\n```".format(p))
 
     @rdb.command(pass_context=True)
     async def info(self, ctx):
         """
         Gets data about the RethinkDB cluster.
         """
-        data = await self.bot.rethinkdb.get_info()
+        data = await ctx.bot.rethinkdb.get_info()
 
         tmp = {
             "server": data["server_info"]["name"],
@@ -88,7 +88,7 @@ class Debug(object):
             "clients": data["stats"]["query_engine"]["client_connections"]
         }
 
-        await self.bot.say("""**RethinkDB stats**:
+        await ctx.bot.say("""**RethinkDB stats**:
 
 **Connected to server** `{server}` (`{server_id}`).
 There are `{jobs}` job(s) across `{clients}` clients.

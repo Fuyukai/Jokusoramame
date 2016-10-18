@@ -3,6 +3,7 @@ Core commands.
 """
 import inspect
 
+import asyncio
 from discord.ext import commands
 from discord.ext.commands import Command, CheckFailure
 
@@ -38,19 +39,19 @@ class Core(object):
         Shows stats about the bot.
         """
         tmp = {
-            "shards": self.bot.manager.max_shards,
-            "servers": sum(1 for _ in self.bot.manager.get_all_servers()),
-            "members": sum(1 for _ in self.bot.manager.get_all_members()),
-            "unique_members": self.bot.manager.unique_member_count,
-            "channels": sum(1 for _ in self.bot.manager.get_all_channels()),
-            "shard": self.bot.shard_id
+            "shards": ctx.bot.manager.max_shards,
+            "servers": sum(1 for _ in ctx.bot.manager.get_all_servers()),
+            "members": sum(1 for _ in ctx.bot.manager.get_all_members()),
+            "unique_members": ctx.bot.manager.unique_member_count,
+            "channels": sum(1 for _ in ctx.bot.manager.get_all_channels()),
+            "shard": ctx.bot.shard_id
         }
 
-        await self.bot.say("Currently connected to `{servers}` servers, "
-                           "with `{channels}` channels "
-                           "and `{members}` members (`{unique_members}` unique) "
-                           "across `{shards}` shards.\n\n"
-                           "This is shard ID **{shard}**.".format(**tmp))
+        await ctx.bot.say("Currently connected to `{servers}` servers, "
+                          "with `{channels}` channels "
+                          "and `{members}` members (`{unique_members}` unique) "
+                          "across `{shards}` shards.\n\n"
+                          "This is shard ID **{shard}**.".format(**tmp))
 
     @commands.command(pass_context=True)
     async def help(self, ctx, *, command: str = None):
@@ -62,7 +63,7 @@ class Core(object):
         if command is None:
             # List the commands.
             base = "**Commands:**\nUse `{}help <command>` for more information about each command.\n\n".format(prefix)
-            for n, (name, cls) in enumerate(self.bot.cogs.items()):
+            for n, (name, cls) in enumerate(ctx.bot.cogs.items()):
                 # Increment N, so we start at 1 index instead of 0.
                 n += 1
 
@@ -82,17 +83,17 @@ class Core(object):
                 base += "**{}. {}: ** {}\n".format(n, name, ' '.join(cmds) if cmds else "`No commands available to "
                                                                                         "you.`")
 
-            await self.bot.say(base)
+            await ctx.bot.say(base)
         else:
             # Check if the command is in the commands dict.
             # TODO: Allow subcommand checking
-            if command not in self.bot.commands:
-                await self.bot.say(":x: This command does not exist.")
+            if command not in ctx.bot.commands:
+                await ctx.bot.say(":x: This command does not exist.")
                 return
             # Use the default HelpFormatter to construct a nice message.
-            fmtted = self.bot.formatter.format_help_for(ctx, self.bot.commands[command])
+            fmtted = ctx.bot.formatter.format_help_for(ctx, ctx.bot.commands[command])
             for page in fmtted:
-                await self.bot.say(page)
+                await ctx.bot.say(page)
 
 
 def setup(bot: Jokusoramame):

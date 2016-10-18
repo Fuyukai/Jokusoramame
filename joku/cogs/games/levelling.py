@@ -71,12 +71,12 @@ class Levelling(object):
         """
         user = target or ctx.message.author
         if user.bot:
-            await self.bot.say(":no_entry_sign: **Bots cannot have XP.**")
+            await ctx.bot.say(":no_entry_sign: **Bots cannot have XP.**")
             return
 
-        level = await self.bot.rethinkdb.get_level(user)
+        level = await ctx.bot.rethinkdb.get_level(user)
 
-        await self.bot.say("User **{}** is level `{}`.".format(user.name, level))
+        await ctx.bot.say("User **{}** is level `{}`.".format(user.name, level))
 
     @level.command(pass_context=True)
     async def next(self, ctx, *, target: discord.Member = None):
@@ -87,15 +87,15 @@ class Levelling(object):
         """
         user = target or ctx.message.author
         if user.bot:
-            await self.bot.say(":no_entry_sign: **Bots cannot have XP.**")
+            await ctx.bot.say(":no_entry_sign: **Bots cannot have XP.**")
             return
 
-        level = await self.bot.rethinkdb.get_level(user)
-        xp = await self.bot.rethinkdb.get_user_xp(user)
+        level = await ctx.bot.rethinkdb.get_level(user)
+        xp = await ctx.bot.rethinkdb.get_user_xp(user)
 
         exp_required = get_next_level(xp)[1]
 
-        await self.bot.say("**{}** needs `{}` XP to advance to level `{}`.".format(user.name, exp_required,
+        await ctx.bot.say("**{}** needs `{}` XP to advance to level `{}`.".format(user.name, exp_required,
                                                                                        level+1))
 
     @commands.command(pass_context=True, aliases=["exp"])
@@ -107,12 +107,12 @@ class Levelling(object):
         """
         user = target or ctx.message.author
         if user.bot:
-            await self.bot.say(":no_entry_sign: **Bots cannot have XP.**")
+            await ctx.bot.say(":no_entry_sign: **Bots cannot have XP.**")
             return
 
-        exp = await self.bot.rethinkdb.get_user_xp(user)
+        exp = await ctx.bot.rethinkdb.get_user_xp(user)
 
-        await self.bot.say("User **{}** has `{}` XP.".format(user.name, exp))
+        await ctx.bot.say("User **{}** has `{}` XP.".format(user.name, exp))
 
 
 def setup(bot: Jokusoramame):
