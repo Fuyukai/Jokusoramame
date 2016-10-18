@@ -68,6 +68,8 @@ class Jokusoramame(Bot):
         self.extensions = OrderedDict()
         self.cogs = OrderedDict()
 
+        self._rotator_task = None
+
     def __del__(self):
         self.loop.set_exception_handler(lambda *args, **kwargs: None)
 
@@ -81,6 +83,15 @@ class Jokusoramame(Bot):
     @staticmethod
     async def get_command_prefix(self: 'Jokusoramame', message: discord.Message):
         return "j!"
+
+    async def rotate_game_text(self):
+        while True:
+            await self.change_presence(
+                game=discord.Game(name="[Shard {}/{}] {} Servers".format(
+                    self.shard_id + 1, self.shard_count, len(self.servers)
+                ))
+            )
+            await asyncio.sleep(60)
 
     async def on_command_error(self, exception, context):
         """
@@ -135,6 +146,12 @@ class Jokusoramame(Bot):
                 self.logger.exception()
             else:
                 self.logger.info("Loaded cog {}.".format(cog))
+
+        if self._rotator_task is not None:
+            self._rotator_task.cancel()
+            self._rotator_task.exception()
+
+        self._rotator_task = self.loop.create_task(self.rotate_game_text())
 
         new_time = time.time() - self.startup_time
 

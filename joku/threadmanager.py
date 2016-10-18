@@ -140,6 +140,7 @@ class Manager(object):
         r = requests.get(endpoint, headers={"Authorization": "Bot {}".format(token)})
 
         number_of_shards = r.json()["shards"]
+        number_of_shards += 1
         self.max_shards = number_of_shards
 
         # Create a bunch of threads, one for each shard.
