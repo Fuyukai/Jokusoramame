@@ -39,8 +39,8 @@ class Debug(object):
         Only usable by the owner.
         """
 
-    @debug.command()
-    async def reloadall(self):
+    @debug.command(pass_context=True)
+    async def reloadall(self, ctx):
         """
         Reloads all modules.
         """
@@ -51,8 +51,8 @@ class Debug(object):
 
         await ctx.bot.say("Reloaded all.")
 
-    @debug.command()
-    async def reload(self, module: str):
+    @debug.command(pass_context=True)
+    async def reload(self, ctx, module: str):
         try:
             ctx.bot.unload_extension(module)
             ctx.bot.load_extension(module)

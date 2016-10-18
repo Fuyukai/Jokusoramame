@@ -140,11 +140,7 @@ class Manager(object):
         r = requests.get(endpoint, headers={"Authorization": "Bot {}".format(token)})
 
         number_of_shards = r.json()["shards"]
-        number_of_shards = 2
         self.max_shards = number_of_shards
-
-        # Nuke our current event loop.
-        asyncio.set_event_loop(None)
 
         # Create a bunch of threads, one for each shard.
         for x in range(0, number_of_shards):

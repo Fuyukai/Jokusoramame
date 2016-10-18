@@ -34,6 +34,14 @@ class Core(object):
             return can_run
 
     @commands.command(pass_context=True)
+    async def info(self, ctx):
+        """
+        Shows botto info.
+        """
+        await ctx.bot.say(":exclamation: **See <https://github.com/SunDwarf/Jokusoramame>, "
+                          "or join the server at https://discord.gg/uQwVat8.**")
+
+    @commands.command(pass_context=True)
     async def stats(self, ctx):
         """
         Shows stats about the bot.
