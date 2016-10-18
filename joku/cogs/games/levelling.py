@@ -46,7 +46,6 @@ class Levelling(object):
 
         # Check the spam quotient.
         if not await self.bot.redis.prevent_spam(message.author):
-            print("Anti-spam protection")
             # The user said more than 15 messages in the last 60 seconds, so don't add XP.
             return
 

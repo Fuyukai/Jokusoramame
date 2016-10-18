@@ -51,8 +51,6 @@ class RedisAdapter(object):
             # Since it does exist, check the length.
             l_len = await redis.llen(b)
 
-            print(l_len)
-
             if l_len >= 15:
                 # Too much spam, return False.
                 return False
