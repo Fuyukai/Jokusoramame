@@ -90,7 +90,7 @@ class Levelling(object):
 
         exp_required = get_next_level(xp)[1]
 
-        await self.bot.say("**{}** needs need `{}` XP to advance to level `{}`.".format(user.name, exp_required,
+        await self.bot.say("**{}** needs `{}` XP to advance to level `{}`.".format(user.name, exp_required,
                                                                                        level+1))
 
     @commands.command(pass_context=True, aliases=["exp"])
