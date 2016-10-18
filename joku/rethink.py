@@ -176,7 +176,7 @@ class RethinkAdapter(object):
         if xp:
             added = xp
         else:
-            added = random.randint(0, 3)
+            added = random.randint(1, 3)
 
         user_dict["xp"] += added
         user_dict["last_modified"] = datetime.datetime.now(tz=pytz.timezone("UTC"))

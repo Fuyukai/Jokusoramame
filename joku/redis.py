@@ -46,10 +46,12 @@ class RedisAdapter(object):
                 # Just LPUSH and EXPIRE the key.
                 await redis.lpush(b, b"A")
                 await redis.expire(b, 60)
-                return False
+                return True
 
             # Since it does exist, check the length.
             l_len = await redis.llen(b)
+
+            print(l_len)
 
             if l_len >= 15:
                 # Too much spam, return False.

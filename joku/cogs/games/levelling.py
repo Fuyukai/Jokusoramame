@@ -23,14 +23,14 @@ def get_level_from_exp(exp: int):
     # I don't get it but ok
     if exp < 50:
         return 0
-    return floor(-0.5 + ((-4375 + 100 * exp) ** 0.5) / 50)
+    return floor(-0.5 + ((-4375 + 100 * exp) ** 0.5) / 50) + 1
 
 
 def get_next_level(exp: int):
     if exp < 50:
         return 0, 50 - exp
 
-    l = ceil(-0.5 + ((-4375 + 100 * exp) ** 0.5) / 50)
+    l = ceil(-0.5 + ((-4375 + 100 * exp) ** 0.5) / 50) + 1
     return l, levels[l] - exp
 
 
@@ -46,6 +46,7 @@ class Levelling(object):
 
         # Check the spam quotient.
         if not await self.bot.redis.prevent_spam(message.author):
+            print("Anti-spam protection")
             # The user said more than 15 messages in the last 60 seconds, so don't add XP.
             return
 
