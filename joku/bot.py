@@ -13,7 +13,7 @@ import logbook
 import logging
 
 import time
-from discord.ext.commands import Bot, CommandError, CommandInvokeError, CheckFailure
+from discord.ext.commands import Bot, CommandError, CommandInvokeError, CheckFailure, MissingRequiredArgument
 from discord.ext.commands import Context
 from logbook.compat import redirect_logging
 from logbook import StreamHandler
@@ -95,6 +95,9 @@ class Jokusoramame(Bot):
         if isinstance(exception, CheckFailure):
             channel = context.message.channel
             await self.send_message(channel, "\U0001f6ab Check failed: {}".format(' '.join(exception.args)))
+
+        elif isinstance(exception, MissingRequiredArgument):
+            await self.send_message(context.message.channel, "\U0001f6ab Error: {}".format(' '.join(exception.args)))
 
     async def on_ready(self):
         self.logger.info("Loaded Jokusoramame, logged in as {}#{}.".format(self.user.name, self.user.discriminator))
