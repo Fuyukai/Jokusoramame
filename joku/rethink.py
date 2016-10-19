@@ -3,6 +3,7 @@ A RethinkDB database interface.
 """
 import datetime
 import random
+import typing
 
 import discord
 import logbook
@@ -60,6 +61,55 @@ class RethinkAdapter(object):
         """
         self.connection = await r.connect(**connection_settings)
         await self._setup()
+
+    # Helpers
+    async def to_list(self, cursor) -> list:
+        """
+        Gets all items from an AsyncioCursor.
+        """
+        l = []
+        while await cursor.fetch_next():
+            l.append(await cursor.next())
+
+        return l
+
+    # Generic actions
+    async def create_or_get_user(self, user: discord.User) -> dict:
+        iterator = await r.table("users").get_all(user.id, index="user_id").run(self.connection)
+
+        exists = await iterator.fetch_next()
+        if not exists:
+            # Create a new user.
+            return {
+                "user_id": user.id,
+                "xp": 0,
+                "rep": 0,
+                "currency": 200,
+                "level": 1
+            }
+
+        else:
+            # Get the next item from the iterator.
+            # Hopefully, this is the right one.
+            d = await iterator.next()
+            return d
+
+    async def get_multiple_users(self, *users: typing.List[discord.User], order_by=None):
+        """
+        Gets multiple users.
+        """
+        ids = [u.id for u in users]
+
+        # Do a get_all using the ids as the items.
+        _q = r.table("users").get_all(*ids, index="user_id")
+        if order_by is None:
+            iterator = await _q.run(self.connection)
+            users = await self.to_list(iterator)
+        else:
+            iterator = await _q.order_by(order_by).run(self.connection)
+            users = iterator
+
+        return users
 
     # Tags
     async def get_all_tags_for_server(self, server: discord.Server):
@@ -141,35 +191,15 @@ class RethinkAdapter(object):
 
     # XP
 
-    async def _create_or_get_user(self, user: discord.User) -> dict:
-        iterator = await r.table("users").get_all(user.id, index="user_id").run(self.connection)
-
-        exists = await iterator.fetch_next()
-        if not exists:
-            # Create a new user.
-            return {
-                "user_id": user.id,
-                "xp": 0,
-                "rep": 0,
-                "currency": 200,
-                "level": 1
-            }
-
-        else:
-            # Get the next item from the iterator.
-            # Hopefully, this is the right one.
-            d = await iterator.next()
-            return d
-
     async def get_level(self, user: discord.User):
-        u = await self._create_or_get_user(user)
+        u = await self.create_or_get_user(user)
         return u["level"]
 
     async def update_user_xp(self, user: discord.User, xp=None) -> dict:
         """
         Updates the user's current experience.
         """
-        user_dict = await self._create_or_get_user(user)
+        user_dict = await self.create_or_get_user(user)
 
         # Add a random amount of exp.
         # lol rng
@@ -191,9 +221,10 @@ class RethinkAdapter(object):
         """
         Gets the user's current experience.
         """
-        user_dict = await self._create_or_get_user(user)
+        user_dict = await self.create_or_get_user(user)
 
         return user_dict["xp"]
+
 
     # Currency
 
@@ -201,7 +232,7 @@ class RethinkAdapter(object):
         """
         Updates the user's current currency.
         """
-        user_dict = await self._create_or_get_user(user)
+        user_dict = await self.create_or_get_user(user)
 
         if currency:
             added = currency
@@ -225,7 +256,7 @@ class RethinkAdapter(object):
         """
         Gets the user's current currency.
         """
-        user_dict = await self._create_or_get_user(user)
+        user_dict = await self.create_or_get_user(user)
 
         return user_dict.get("currency", 200)
 
