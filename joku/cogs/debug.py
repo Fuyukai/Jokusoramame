@@ -69,7 +69,7 @@ class Debug(object):
 
     @rdb.command(pass_context=True)
     async def inspect(self, ctx, *, user: discord.Member):
-        obb = await ctx.bot.rethinkdb._create_or_get_user(user)
+        obb = await ctx.bot.rethinkdb.create_or_get_user(user)
 
         p = pprint.pformat(obb)
         await ctx.bot.say("```json\n{}\n```".format(p))

@@ -6,6 +6,7 @@ from math import floor, ceil
 import discord
 import rethinkdb as r
 from discord.ext import commands
+from discord.ext.commands import Context
 
 from joku.bot import Jokusoramame
 
@@ -79,6 +80,27 @@ class Levelling(object):
         await ctx.bot.say("User **{}** is level `{}`.".format(user.name, level))
 
     @level.command(pass_context=True)
+    async def leaderboard(self, ctx: Context):
+        """
+        Shows the top 10 people in this server.
+
+        This uses the global XP counter.
+        """
+        users = await ctx.bot.rethinkdb.get_multiple_users(*ctx.message.server.members, order_by=r.desc("xp"))
+
+        base = "**Top 10 users (in this server):**\n\n"
+
+        for n, u in enumerate(users[:10]):
+            base += "**{}. {} - {} XP - Level {}**\n".format(
+                n + 1,
+                ctx.message.server.get_member(u["user_id"]).name,
+                u["xp"],
+                u["level"]
+            )
+
+        await ctx.bot.say(base)
+
+    @level.command(pass_context=True)
     async def next(self, ctx, *, target: discord.Member = None):
         """
         Shows the next level for somebody.
@@ -96,7 +118,7 @@ class Levelling(object):
         exp_required = get_next_level(xp)[1]
 
         await ctx.bot.say("**{}** needs `{}` XP to advance to level `{}`.".format(user.name, exp_required,
-                                                                                       level+1))
+                                                                                  level + 1))
 
     @commands.command(pass_context=True, aliases=["exp"])
     async def xp(self, ctx, *, target: discord.Member = None):
