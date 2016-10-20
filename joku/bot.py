@@ -3,21 +3,17 @@ Main bot class.
 """
 import asyncio
 import os
-import shutil
 import sys
 import traceback
 from collections import OrderedDict
+import time
+import random
 
 import discord
 import logbook
 import logging
 
-import time
-
-import threading
-from discord.ext.commands import Bot, CommandError, CommandInvokeError, CheckFailure, MissingRequiredArgument
-from discord.ext.commands import Context
-from discord.ext.commands.bot import _get_variable
+from discord.ext.commands import Bot, CommandInvokeError, CheckFailure, MissingRequiredArgument
 from logbook.compat import redirect_logging
 from logbook import StreamHandler
 from rethinkdb import ReqlDriverError
@@ -69,6 +65,7 @@ class Jokusoramame(Bot):
         self.cogs = OrderedDict()
 
         self._rotator_task = None
+        self._avatar_rotator = None
 
     def __del__(self):
         self.loop.set_exception_handler(lambda *args, **kwargs: None)
@@ -153,9 +150,28 @@ class Jokusoramame(Bot):
 
         self._rotator_task = self.loop.create_task(self.rotate_game_text())
 
+        if self.shard_id == 0:
+            # Start the avatar rotator.
+            if self._avatar_rotator is None:
+                self.loop.create_task(self._rotate_avatar())
+
         new_time = time.time() - self.startup_time
 
         self.logger.info("Bot ready in {} seconds.".format(new_time))
+
+    async def _rotate_avatar(self):
+        while True:
+            # Pick a random avatar from the `avatars/` directory.
+            scanned = os.scandir("avatars/")
+            r = random.choice([_ for _ in scanned])
+            p = r.path
+            with open(p, 'rb') as f:
+                data = f.read()
+            # Set the avy.
+            await self.edit_profile(avatar=data)
+
+            # Sleep for 300 seconds.
+            await asyncio.sleep(300)
 
     async def on_message(self, message):
         self.logger.info("Recieved message: {message.content} from {message.author.display_name}{bot}"
