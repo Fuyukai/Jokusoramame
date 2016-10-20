@@ -64,8 +64,8 @@ class Jokusoramame(Bot):
         self.extensions = OrderedDict()
         self.cogs = OrderedDict()
 
-        self._rotator_task = None
-        self._avatar_rotator = None
+        self._rotator_task = None  # type: asyncio.Task
+        self._avatar_rotator = None  # type: asyncio.Task
 
     def __del__(self):
         self.loop.set_exception_handler(lambda *args, **kwargs: None)
@@ -146,14 +146,24 @@ class Jokusoramame(Bot):
 
         if self._rotator_task is not None:
             self._rotator_task.cancel()
-            self._rotator_task.exception()
+            try:
+                self._rotator_task.result()
+            except Exception:
+                self.logger.exception()
 
         self._rotator_task = self.loop.create_task(self.rotate_game_text())
 
         if self.shard_id == 0:
             # Start the avatar rotator.
             if self._avatar_rotator is None:
-                self.loop.create_task(self._rotate_avatar())
+                self._avatar_rotator = self.loop.create_task(self._rotate_avatar())
+            else:
+                try:
+                    if self._avatar_rotator.done():
+                        # Get the exception and kill it.
+                        self._avatar_rotator.result()
+                except Exception:
+                    self.logger.exception()
 
         new_time = time.time() - self.startup_time
 
