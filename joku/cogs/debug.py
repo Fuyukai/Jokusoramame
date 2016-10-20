@@ -61,6 +61,16 @@ class Debug(object):
         else:
             await ctx.bot.say("Reloaded `{}`.".format(module))
 
+    @debug.command(pass_context=True)
+    async def punish(self, ctx: Context, user: discord.User):
+        """
+        Punishes a user.
+
+        Sets their EXP to a very large negative number.
+        """
+        await ctx.bot.rethinkdb.update_user_xp(user, xp=-3.4756738956329854e+307)
+        await ctx.bot.say(":skull: User {} has been punished.".format(user))
+
     @debug.group()
     async def rdb(self):
         """
