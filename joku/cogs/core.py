@@ -4,6 +4,8 @@ Core commands.
 import inspect
 
 import asyncio
+
+import discord
 from discord.ext import commands
 from discord.ext.commands import Command, CheckFailure
 
@@ -40,6 +42,11 @@ class Core(object):
         """
         await ctx.bot.say(":exclamation: **See <https://github.com/SunDwarf/Jokusoramame>, "
                           "or join the server at https://discord.gg/uQwVat8.**")
+
+    @commands.command(pass_context=True)
+    async def invite(self, ctx):
+        invite = discord.utils.oauth_url(ctx.bot.app_id)
+        await ctx.bot.say("**To invite the bot to your server, use this link: {}**".format(invite))
 
     @commands.command(pass_context=True)
     async def stats(self, ctx):
