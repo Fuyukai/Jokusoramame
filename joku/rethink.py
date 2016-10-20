@@ -171,8 +171,8 @@ class RethinkAdapter(object):
             d["content"] = content
             d["last_modified"] = datetime.datetime.now(tz=pytz.timezone("UTC"))
 
-        d = await r.table("tags")\
-            .insert(d, conflict="update")\
+        d = await r.table("tags") \
+            .insert(d, conflict="update") \
             .run(self.connection)
 
         return d
@@ -181,10 +181,10 @@ class RethinkAdapter(object):
         """
         Deletes a tag.
         """
-        d = await r.table("tags")\
-            .get_all(server.id, index="server_id")\
-            .filter({"name": name})\
-            .delete()\
+        d = await r.table("tags") \
+            .get_all(server.id, index="server_id") \
+            .filter({"name": name}) \
+            .delete() \
             .run(self.connection)
 
         return d
@@ -224,7 +224,6 @@ class RethinkAdapter(object):
         user_dict = await self.create_or_get_user(user)
 
         return user_dict["xp"]
-
 
     # Currency
 

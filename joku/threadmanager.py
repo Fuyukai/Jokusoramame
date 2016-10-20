@@ -24,17 +24,6 @@ class ManagerLocal(threading.local):
     """
     bot = None
 
-# I didn't want to have to do this.
-from async_timeout import timeout
-
-
-def unfucked__enter__(self):
-    if self._timeout is not None:
-        self._cancel_handler = self._loop.call_later(
-            self._timeout, self._cancel_task)
-    return self
-
-timeout.__enter__ = unfucked__enter__
 
 class Manager(object):
     def __init__(self):
