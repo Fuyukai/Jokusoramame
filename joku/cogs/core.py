@@ -116,15 +116,8 @@ class Core(object):
 
             await ctx.bot.say(base)
         else:
-            # Check if the command is in the commands dict.
-            # TODO: Allow subcommand checking
-            if command not in ctx.bot.commands:
-                await ctx.bot.say(":x: This command does not exist.")
-                return
-            # Use the default HelpFormatter to construct a nice message.
-            fmtted = ctx.bot.formatter.format_help_for(ctx, ctx.bot.commands[command])
-            for page in fmtted:
-                await ctx.bot.say(page)
+            # Use the default help command.
+            await _default_help_command(ctx, *command.split(" "))
 
 
 def setup(bot: Jokusoramame):
