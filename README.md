@@ -1,6 +1,6 @@
 ## Jokusoramame (Juck Fava)
 
-[![Join the Discord!](https://discordapp.com/api/guilds/198101180180594688/widget.png)](https://discord.gg/KY83fQD)
+[![Join the Discord!](https://discordapp.com/api/guilds/237980238536114176/widget.png)](https://discord.gg/uQwVat8)
  
 Jokusoramame is another terrible bot.
 
