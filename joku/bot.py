@@ -79,7 +79,7 @@ class Jokusoramame(Bot):
 
     @staticmethod
     async def get_command_prefix(self: 'Jokusoramame', message: discord.Message):
-        return "j!"
+        return ["j" + s for s in "!?^&$}#~:"]
 
     async def rotate_game_text(self):
         while True:
