@@ -3,6 +3,9 @@
 # The bot's token.
 bot_token: mfa.syfydwefbvwet
 
+# The bots.discord.pw token.
+dbots_token: dniewudbyuewbdfuewvfueqwh89defbewyfbuewhf
+
 # The cogs to load.
 autoload:
   - joku.cogs.debug
