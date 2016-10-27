@@ -45,6 +45,10 @@ class Levelling(object):
         if message.author.bot:
             return
 
+        # No discord bots, thanks.
+        if message.server.id == "110373943822540800":
+            return
+
         # Check the spam quotient.
         if not await self.bot.redis.prevent_spam(message.author):
             # The user said more than 15 messages in the last 60 seconds, so don't add XP.
