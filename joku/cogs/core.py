@@ -8,8 +8,10 @@ import asyncio
 import discord
 from discord.ext import commands
 from discord.ext.commands import Command, CheckFailure
+from discord.ext.commands import Context
 
 from joku.bot import Jokusoramame
+from joku.checks import is_owner
 from joku.redis import with_redis_cooldown
 
 
@@ -34,6 +36,18 @@ class Core(object):
             return False
         else:
             return can_run
+
+    @commands.command(pass_context=True)
+    @commands.check(is_owner)
+    async def changename(self, ctx: Context, *, name: str):
+        """
+        Changes the current username of the bot.
+
+        This command is only usable by the owner.
+        """
+        await self.bot.edit_profile(username=name)
+        await self.bot.say(":heavy_check_mark: Changed username.")
+
 
     @commands.command(pass_context=True)
     async def info(self, ctx):
