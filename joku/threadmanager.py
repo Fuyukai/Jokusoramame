@@ -166,12 +166,13 @@ class Manager(object):
             self.max_shards = 1
             self.logger.info("Starting single-shard instance of the bot.")
             # Run the stats uploader in a loop anyway.
-            def __stats_uploader():
-                while True:
-                    self._upload_bot_stats()
-                    time.sleep(10)
+            if self.config.get("dbots_token", None):
+                def __stats_uploader():
+                    while True:
+                        self._upload_bot_stats()
+                        time.sleep(10)
 
-            self._start_in_thread(-1, __stats_uploader)
+                self._start_in_thread(-1, __stats_uploader)
             self._run_bot_threaded(0)
             return
 
