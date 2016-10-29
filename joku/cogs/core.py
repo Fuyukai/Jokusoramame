@@ -48,7 +48,6 @@ class Core(object):
         await self.bot.edit_profile(username=name)
         await self.bot.say(":heavy_check_mark: Changed username.")
 
-
     @commands.command(pass_context=True)
     async def info(self, ctx):
         """

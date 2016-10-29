@@ -79,7 +79,10 @@ class Jokusoramame(Bot):
 
     @staticmethod
     async def get_command_prefix(self: 'Jokusoramame', message: discord.Message):
-        return ["j" + s for s in "?^&$}#~:"]
+        if message.server.id == "110373943822540800":
+            # Don't conflict in dbots
+            return ["j" + s for s in "?^&$}#~:"]
+        return ["j" + s for s in "!?^&$}#~:"]
 
     async def rotate_game_text(self):
         while True:
