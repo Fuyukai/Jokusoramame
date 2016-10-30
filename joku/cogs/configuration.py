@@ -80,13 +80,13 @@ class Config(object):
                              "type": args.type})\
                     .run(ctx.bot.rethinkdb.connection)
 
-            got = await self.bot.rethinkdb.to_list(query)
+            got = await ctx.bot.rethinkdb.to_list(query)
             if not got:
                 await ctx.bot.say(":x: This item does not have an ignore rule on it of that type.")
                 return
 
             # Remove the rule.
-            await r.table("settings").get(got[0]["id"]).delete().run(self.bot.rethinkdb.connection)
+            await r.table("settings").get(got[0]["id"]).delete().run(ctx.bot.rethinkdb.connection)
             await ctx.bot.say(":heavy_check_mark: Removed ignore rule.")
             return
         elif args.add:
