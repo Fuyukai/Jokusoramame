@@ -54,6 +54,10 @@ class Levelling(object):
             # The user said more than 15 messages in the last 60 seconds, so don't add XP.
             return
 
+        # Check if this channel should be ignored for levelling.
+        if await self.bot.rethinkdb.is_channel_ignored(message.channel, type_="levels"):
+            return
+
         user = await self.bot.rethinkdb.update_user_xp(message.author)
         # Get the level.
         new_level = get_level_from_exp(user["xp"])

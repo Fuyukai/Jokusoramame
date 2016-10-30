@@ -94,7 +94,7 @@ class RethinkAdapter(object):
             d = await iterator.next()
             return d
 
-    async def get_multiple_users(self, *users: typing.List[discord.User], order_by=None):
+    async def get_multiple_users(self, *users: typing.List[discord.User], order_by = None):
         """
         Gets multiple users.
         """
@@ -195,7 +195,7 @@ class RethinkAdapter(object):
         u = await self.create_or_get_user(user)
         return u["level"]
 
-    async def update_user_xp(self, user: discord.User, xp=None) -> dict:
+    async def update_user_xp(self, user: discord.User, xp = None) -> dict:
         """
         Updates the user's current experience.
         """
@@ -227,7 +227,7 @@ class RethinkAdapter(object):
 
     # Currency
 
-    async def update_user_currency(self, user: discord.User, currency=None) -> dict:
+    async def update_user_currency(self, user: discord.User, currency = None) -> dict:
         """
         Updates the user's current currency.
         """
@@ -301,6 +301,22 @@ class RethinkAdapter(object):
 
         i = await d.next()
         return i
+
+    # Ignores
+    async def is_channel_ignored(self, channel: discord.Channel, type_: str = "levelling"):
+        """
+        Checks if a channel has an ignore rule on it.
+        """
+        cursor = await r.table("settings") \
+            .get_all(channel.server.id, index="server_id")\
+            .filter({"name": "ignore", "target": channel.id, "type": type_})\
+            .run(self.connection)
+
+        items = await self.to_list(cursor=cursor)
+        # Hacky thing
+        # Turns a truthy value into True
+        # and a falsey value ([], None) into False
+        return not not items
 
     # Internals
 
