@@ -200,7 +200,7 @@ class Jokusoramame(Bot):
         token = self.config["bot_token"]
         super().run(token)
 
-    async def login(self):
+    async def login(self, *args, **kwargs):
         token = self.config["bot_token"]
         return await super().login(token)
 
