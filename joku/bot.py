@@ -194,6 +194,10 @@ class Jokusoramame(Bot):
         if message.server is not None:
             self.logger.info(" On server: {} ({})".format(message.server.name, message.server.id))
 
+        # Check if an ignore rule exists for that channel.
+        if await self.rethinkdb.is_channel_ignored(message.channel, type_="commands"):
+            return
+
         await super().on_message(message)
 
     def run(self):
