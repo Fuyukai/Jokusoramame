@@ -3,6 +3,7 @@ A RethinkDB database interface.
 """
 import datetime
 import random
+import threading
 import typing
 
 import discord
@@ -261,20 +262,20 @@ class RethinkAdapter(object):
 
     # Settings
 
-    async def set_setting(self, server: discord.Server, setting_name: str, value: str) -> dict:
+    async def set_setting(self, server: discord.Server, setting_name: str, **values: dict) -> dict:
         """
         Sets a setting.
         :param server: The server to set the setting in.
         :param setting_name: The name to use.
-        :param value: The value to insert.
+        :param values: The values to insert into the settings.
         """
         # Try and find the ID.
         setting = await self.get_setting(server, setting_name)
         if not setting:
-            d = {"server_id": server.id, "name": setting_name, "value": value}
+            d = {"server_id": server.id, "name": setting_name, **values}
         else:
             # Use the ID we have.
-            d = {"server_id": server.id, "name": setting_name, "value": value, "id": setting["id"]}
+            d = {"server_id": server.id, "name": setting_name, "id": setting["id"], **values}
 
         d = await r.table("settings") \
             .insert(d, conflict="update") \
