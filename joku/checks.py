@@ -1,10 +1,28 @@
 """
 Specific checks.
 """
-from discord.ext.commands import CheckFailure
+from discord.ext.commands import CheckFailure, check
 
 
 def is_owner(ctx):
     if not ctx.bot.owner_id == ctx.message.author.id:
         raise CheckFailure(message="You are not the owner.")
     return True
+
+
+def has_permissions(**perms):
+    def predicate(ctx):
+        if ctx.bot.owner_id == ctx.message.author.id:
+            return True
+        msg = ctx.message
+        ch = msg.channel
+        permissions = ch.permissions_for(msg.author)
+        if all(getattr(permissions, perm, None) == value for perm, value in perms.items()):
+            return True
+
+        # Raise a custom error message
+        raise CheckFailure(message="You do not have any of the required permissions: {}".format(
+            ', '.join([perm.upper() for perm in perms])
+        ))
+
+    return check(predicate)
