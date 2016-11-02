@@ -31,7 +31,7 @@ class Config(object):
         self.bot = bot
 
     @commands.group(pass_context=True, invoke_without_command=True)
-    @commands.has_permissions(manage_server=True)
+    @has_permissions(manage_server=True)
     async def notifications(self, ctx: Context):
         """
         Allows you to edit which events you are subscribed to on this bot.
@@ -72,16 +72,18 @@ class Config(object):
 
         # Add it to the events dict.
         d = await self.bot.rethinkdb.get_setting(ctx.message.server, "events")
+        # Below, we use the channel ID as it is truthy.
+        # It also signifies what channel to spam for the events.
         if not d:
             # Setting doesn't exist, create a new dict which has the event in it.
-            d = {"events": {event: True}}
+            d = {"events": {event: ctx.message.channel.id}}
         else:
             # Setting does exist, make a new dict, and then flip the setting bool.
             d = {"events": d["events"]}
-            d["events"][event] = True
+            d["events"][event] = ctx.message.channel.id
 
-        await self.bot.rethinkdb.set_setting(ctx.message.server, setting_name="events", **d)
-        await self.bot.say(":heavy_check_mark: Subscribed to event.")
+        await ctx.bot.rethinkdb.set_setting(ctx.message.server, setting_name="events", **d)
+        await ctx.bot.say(":heavy_check_mark: Subscribed to event.")
 
     @notifications.command(pass_context=True, aliases=["unsub"])
     async def unsubscribe(self, ctx: Context, *, event: str=None):
@@ -100,7 +102,7 @@ class Config(object):
             await ctx.bot.say(":x: That event is not a valid event.")
             return
 
-        d = await self.bot.rethinkdb.get_setting(ctx.message.server, "events")
+        d = await ctx.bot.rethinkdb.get_setting(ctx.message.server, "events")
         if not d:
             # No need to unsub.
             await ctx.bot.say(":heavy_check_mark: Unsubscribed from event.")
@@ -113,6 +115,26 @@ class Config(object):
         d['events'][event] = False
         await ctx.bot.rethinkdb.set_setting(ctx.message.server, setting_name="events", **d)
         await ctx.bot.say(":heavy_check_mark: Unsubscribed from event.")
+
+    @notifications.command(pass_context=True)
+    async def msg(self, ctx: Context, event: str, *, msg: str):
+        """
+        Allows editing the message sent for each event.
+        """
+        if not event.endswith("s"):
+            event += "s"
+
+        if event not in self.VALID_EVENTS:
+            await ctx.bot.say(":x: That is not a valid event.")
+            return
+
+        d = {
+            "setting_name": "event_msg",
+            "event": event,
+            "msg": msg
+        }
+        await ctx.bot.rethinkdb.set_setting(ctx.message.server, **d)
+        await ctx.bot.say(":heavy_check_mark: Updated message for event `{}` to `{}`.".format(event, msg))
 
     @commands.command(pass_context=True)
     @has_permissions(manage_server=True, manage_channels=True)
