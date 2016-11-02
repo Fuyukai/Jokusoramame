@@ -9,6 +9,8 @@ from discord.ext import commands
 from discord.ext.commands import Context, MemberConverter, BadArgument, ChannelConverter
 
 from joku.bot import Jokusoramame
+from joku.rethink import RethinkAdapter
+from joku.checks import has_permissions
 
 
 class ArgumentParser(argparse.ArgumentParser):
@@ -18,11 +20,102 @@ class ArgumentParser(argparse.ArgumentParser):
 
 
 class Config(object):
+    # TODO: Add more events
+    VALID_EVENTS = (
+        "joins",
+        "leaves",
+        "bans",  # implies unbans too
+    )
+
     def __init__(self, bot: Jokusoramame):
         self.bot = bot
 
+    @commands.group(pass_context=True, invoke_without_command=True)
+    @commands.has_permissions(manage_server=True)
+    async def notifications(self, ctx: Context):
+        """
+        Allows you to edit which events you are subscribed to on this bot.
+        """
+        assert isinstance(ctx.bot.rethinkdb, RethinkAdapter)
+        welcome_setting = await ctx.bot.rethinkdb.get_setting(ctx.message.server, "events")
+
+        if welcome_setting is None:
+            await ctx.bot.say("Your server's notification settings is **off**.")
+            return
+
+        # Check the enabled dict.
+        enabled = welcome_setting.get("events", {})
+        if not any(enabled.values()):
+            features = "none"
+        else:
+            features = ", ".join(name for name in enabled.keys() if enabled[name])
+
+        await ctx.bot.say("Current events subscribed to: **{}**.".format(features))
+
+    @notifications.command(pass_context=True, aliases=["sub"])
+    async def subscribe(self, ctx: Context, *, event: str = None):
+        """
+        Subscribes to an event.
+        To get a list of valid events, call this command without an argument.
+        """
+        if event is None:
+            await ctx.bot.say("Valid events are: `{}`".format("`, `".join(self.VALID_EVENTS)))
+            return
+
+        # Add an "s" to the end of the event.
+        if not event.endswith("s"):
+            event += "s"
+
+        if event not in self.VALID_EVENTS:
+            await ctx.bot.say(":x: That event is not a valid event.")
+            return
+
+        # Add it to the events dict.
+        d = await self.bot.rethinkdb.get_setting(ctx.message.server, "events")
+        if not d:
+            # Setting doesn't exist, create a new dict which has the event in it.
+            d = {"events": {event: True}}
+        else:
+            # Setting does exist, make a new dict, and then flip the setting bool.
+            d = {"events": d["events"]}
+            d["events"][event] = True
+
+        await self.bot.rethinkdb.set_setting(ctx.message.server, setting_name="events", **d)
+        await self.bot.say(":heavy_check_mark: Subscribed to event.")
+
+    @notifications.command(pass_context=True, aliases=["unsub"])
+    async def unsubscribe(self, ctx: Context, *, event: str=None):
+        """
+        Unsubscribe from an event that was subscribed in with `notifications subscribe`.
+        """
+        if event is None:
+            await ctx.bot.say("Valid events are: `{}`".format("`, `".join(self.VALID_EVENTS)))
+            return
+
+        # Add an "s" to the end of the event.
+        if not event.endswith("s"):
+            event += "s"
+
+        if event not in self.VALID_EVENTS:
+            await ctx.bot.say(":x: That event is not a valid event.")
+            return
+
+        d = await self.bot.rethinkdb.get_setting(ctx.message.server, "events")
+        if not d:
+            # No need to unsub.
+            await ctx.bot.say(":heavy_check_mark: Unsubscribed from event.")
+            return
+
+        # Edit the event.
+        if 'events' not in d:
+            d['events'] = {}
+
+        d['events'][event] = False
+        await ctx.bot.rethinkdb.set_setting(ctx.message.server, setting_name="events", **d)
+        await ctx.bot.say(":heavy_check_mark: Unsubscribed from event.")
+
     @commands.command(pass_context=True)
-    @commands.has_permissions(manage_server=True, manage_channels=True)
+    @has_permissions(manage_server=True, manage_channels=True)
     async def ignore(self, ctx: Context, *, args: str = None):
         """
         Adds an ignore rule to the bot.
@@ -74,11 +167,11 @@ class Config(object):
         if args.remove:
             # Try and get the ignore rule that is currently in the database.
             # This means filtering by name and type.
-            query = await r.table("settings")\
-                    .get_all(ctx.message.server.id, index="server_id")\
-                    .filter({"name": "ignore", "target": converted.id,
-                             "type": args.type})\
-                    .run(ctx.bot.rethinkdb.connection)
+            query = await r.table("settings") \
+                .get_all(ctx.message.server.id, index="server_id") \
+                .filter({"name": "ignore", "target": converted.id,
+                         "type": args.type}) \
+                .run(ctx.bot.rethinkdb.connection)
 
             got = await ctx.bot.rethinkdb.to_list(query)
             if not got:
@@ -91,11 +184,11 @@ class Config(object):
             return
         elif args.add:
             # Check if the rule already exists.
-            query = await r.table("settings")\
-                    .get_all(ctx.message.server.id, index="server_id")\
-                    .filter({"name": "ignore", "target": converted.id,
-                             "type": args.type})\
-                    .run(ctx.bot.rethinkdb.connection)
+            query = await r.table("settings") \
+                .get_all(ctx.message.server.id, index="server_id") \
+                .filter({"name": "ignore", "target": converted.id,
+                         "type": args.type}) \
+                .run(ctx.bot.rethinkdb.connection)
 
             got = await self.bot.rethinkdb.to_list(query)
             if got:
@@ -108,7 +201,6 @@ class Config(object):
 
             result = await r.table("settings").insert(built_dict).run(self.bot.rethinkdb.connection)
             await ctx.bot.say(":heavy_check_mark: Added ignore rule.")
-
 
 
 def setup(bot):
