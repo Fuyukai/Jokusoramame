@@ -30,6 +30,11 @@ class Debug(object):
 
         await ctx.bot.say("`" + repr(d) + "`")
 
+    @commands.command(pass_context=True)
+    async def userinfo(self, ctx, *, user_id: str):
+        u = await ctx.bot.get_user_info(user_id)
+        await ctx.bot.say("User: {}, joined at: {}".format(str(u), u.created_at))
+
     @commands.group()
     @commands.check(is_owner)
     async def debug(self):
