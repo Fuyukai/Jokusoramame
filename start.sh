@@ -18,3 +18,6 @@ rethinkdb --http-port 8787 --cache-size auto &
 sleep 2
 echo "Starting Jokusoramame."
 python bot.py config.yml
+
+echo "Bot has terminated, killing RethinkDB safely."
+kill -INT $!
