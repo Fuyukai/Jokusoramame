@@ -173,6 +173,8 @@ class Jokusoramame(Bot):
         self.logger.info("Bot ready in {} seconds.".format(new_time))
 
     async def _rotate_avatar(self):
+        if not self.config.get("cycle_avatars", True):
+            return
         while True:
             # Pick a random avatar from the `avatars/` directory.
             scanned = os.scandir("avatars/")

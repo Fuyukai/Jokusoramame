@@ -23,3 +23,6 @@ redis:
 # If the bot is in developer mode or not.
 # If it is, the bot will be booted in non-sharded mode, beware!
 developer_mode: false
+
+# Should the bot cycle avatars?
+cycle_avatars: true
