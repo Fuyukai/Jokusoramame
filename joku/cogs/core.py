@@ -8,6 +8,7 @@ from discord.ext import commands
 from discord.ext.commands import Command, CheckFailure
 from discord.ext.commands import Context
 import psutil
+from discord.ext.commands.bot import _default_help_command
 
 from joku.bot import Jokusoramame
 from joku.checks import is_owner
