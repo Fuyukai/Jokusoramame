@@ -33,10 +33,9 @@ class Events(object):
 
             message = await r.table("settings")\
                 .get_all(member.server.id, index="server_id")\
-                .filter({"setting_name": "event_msg", "event": "joins"}).run(self.bot.rethinkdb.connection)
+                .filter({"name": "event_msg", "event": "joins"}).run(self.bot.rethinkdb.connection)
 
             message = await self.bot.rethinkdb.to_list(message)
-            print(message)
 
             if message:
                 message = message[0]

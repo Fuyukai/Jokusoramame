@@ -4,6 +4,9 @@ Debug cog.
 import inspect
 import pprint
 import traceback
+import asyncio
+
+import rethinkdb as r
 
 import discord
 from discord.ext import commands
@@ -27,11 +30,15 @@ class Debug(object):
     @commands.check(is_owner)
     async def eval(self, ctx, *, cmd):
         try:
-            d = eval(cmd)
+            d = eval(cmd, {"r": r, "asyncio": asyncio,
+                           "member": ctx.message.author, "message": ctx.message,
+                           "server": ctx.message.server, "channel": ctx.message.channel,
+                           "bot": ctx.bot})
             if inspect.isawaitable(d):
                 d = await d
         except Exception:
-            await ctx.bot.say(''.join(traceback.format_exc()))
+            f = "```{}```".format(''.join(traceback.format_exc()))
+            await ctx.bot.say(f)
             return
 
         await ctx.bot.say("`" + repr(d) + "`")
