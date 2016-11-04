@@ -50,11 +50,13 @@ class RethinkAdapter(object):
         await self._reql_safe(r.table_create("settings"))
         await self._reql_safe(r.table_create("users"))
         await self._reql_safe(r.table_create("tags"))
+        await self._reql_safe(r.table_create("todos"))
 
         # Create indexes.
         await self._reql_safe(r.table("settings").index_create("server_id"))
         await self._reql_safe(r.table("users").index_create("user_id"))
         await self._reql_safe(r.table("tags").index_create("server_id"))
+        await self._reql_safe(r.table("todos").index_create("user_id"))
 
     async def connect(self, **connection_settings):
         """
