@@ -8,6 +8,8 @@ source .venv/bin/activate
 PATH=.venv/bin/:/usr/bin:/usr/sbin:/bin:/sbin
 
 # Git pull
+BRANCH=`git rev-parse --abbrev-ref HEAD`
+echo "Currently on branch $BRANCH".
 echo "Pulling latest version..."
 git pull || exit 1
 

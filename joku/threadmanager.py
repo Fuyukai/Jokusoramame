@@ -15,6 +15,7 @@ from discord.http import HTTPClient
 from logbook import Logger
 from ruamel import yaml
 
+from joku import VERSION
 from joku.bot import Jokusoramame
 
 
@@ -148,6 +149,7 @@ class Manager(object):
         """
         Starts all the bots.
         """
+        self.logger.info("Loading Jokusoramame, version {}.".format(VERSION))
         # Load the config
         try:
             cfg = sys.argv[1]
@@ -157,6 +159,8 @@ class Manager(object):
         # Copy the default config file.
         if not os.path.exists(cfg):
             shutil.copy("config.example.yml", cfg)
+            self.logger.error("Could not find default config file - copied new one, please edit and restart the bot.")
+            return
 
         with open(cfg) as f:
             self.config = yaml.load(f)
@@ -182,6 +186,10 @@ class Manager(object):
         endpoint = HTTPClient.GATEWAY + "/bot"
 
         r = requests.get(endpoint, headers={"Authorization": "Bot {}".format(token)})
+
+        if r.status_code != 200:
+            self.logger.error("Unable to download number of shards - is your token correct?")
+            return
 
         number_of_shards = r.json()["shards"]
         number_of_shards += 1
