@@ -35,4 +35,23 @@ class Events(object):
                 .get_all(member.server.id, index="server_id")\
                 .filter({"setting_name": "event_msg", "event": "joins"}).run(self.bot.rethinkdb.connection)
 
-            i =     
+            message = await self.bot.rethinkdb.to_list(message)
+            print(message)
+
+            if message:
+                message = message[0]
+
+                # Format the msg.
+                msg = message.get("msg", "Welcome {member.name}!")
+            else:
+                msg = "Welcome {member.name}!"
+            msg = msg.format(**{
+                "member": member,
+                "server": member.server,
+                "channel": channel
+            })
+            await self.bot.send_message(channel, msg)
+
+
+def setup(bot: Jokusoramame):
+    bot.add_cog(Events(bot))

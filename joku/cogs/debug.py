@@ -19,6 +19,12 @@ class Debug(object):
 
     @commands.command(pass_context=True)
     @commands.check(is_owner)
+    async def load(self, ctx, *, cog):
+        ctx.bot.load_extension(cog)
+        await ctx.bot.say(":heavy_check_mark: Loaded extension.")
+
+    @commands.command(pass_context=True)
+    @commands.check(is_owner)
     async def eval(self, ctx, *, cmd):
         try:
             d = eval(cmd)
