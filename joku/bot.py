@@ -132,6 +132,7 @@ class Jokusoramame(Bot):
             await self.rethinkdb.connect(**self.config.get("rethinkdb", {}))
         except ReqlDriverError:
             self.logger.error("Unable to connect to RethinkDB!")
+            traceback.print_exc()
             await self.logout()
             return
 
@@ -139,6 +140,7 @@ class Jokusoramame(Bot):
             await self.redis.connect(**self.config.get("redis", {}))
         except ConnectionRefusedError:
             self.logger.error("Unable to connect to Redis!")
+            traceback.print_exc()
             await self.logout()
             return
 
