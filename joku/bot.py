@@ -79,6 +79,10 @@ class Jokusoramame(Bot):
 
     @staticmethod
     async def get_command_prefix(self: 'Jokusoramame', message: discord.Message):
+        if self.config.get("developer_mode", False):
+            # Use `jd!` prefix.
+            return "jd!"
+
         if message.server.id == "110373943822540800":
             # Don't conflict in dbots
             return ["j" + s for s in "?^&$}#~:"]
