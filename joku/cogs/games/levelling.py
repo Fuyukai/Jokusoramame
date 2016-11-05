@@ -5,6 +5,7 @@ from math import floor, ceil
 
 import discord
 import rethinkdb as r
+import tabulate
 from discord.ext import commands
 from discord.ext.commands import Context
 
@@ -96,17 +97,27 @@ class Levelling(object):
         """
         users = await ctx.bot.rethinkdb.get_multiple_users(*ctx.message.server.members, order_by=r.desc("xp"))
 
-        base = "**Top 10 users (in this server):**\n\n"
+        base = "**Top 10 users (in this server):**\n\n```{}```"
+
+        # Create a table using tabulate.
+        headers = ["POS", "User", "XP", "Level"]
+        table = []
 
         for n, u in enumerate(users[:10]):
-            base += "**{}. {} - {} XP - Level {}**\n".format(
-                n + 1,
-                ctx.message.server.get_member(u["user_id"]).name,
-                u["xp"],
-                u["level"]
-            )
+            try:
+                member = ctx.message.server.get_member(u["user_id"]).name
+            except AttributeError:
+                # Prevent race condition - member leaving between command invocation and here
+                continue
+            # position, name, xp, level
+            table.append([n + 1, member, u["xp"], u["level"]])
 
-        await ctx.bot.say(base)
+        # Format the table.
+        table = tabulate.tabulate(table, headers=headers, tablefmt="orgtbl")
+
+        fmtted = base.format(table)
+
+        await ctx.bot.say(fmtted)
 
     @level.command(pass_context=True)
     async def next(self, ctx, *, target: discord.Member = None):
