@@ -348,7 +348,7 @@ class RethinkAdapter(object):
 
         d["priority"] = priority
 
-        i = await r.table("todos").insert(d).run(self.connection)
+        i = await r.table("todos").insert(d, return_changes=True).run(self.connection)
         return i
 
     async def edit_user_todo(self, user: discord.User, index: int, new_content: str):
