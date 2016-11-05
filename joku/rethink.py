@@ -97,7 +97,7 @@ class RethinkAdapter(object):
             d = await iterator.next()
             return d
 
-    async def get_multiple_users(self, *users: typing.List[discord.User], order_by = None):
+    async def get_multiple_users(self, *users: typing.List[discord.User], order_by=None):
         """
         Gets multiple users.
         """
@@ -198,7 +198,7 @@ class RethinkAdapter(object):
         u = await self.create_or_get_user(user)
         return u["level"]
 
-    async def update_user_xp(self, user: discord.User, xp = None) -> dict:
+    async def update_user_xp(self, user: discord.User, xp=None) -> dict:
         """
         Updates the user's current experience.
         """
@@ -230,7 +230,7 @@ class RethinkAdapter(object):
 
     # Currency
 
-    async def update_user_currency(self, user: discord.User, currency = None) -> dict:
+    async def update_user_currency(self, user: discord.User, currency=None) -> dict:
         """
         Updates the user's current currency.
         """
@@ -311,8 +311,8 @@ class RethinkAdapter(object):
         Checks if a channel has an ignore rule on it.
         """
         cursor = await r.table("settings") \
-            .get_all(channel.server.id, index="server_id")\
-            .filter({"name": "ignore", "target": channel.id, "type": type_})\
+            .get_all(channel.server.id, index="server_id") \
+            .filter({"name": "ignore", "target": channel.id, "type": type_}) \
             .run(self.connection)
 
         items = await self.to_list(cursor=cursor)
@@ -320,6 +320,71 @@ class RethinkAdapter(object):
         # Turns a truthy value into True
         # and a falsey value ([], None) into False
         return not not items
+
+    # TODOs
+
+    async def get_user_todos(self, user: discord.User) -> typing.List[dict]:
+        """
+        Gets a list of TODO entries for a user.
+        """
+        items = await r.table("todos") \
+            .get_all(user.id, index="user_id") \
+            .order_by("priority") \
+            .run(self.connection)
+
+        return items
+
+    async def add_user_todo(self, user: discord.User, content: str, priority: int = None):
+        """
+        Adds a TODO for a user.
+        """
+        d = {
+            "user_id": user.id,
+            "content": content
+        }
+
+        if priority is None:
+            priority = len(await self.get_user_todos(user)) + 1
+
+        d["priority"] = priority
+
+        i = await r.table("todos").insert(d).run(self.connection)
+        return i
+
+    async def edit_user_todo(self, user: discord.User, index: int, new_content: str):
+        """
+        Edits a user's TODO.
+        """
+        i = await r.table("todos")\
+            .get_all(user.id, index="user_id")\
+            .filter({"priority": index})\
+            .update({"content": new_content}, return_changes=True)\
+            .run(self.connection)
+
+        return i
+
+    async def delete_user_todo(self, user: discord.User, index: int):
+        """
+        Deletes a user's TODO.
+
+        This will bump down all of the other indexes by one
+        """
+        # Delete the entry with the specified index.
+        i1 = await r.table("todos") \
+            .get_all(user.id, index="user_id") \
+            .filter({"priority": index}) \
+            .delete(return_changes=True) \
+            .run(self.connection)
+
+        # Now move all of the indexes down.
+        i2 = await r.table("todos") \
+            .get_all(user.id, index="user_id") \
+            .filter(r.row["priority"] > index) \
+            .update({"priority": r.row["priority"] - 1},
+                    return_changes=True) \
+            .run(self.connection)
+
+        return [i1, i2]
 
     # Internals
 
