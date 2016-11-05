@@ -13,6 +13,7 @@ import discord
 import logbook
 import logging
 
+from discord.ext import commands
 from discord.ext.commands import Bot, CommandInvokeError, CheckFailure, MissingRequiredArgument
 from logbook.compat import redirect_logging
 from logbook import StreamHandler
@@ -226,3 +227,17 @@ class Jokusoramame(Bot):
 
         # Get rid of the exceptions.
         all_tasks.exception()
+
+
+class Context(commands.Context):
+    def __init__(self, *args, **kwargs):
+        self._bot = None
+        super().__init__(*args, **kwargs)
+
+    @property
+    def bot(self) -> Jokusoramame:
+        return self._bot
+
+    @bot.setter
+    def bot(self, i):
+        self._bot = i
