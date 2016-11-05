@@ -88,7 +88,7 @@ class Levelling(object):
 
         await ctx.bot.say("User **{}** is level `{}`.".format(user.name, level))
 
-    @level.command(pass_context=True)
+    @level.command(pass_context=True, aliases=["top", "top10"])
     async def leaderboard(self, ctx: Context):
         """
         Shows the top 10 people in this server.
