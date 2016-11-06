@@ -33,7 +33,7 @@ def get_next_level(exp: int):
         return 0, 50 - exp
 
     l = ceil(-0.5 + ((-4375 + 100 * exp) ** 0.5) / 50) + 1
-    return l, levels[l] - exp
+    return l, levels[l - 1] - exp
 
 
 class Levelling(object):
