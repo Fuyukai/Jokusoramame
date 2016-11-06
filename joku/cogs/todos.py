@@ -5,6 +5,7 @@ import discord
 from discord.ext import commands
 
 from joku.bot import Jokusoramame, Context
+from joku.utils import paginate_table
 
 
 class Todos(object):
@@ -22,13 +23,20 @@ class Todos(object):
             target = ctx.message.author
         todos = await ctx.bot.rethinkdb.get_user_todos(target)
 
-        # TODO: Pagination
-        fmt = "\U0001f4d4 | **TODO List for {}**:\n\n".format(target.display_name)
+        # M O R E T A B L E S
+        headers = ["Priority", "Content"]
+        rows = []
+
+        header = "\U0001f4d4 | **TODO List for {}**:\n\n".format(target.display_name)
 
         for item in todos:
-            fmt += "**{}.** `{}`\n".format(item["priority"], item["content"])
+            rows.append([item["priority"], item["content"]])
 
-        await ctx.bot.say(fmt)
+        pages = paginate_table(rows, headers)
+
+        await ctx.bot.say(header)
+        for page in pages:
+            await ctx.bot.say(page)
 
     @todo.command(pass_context=True)
     async def add(self, ctx: Context, *, content: str):
