@@ -71,7 +71,7 @@ class RdbLogAdapter(object):
             "message_id": message.id,
             "content": message.content,
             "member_id": message.author.id,
-            "member_nick": message.author.nick,
+            "member_nick": message.author.nick if isinstance(message.author, discord.Member) else None,
             "member_name": message.author.name,
             "server_id": message.server.id,
             "channel_id": message.channel.id,
