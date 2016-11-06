@@ -131,7 +131,7 @@ class Events(object):
 
     async def on_member_ban(self, member: discord.Member):
         obb = {
-            "t": "GUILD_MEMBER_BAN",
+            "t": "GUILD_BAN_ADD",
             "member_id": member.id,
             "member_name": member.name,
             "server_id": member.server.id
@@ -154,7 +154,7 @@ class Events(object):
 
     async def on_member_unban(self, server: discord.Server, member: discord.Member):
         obb = {
-            "t": "GUILD_MEMBER_UNBAN",
+            "t": "GUILD_BAN_REMOVE",
             "member_id": member.id,
             "member_name": member.name,
             "server_id": server.id
