@@ -127,7 +127,7 @@ class Reminders(object):
 
         reminders = await r.table("reminders") \
             .get_all(ctx.message.author.id, index="user_id") \
-            .order_by(r.desc("expiration")) \
+            .order_by(r.asc("expiration")) \
             .run(ctx.bot.rethinkdb.connection)
 
         for record in reminders:
