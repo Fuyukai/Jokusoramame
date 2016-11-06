@@ -154,6 +154,10 @@ class Jokusoramame(Bot):
             else:
                 self.logger.info("Loaded cog {}.".format(cog))
 
+        for name, cog in self.cogs.items():
+            if hasattr(cog, "ready"):
+                self.loop.create_task(cog.ready())
+
         if self._rotator_task is not None:
             self._rotator_task.cancel()
             try:
