@@ -98,7 +98,7 @@ class Levelling(object):
         """
         users = await ctx.bot.rethinkdb.get_multiple_users(*ctx.message.server.members, order_by=r.desc("xp"))
 
-        base = "**Top 10 users (in this server):**\n\n"
+        base = "**Top {} users (in this server):**\n\n".format(num)
 
         # Create a table using tabulate.
         headers = ["POS", "User", "XP", "Level"]
