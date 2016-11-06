@@ -20,7 +20,7 @@ class Events(object):
     def __init__(self, bot: Jokusoramame):
         self.bot = bot
 
-    @commands.command(pass_context=True)
+    @commands.group(pass_context=True, invoke_without_command=True)
     async def events(self, ctx: Context):
         """
         Shows the top 10 most frequent events.
@@ -31,6 +31,14 @@ class Events(object):
         table = tabulate.tabulate(data, headers=headers, tablefmt="orgtbl")
 
         await ctx.bot.say("```{}```".format(table))
+
+    @events.command(pass_context=True)
+    async def seq(self, ctx: Context):
+        """
+        Shows the current sequence number.
+        """
+        seq = ctx.bot.connection.sequence
+        await ctx.bot.say("Current sequence number: `{}`".format(seq))
 
     async def on_socket_response(self, data: dict):
         """
