@@ -9,6 +9,12 @@ import tabulate
 
 from joku.bot import Jokusoramame, Context
 
+unknown_events = {
+    11: "HEARTBEAT_ACK",
+    9: "INVALIDATE_SESSION",
+    7: "RECONNECT"
+}
+
 
 class Events(object):
     def __init__(self, bot: Jokusoramame):
@@ -32,8 +38,9 @@ class Events(object):
         """
         event = data.get("t")
         if not event:
-            self.bot.logger.warning("Caught None-event: {}".format(data))
-            return
+            event = unknown_events.get(data.get("op"))
+            if not event:
+                self.bot.logger.warn("Caught None-event: `{}`".format(event))
         self.bot.manager.events[event] += 1
 
     async def on_member_join(self, member: discord.Member):
