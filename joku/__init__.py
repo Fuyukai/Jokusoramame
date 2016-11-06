@@ -6,7 +6,7 @@ import re
 
 __author__ = "Isaac Dickinson"
 
-VERSION = "0.4.0"
+VERSION = "0.4.1"
 VERSIONT = tuple(map(int, VERSION.split(".")))
 
 version_matcher = re.compile(r'VERSION = "(.*)"')
