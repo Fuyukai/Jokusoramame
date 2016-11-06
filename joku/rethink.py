@@ -305,6 +305,36 @@ class RethinkAdapter(object):
         i = await d.next()
         return i
 
+    async def get_event_message(self, server: discord.Server, event: str, default: str = "") \
+            -> typing.Tuple[discord.Channel, str]:
+        """
+        Gets an event message, if the event exists.
+        """
+        enabled = await self.get_setting(server, "events")
+        if not enabled:
+            return
+
+        events = enabled.get("events", {})
+        if not events.get(event):
+            return
+
+        channel = server.get_channel(events[event])
+        if not channel:
+            return
+
+        message = await r.table("settings") \
+            .get_all(server.id, index="server_id") \
+            .filter({"name": "event_msg", "event": event}) \
+            .run(self.connection)
+
+        l = await self.to_list(message)
+        if not l:
+            return
+
+        message = l[0].get("msg", default)
+
+        return [channel, message]
+
     # Ignores
     async def is_channel_ignored(self, channel: discord.Channel, type_: str = "levelling"):
         """
@@ -355,10 +385,10 @@ class RethinkAdapter(object):
         """
         Edits a user's TODO.
         """
-        i = await r.table("todos")\
-            .get_all(user.id, index="user_id")\
-            .filter({"priority": index})\
-            .update({"content": new_content}, return_changes=True)\
+        i = await r.table("todos") \
+            .get_all(user.id, index="user_id") \
+            .filter({"priority": index}) \
+            .update({"content": new_content}, return_changes=True) \
             .run(self.connection)
 
         return i
