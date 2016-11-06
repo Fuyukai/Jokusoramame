@@ -1,6 +1,7 @@
 """
 Cog that handles event listeners and such.
 """
+import datetime
 import discord
 
 import rethinkdb as r
@@ -8,6 +9,7 @@ from discord.ext import commands
 import tabulate
 
 from joku.bot import Jokusoramame, Context
+from joku.checks import is_owner
 
 unknown_events = {
     11: "HEARTBEAT_ACK",
@@ -29,6 +31,29 @@ class Events(object):
         data = ctx.bot.manager.events.most_common(10)
 
         table = tabulate.tabulate(data, headers=headers, tablefmt="orgtbl")
+
+        await ctx.bot.say("```{}```".format(table))
+
+    @events.command(pass_context=True)
+    @commands.check(is_owner)
+    async def all(self, ctx: Context):
+        """
+        Shows all events the bot has received since it started logging.
+        """
+        await ctx.bot.say(":hourglass: Loading events... (this may take some time!)")
+        # This abuses RethinkDB to count the events.
+        q = await r.table("events")\
+            .group("t")\
+            .count()\
+            .run(ctx.bot.rdblog.connection)
+
+        # Get a list of events.
+        l = list(q.items())
+        # Sort them by the second key, and tabulate them.
+        l = reversed(sorted(l, key=lambda x: x[1]))
+
+        headers = ("Event", "Frequency")
+        table = tabulate.tabulate(l, headers=headers, tablefmt="orgtbl")
 
         await ctx.bot.say("```{}```".format(table))
 
@@ -59,11 +84,27 @@ class Events(object):
                 "game": data["d"].get("game")
             }
             await self.bot.rdblog.log(e_data)
+
+        elif event == "HEATBEAT_ACK":
+            e_data = {
+                "t": "HEARTBEAT_ACK",
+                "seq": self.bot.connection.sequence
+            }
+            await self.bot.rdblog.log(e_data)
+
         self.bot.manager.events[event] += 1
 
     async def on_message(self, message: discord.Message):
         # Simply log the message.
         await self.bot.rdblog.log_message(message)
+
+    async def on_typing(self, channel: discord.Channel, user: discord.User, when: datetime.datetime):
+        obb = {
+            "t": "TYPING_START",
+            "member_id": user.id,
+            "channel_id": channel.id
+        }
+        await self.bot.rdblog.log(obb)
 
     async def on_message_delete(self, message: discord.Message):
         obb = {
@@ -76,7 +117,7 @@ class Events(object):
         }
         await self.bot.rdblog.log(obb)
 
-    async def on_message_update(self, old: discord.Message, message: discord.Message):
+    async def on_message_edit(self, old: discord.Message, message: discord.Message):
         obb = {
             "t": "MESSAGE_UPDATE",
             "member_id": message.author.id,
@@ -98,6 +139,29 @@ class Events(object):
         await self.bot.rdblog.log(obb)
 
         i = await self.bot.rethinkdb.get_event_message(member.server, "bans", "`{member.name}` got **bent**")
+
+        if not i:
+            return
+
+        channel, event_msg = i
+
+        msg = event_msg.format(**{
+            "member": member,
+            "server": member.server,
+            "channel": channel
+        })
+        await self.bot.send_message(channel, msg)
+
+    async def on_member_unban(self, member: discord.Member):
+        obb = {
+            "t": "GUILD_MEMBER_BAN",
+            "member_id": member.id,
+            "member_name": member.name,
+            "server_id": member.server.id
+        }
+        await self.bot.rdblog.log(obb)
+
+        i = await self.bot.rethinkdb.get_event_message(member.server, "unbans", "`{member.name}` got **unbent**")
 
         if not i:
             return
