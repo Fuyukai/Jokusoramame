@@ -10,6 +10,7 @@ from discord.ext import commands
 from discord.ext.commands import Context
 
 from joku.bot import Jokusoramame
+from joku.utils import paginate_table
 
 INCREASING_FACTOR = 50
 
@@ -88,8 +89,8 @@ class Levelling(object):
 
         await ctx.bot.say("User **{}** is level `{}`.".format(user.name, level))
 
-    @level.command(pass_context=True, aliases=["top", "top10"])
-    async def leaderboard(self, ctx: Context):
+    @level.command(pass_context=True, aliases=["top"])
+    async def leaderboard(self, ctx: Context, *, num: int=10):
         """
         Shows the top 10 people in this server.
 
@@ -97,13 +98,13 @@ class Levelling(object):
         """
         users = await ctx.bot.rethinkdb.get_multiple_users(*ctx.message.server.members, order_by=r.desc("xp"))
 
-        base = "**Top 10 users (in this server):**\n\n```{}```"
+        base = "**Top 10 users (in this server):**\n\n"
 
         # Create a table using tabulate.
         headers = ["POS", "User", "XP", "Level"]
         table = []
 
-        for n, u in enumerate(users[:10]):
+        for n, u in enumerate(users[:num]):
             try:
                 member = ctx.message.server.get_member(u["user_id"]).name
                 # Unicode and tables suck
@@ -115,11 +116,11 @@ class Levelling(object):
             table.append([n + 1, member, u["xp"], u["level"]])
 
         # Format the table.
-        table = tabulate.tabulate(table, headers=headers, tablefmt="orgtbl")
+        pages = paginate_table(table, headers)
 
-        fmtted = base.format(table)
-
-        await ctx.bot.say(fmtted)
+        await ctx.bot.say(base)
+        for page in pages:
+            await ctx.bot.say(page)
 
     @level.command(pass_context=True)
     async def next(self, ctx, *, target: discord.Member = None):

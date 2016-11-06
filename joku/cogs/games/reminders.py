@@ -16,6 +16,7 @@ import rethinkdb as r
 from parsedatetime import Calendar
 
 from joku.bot import Jokusoramame, Context
+from joku.utils import paginate_table
 
 
 class Reminders(object):
@@ -149,9 +150,9 @@ class Reminders(object):
             row = [str(dt), content, name]
             items.append(row)
 
-        table = tabulate.tabulate(items, headers=headers, tablefmt="orgtbl")
-
-        await ctx.bot.say("```{}```".format(table))
+        pages = paginate_table(items, headers)
+        for page in pages:
+            await ctx.bot.say(page)
 
 
 def setup(bot):
