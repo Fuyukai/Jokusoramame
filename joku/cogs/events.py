@@ -152,16 +152,16 @@ class Events(object):
         })
         await self.bot.send_message(channel, msg)
 
-    async def on_member_unban(self, member: discord.Member):
+    async def on_member_unban(self, server: discord.Server, member: discord.Member):
         obb = {
-            "t": "GUILD_MEMBER_BAN",
+            "t": "GUILD_MEMBER_UNBAN",
             "member_id": member.id,
             "member_name": member.name,
-            "server_id": member.server.id
+            "server_id": server.id
         }
         await self.bot.rdblog.log(obb)
 
-        i = await self.bot.rethinkdb.get_event_message(member.server, "unbans", "`{member.name}` got **unbent**")
+        i = await self.bot.rethinkdb.get_event_message(server, "unbans", "`{member.name}` got **unbent**")
 
         if not i:
             return
@@ -170,7 +170,7 @@ class Events(object):
 
         msg = event_msg.format(**{
             "member": member,
-            "server": member.server,
+            "server": server,
             "channel": channel
         })
         await self.bot.send_message(channel, msg)
