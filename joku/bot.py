@@ -15,6 +15,7 @@ import logging
 
 from discord.ext import commands
 from discord.ext.commands import Bot, CommandInvokeError, CheckFailure, MissingRequiredArgument
+from discord.gateway import DiscordWebSocket, ReconnectWebSocket, ResumeWebSocket
 from logbook.compat import redirect_logging
 from logbook import StreamHandler
 
@@ -97,7 +98,7 @@ class Jokusoramame(Bot):
             await self.change_presence(
                 game=discord.Game(name="[Shard {}/{}] {} Servers".format(
                     self.shard_id + 1, self.shard_count, len(self.servers)
-                ))
+                )), status=discord.Status.online
             )
             await asyncio.sleep(60)
 
@@ -229,6 +230,24 @@ class Jokusoramame(Bot):
     async def login(self, *args, **kwargs):
         token = self.config["bot_token"]
         return await super().login(token)
+
+    async def connect(self):
+        self.ws = await DiscordWebSocket.from_client(self)
+        # Send the CHANGE_PRESCENCE to DND.
+        await self.change_presence(game=discord.Game(name="Loading Jokusoramame.."),
+                                   status=discord.Status.do_not_disturb)
+
+        while not self.is_closed:
+            try:
+                await self.ws.poll_event()
+            except (ReconnectWebSocket, ResumeWebSocket) as e:
+                resume = type(e) is ResumeWebSocket
+                self.logger.info('Got ' + type(e).__name__)
+                self.ws = await DiscordWebSocket.from_client(self, resume=resume)
+            except discord.ConnectionClosed as e:
+                await self.close()
+                if e.code != 1000:
+                    raise
 
     def die(self):
         """
