@@ -81,7 +81,7 @@ class Reminders(object):
             finally:
                 await asyncio.sleep(300)
 
-    @commands.group(pass_context=True, invoke_without_command=True)
+    @commands.group(pass_context=True, invoke_without_command=True, aliases=["reminder"])
     async def remind(self, ctx: Context, duration: str, *, reminder_text: str):
         """
         Sets a reminder to be run in the future.
