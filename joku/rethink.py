@@ -31,7 +31,7 @@ class RethinkAdapter(object):
         """
         try:
             res = await awaitable.run(self.connection)
-        except r.ReqlRuntimeError as e:
+        except (r.ReqlRuntimeError, r.ReqlOpFailedError) as e:
             self.logger.warn("Failed to run REQL operation: {}".format(e))
         else:
             self.logger.info("Ran {}.".format(awaitable))

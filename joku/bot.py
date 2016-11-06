@@ -17,6 +17,8 @@ from discord.ext import commands
 from discord.ext.commands import Bot, CommandInvokeError, CheckFailure, MissingRequiredArgument
 from logbook.compat import redirect_logging
 from logbook import StreamHandler
+
+from joku.rdblog import RdbLogAdapter
 from rethinkdb import ReqlDriverError
 
 from joku.redis import RedisAdapter
@@ -57,6 +59,7 @@ class Jokusoramame(Bot):
         self.startup_time = time.time()
 
         self.rethinkdb = RethinkAdapter(self)
+        self.rdblog = RdbLogAdapter(self)
 
         self.redis = RedisAdapter(self)
 
@@ -131,6 +134,9 @@ class Jokusoramame(Bot):
 
         try:
             await self.rethinkdb.connect(**self.config.get("rethinkdb", {}))
+            data = self.config.get("rethinkdb", {}).copy()
+            data["db"] = "joku_logs"
+            await self.rdblog.connect(**data)
         except ReqlDriverError:
             self.logger.error("Unable to connect to RethinkDB!")
             traceback.print_exc()
