@@ -5,6 +5,7 @@ import functools
 import os
 import shutil
 import sys
+import collections
 
 import asyncio
 import requests
@@ -38,6 +39,9 @@ class Manager(object):
         self.logger = Logger("Jokusoramame.ThreadManager")
 
         self._last_stats_upload = 0
+
+        # The events counter.
+        self.events = collections.Counter()
 
     def _start_in_thread(self, id: int, func: callable):
         t = threading.Thread(target=func)
