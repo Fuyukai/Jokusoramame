@@ -106,6 +106,8 @@ class Levelling(object):
         for n, u in enumerate(users[:10]):
             try:
                 member = ctx.message.server.get_member(u["user_id"]).name
+                # Unicode and tables suck
+                member = member.encode("ascii", errors="replace").decode()
             except AttributeError:
                 # Prevent race condition - member leaving between command invocation and here
                 continue
