@@ -40,7 +40,7 @@ class Events(object):
         """
         Shows all events the bot has received since it started logging.
         """
-        await ctx.bot.say(":hourglass: Loading events... (this may take some time!)")
+        message = await ctx.bot.say(":hourglass: Loading events... (this may take some time!)")
         # This abuses RethinkDB to count the events.
         q = await r.table("events")\
             .group("t")\
@@ -55,7 +55,7 @@ class Events(object):
         headers = ("Event", "Frequency")
         table = tabulate.tabulate(l, headers=headers, tablefmt="orgtbl")
 
-        await ctx.bot.say("```{}```".format(table))
+        await ctx.bot.edit_message(message, "```{}```".format(table))
 
     @events.command(pass_context=True)
     async def seq(self, ctx: Context):
