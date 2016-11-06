@@ -64,7 +64,7 @@ class Core(object):
                             self.bot.logger.error("Failed to update server count.")
                             self.bot.logger.error(await r.text())
                         else:
-                            self.bot.logger.error("Updated server count on bots.discord.pw.")
+                            self.bot.logger.info("Updated server count on bots.discord.pw.")
                 except:
                     self.bot.logger.exception()
                 finally:
