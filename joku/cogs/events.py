@@ -42,38 +42,29 @@ class Events(object):
 
         Checks if this server is subscribed to joins, and formats the welcome message as appropriate.
         """
-        enabled = await self.bot.rethinkdb.get_setting(member.server, "events")
-        if not enabled:
-            return
 
-        events = enabled.get("events", {})
-        chan_id = events.get("joins")
-        if chan_id:
-            # Get the channel, and send the welcome message to it.
-            channel = member.server.get_channel(chan_id)
-            if not channel:
-                # Not good!
-                return
+        channel, event_msg = await self.bot.rethinkdb.get_event_message(member.server,
+                                                                        "joins",
+                                                                        "Welcome {member.name}!"
+                                                                        )
+        msg = event_msg.format(**{
+            "member": member,
+            "server": member.server,
+            "channel": channel
+        })
+        await self.bot.send_message(channel, msg)
 
-            message = await r.table("settings") \
-                .get_all(member.server.id, index="server_id") \
-                .filter({"name": "event_msg", "event": "joins"}).run(self.bot.rethinkdb.connection)
-
-            message = await self.bot.rethinkdb.to_list(message)
-
-            if message:
-                message = message[0]
-
-                # Format the msg.
-                msg = message.get("msg", "Welcome {member.name}!")
-            else:
-                msg = "Welcome {member.name}!"
-            msg = msg.format(**{
-                "member": member,
-                "server": member.server,
-                "channel": channel
-            })
-            await self.bot.send_message(channel, msg)
+    async def on_member_remove(self, member: discord.Member):
+        channel, event_msg = await self.bot.rethinkdb.get_event_message(member.server,
+                                                                        "leaves",
+                                                                        "Bye {member.name}!"
+                                                                        )
+        msg = event_msg.format(**{
+            "member": member,
+            "server": member.server,
+            "channel": channel
+        })
+        await self.bot.send_message(channel, msg)
 
 
 def setup(bot: Jokusoramame):
