@@ -31,6 +31,9 @@ class Events(object):
         Adds events to the event counter.
         """
         event = data.get("t")
+        if not event:
+            self.bot.logger.warning("Caught None-event: {}".format(data))
+            return
         self.bot.manager.events[event] += 1
 
     async def on_member_join(self, member: discord.Member):
