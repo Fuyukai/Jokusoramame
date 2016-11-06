@@ -3,13 +3,13 @@ A RethinkDB database interface.
 """
 import datetime
 import random
-import threading
 import typing
 
 import discord
 import logbook
 import rethinkdb as r
 import pytz
+from rethinkdb.asyncio_net.net_asyncio import AsyncioCursor
 
 r.set_loop_type("asyncio")
 
@@ -51,12 +51,14 @@ class RethinkAdapter(object):
         await self._reql_safe(r.table_create("users"))
         await self._reql_safe(r.table_create("tags"))
         await self._reql_safe(r.table_create("todos"))
+        await self._reql_safe(r.table_create("reminders"))
 
         # Create indexes.
         await self._reql_safe(r.table("settings").index_create("server_id"))
         await self._reql_safe(r.table("users").index_create("user_id"))
         await self._reql_safe(r.table("tags").index_create("server_id"))
         await self._reql_safe(r.table("todos").index_create("user_id"))
+        await self._reql_safe(r.table("reminders").index_create("user_id"))
 
     async def connect(self, **connection_settings):
         """

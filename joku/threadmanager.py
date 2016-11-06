@@ -8,6 +8,8 @@ import sys
 import collections
 
 import asyncio
+
+import discord
 import requests
 import threading
 
@@ -177,6 +179,9 @@ class Manager(object):
         """
         for bot in self.bots.values():
             yield from bot.get_all_members()
+
+    def get_channel(self, id: str):
+        return discord.utils.get(self.get_all_channels(), id=id)
 
     @property
     def unique_member_count(self):
