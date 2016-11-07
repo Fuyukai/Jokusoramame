@@ -32,7 +32,7 @@ class Reminders(object):
             # Probably not on this shard.
             return
         server = channel.server
-        member = server.get_member(record["member_id"])
+        member = server.get_member(record["user_id"])
 
         # Wait until we need to remind them.
         reminder_time = record["expiration"] - time.time()
