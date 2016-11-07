@@ -69,7 +69,7 @@ class Reminders(object):
                 async for record in records:
                     # Check the reminder time.
                     # If it's less than 5 minutes, create a reminder coroutine.
-                    time_left = record.get("expiration")
+                    time_left = record.get("expiration") - time.time()
                     if time_left < 300:
                         self.bot.loop.create_task(self._run_reminder(record))
 
