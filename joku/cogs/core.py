@@ -7,15 +7,17 @@ import aiohttp
 import asyncio
 import discord
 import json
+
+import threading
+
+import tabulate
 from discord.ext import commands
 from discord.ext.commands import Command, CheckFailure
-from discord.ext.commands import Context
 import psutil
 from discord.ext.commands.bot import _default_help_command
 
-from joku.bot import Jokusoramame
+from joku.bot import Jokusoramame, Context
 from joku.checks import is_owner
-from joku.redis import with_redis_cooldown
 
 
 class Core(object):
@@ -83,6 +85,25 @@ class Core(object):
             return False
         else:
             return can_run
+
+    @commands.group(pass_context=True, invoke_without_command=True)
+    @commands.check(is_owner)
+    async def shards(self, ctx: Context):
+        """
+        Shows shard status.
+        """
+        headers = ["Thread", "Status", "Servers", "Members"]
+        items = []
+
+        for (thread_id, thread), bot in zip(ctx.bot.manager.threads.items(), ctx.bot.manager.bots.values()):
+            assert isinstance(thread, threading.Thread)
+            if thread.is_alive():
+                items.append((thread_id, "Alive", len(bot.servers), len(list(bot.get_all_members()))))
+            else:
+                items.append((thread_id, "Dead", 0, 0))
+
+        tbl = tabulate.tabulate(items, headers, tablefmt="orgtbl")
+        await ctx.bot.say("```{}```".format(tbl))
 
     @commands.command(pass_context=True)
     @commands.check(is_owner)
