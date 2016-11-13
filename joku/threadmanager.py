@@ -95,6 +95,8 @@ class Manager(object):
         for bot in self.bots.values():
             # Kill it.
             self.logger.info("Killing bot {}.".format(bot.shard_id))
+            # Force it to run logout.
+            asyncio.run_coroutine_threadsafe(bot.logout(), loop=bot.loop)
             bot.loop.stop()
             bot.die()
 
