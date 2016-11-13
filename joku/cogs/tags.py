@@ -3,16 +3,35 @@ Generic tag bot, yay.
 """
 import shlex
 
+import traceback
+
 import discord
 from discord.ext import commands
 from discord.ext.commands import CommandError, CommandNotFound, CommandInvokeError
+from jinja2.sandbox import SandboxedEnvironment
 
 from joku.bot import Jokusoramame
+
+# Import a few modules, for usage inside the renderer.
+import random
+import string
+import base64
 
 
 class Tags(object):
     def __init__(self, bot: Jokusoramame):
         self.bot = bot
+
+        # Create the Jinja2 environment.
+        self.template_env = SandboxedEnvironment()
+        self.template_env.globals.update({
+            "random": random,
+            "string": string,
+            "base64": base64,
+            "list": list,
+            "tuple": tuple,
+            "dict": dict
+        })
 
     @commands.group(pass_context=True, invoke_without_command=True)
     async def tag(self, ctx, *, name: str):
@@ -38,9 +57,9 @@ class Tags(object):
 
         # Display the tag info.
         await ctx.bot.say("**Tag name:** `{name}`\n"
-                           "**Owner:** `{owner}`\n"
-                           "**Last modified:** `{lm}`\n"
-                           "**Value:** `{content}`".format(**tmp))
+                          "**Owner:** `{owner}`\n"
+                          "**Last modified:** `{lm}`\n"
+                          "**Value:** `{content}`".format(**tmp))
 
     @tag.command(pass_context=True)
     async def all(self, ctx):
@@ -130,49 +149,28 @@ class Tags(object):
         # Get the content from the tag.
         content = tag["content"]
 
-        # Left strip any whtiespace.
+        # Left strip any whitespace.
         content = content.lstrip(" ")
 
-        # Check if it starts with `{`.
-        if content.startswith("{") and content.endswith("}"):
-            # lstrip the {, and rstrip the }.
-            clean_content = content.lstrip("{ ")[:-1]
-            # Create a temporary dict to pass to the message.
-            # Shlex split the message.
-            # TODO: make this nicer.
+        # Create the arguments for the template.
+        args = {
+            "args": shlex.split(ctx.message.content[len(ctx.prefix):]),
+            "message": ctx.message,
+            "channel": ctx.message.channel,
+            "author": ctx.message.author,
+            "server": ctx.message.server
+        }
 
-            message_args = shlex.split(ctx.message.content)[1:]
-
-            tmp = {
-                "message": ctx.message,
-                "server": ctx.message.server,
-                "author": ctx.message.author,
-                "channel": ctx.message.channel,
-                "all": ' '.join(message_args)
-            }
-
-            # Format the string.
-            try:
-                formatted = clean_content.format(*message_args, **tmp)
-            except (ValueError, KeyError, IndexError) as e:
-                await ctx.bot.send_message(
-                    ctx.message.channel,
-                    ":x: Tag failed to compile -> {}".format(' '.join(e.args))
-                )
-                return
-
-            # Add the prefix to the string and call `process_commands`.
-            prefix = await ctx.bot.get_command_prefix(ctx.bot, ctx.message)
-            final = prefix + formatted
-
-            # Update the message.
-            ctx.message.content = final
-
-            await ctx.bot.process_commands(ctx.message)
-            return
+        # Render the template, using the args.
+        try:
+            templ = self.template_env.from_string(content)
+            rendered = templ.render(**args)
+        except Exception:
+            traceback.print_exc()
+            rendered = "**Error when compiling template:**\n```{}```".format(''.join(traceback.format_exc()))
 
         try:
-            await ctx.bot.send_message(ctx.message.channel, content)
+            await ctx.bot.send_message(ctx.message.channel, rendered)
         except Exception as e:
             # Panic, and dispatch on_command_error.
             new_e = CommandInvokeError(e)
