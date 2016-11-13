@@ -12,6 +12,8 @@ import datetime
 
 import tabulate
 from discord.ext import commands
+from math import ceil
+
 import rethinkdb as r
 from parsedatetime import Calendar
 
@@ -86,7 +88,7 @@ class Reminders(object):
                     if time_left < 300:
                         self.bot.loop.create_task(self._run_reminder(record))
 
-                    # Otherwise, don't bother with the reminder.
+                        # Otherwise, don't bother with the reminder.
 
             except Exception:
                 self.bot.logger.exception()
@@ -129,12 +131,48 @@ class Reminders(object):
 
         await ctx.bot.say(":heavy_check_mark: Will remind you at `{}`.".format(dt))
 
+    @remind.command(pass_context=True, aliases=["repeating"])
+    async def repeat(self, ctx: Context, duration: str, *, reminder_text: str):
+        """
+        Create a repeating reminder.
+        It is not recommended to create a repeating reminder that is under 5 minutes long.
+        """
+        calendar = Calendar()
+        t_struct, parse_status = calendar.parse(duration)
+        if parse_status == 0:
+            await ctx.bot.say(":x: Invalid time format.")
+            return
+
+        dt = datetime.datetime(*t_struct[:6])
+
+        # Get the repeating difference.
+        diff = ceil((dt - datetime.datetime.utcnow()).total_seconds())
+
+        if diff < 300:
+            await ctx.bot.say(":x: Cannot create a repeating reminder with a time under 5 minutes.")
+            return
+
+        object = {
+            "user_id": ctx.message.author.id,
+            "channel_id": ctx.message.channel.id,
+            "expiration": datetime.datetime.utcnow().timestamp() + diff,
+            "content": reminder_text,
+            "repeating": True,
+            "repeat_time": diff
+        }
+
+        # Add it to the database.
+        i = await r.table("reminders").insert(object).run(ctx.bot.rethinkdb.connection)
+
+        await ctx.bot.say(":heavy_check_mark: Will start reminding you at `{}`, then every `{}` seconds after.."
+                          .format(dt, diff))
+
     @remind.command(pass_context=True, aliases=["list"])
     async def reminders(self, ctx: Context):
         """
         Shows your current reminders, and where they are.
         """
-        headers = ["Time", "Content", "Where"]
+        headers = ["Time", "Content", "Where", "Repeating"]
         items = []
 
         reminders = await r.table("reminders") \
@@ -151,6 +189,8 @@ class Reminders(object):
                 # Truncate the end of it with `...`
                 content = content[:27] + "..."
 
+            repeats = record.get("repeating", False)
+
             # Resolve the channel and server.
             channel = ctx.bot.manager.get_channel(record["channel_id"])
 
@@ -159,7 +199,7 @@ class Reminders(object):
             else:
                 name = "{} -> #{}".format(channel.server.name, channel.name)
 
-            row = [str(dt), content, name]
+            row = [str(dt), content, name, str(repeats)]
             items.append(row)
 
         pages = paginate_table(items, headers)
