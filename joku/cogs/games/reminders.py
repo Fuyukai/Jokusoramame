@@ -203,7 +203,7 @@ class Reminders(object):
         """
         Cancels one of your reminders.
         """
-        reminder = await r.table("reminders")\
+        reminder = await r.table("reminders") \
             .get_all(ctx.message.author.id, index="user_id") \
             .filter({"reminder_id": reminder_id}).run(self.bot.rethinkdb.connection)
 
@@ -263,6 +263,31 @@ class Reminders(object):
         for page in pages:
             await ctx.bot.say(page)
 
+    @remind.command(pass_context=True)
+    async def inspect(self, ctx: Context, *, reminder_id: int):
+        """
+        Inspects a reminder for more detailed info about it.
+        """
+        reminder = await r.table("reminders") \
+            .get_all(ctx.message.author.id, index="user_id") \
+            .filter({"reminder_id": reminder_id}).run(self.bot.rethinkdb.connection)
+
+        reminder = await self.bot.rethinkdb.to_list(reminder)
+        if not reminder:
+            await ctx.bot.say(":x: This reminder does not exist.")
+            return
+
+        if reminder.get("user_id") != ctx.message.author.id and \
+                        ctx.message.author.id == ctx.bot.owner_id:
+            await ctx.bot.say(":x: This reminder does not exist.")
+            return
+
+        fmt = "**`{id}`:**\nChannel: {channel}\nContent: `{content}`".format(
+            id=reminder.get("reminder_id"), channel=reminder.get("channel_id"),
+            content=reminder.get("content")
+        )
+
+        await ctx.bot.say(fmt)
 
 def setup(bot):
     bot.add_cog(Reminders(bot))
