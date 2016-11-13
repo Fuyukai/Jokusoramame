@@ -4,41 +4,15 @@ Cog for interacting with the Pixiv API.
 import random
 import shutil
 
-import requests
+import aiopixiv
+import aiohttp
+import discord
+import json
 from discord.ext import commands
 from io import BytesIO
-from pixivpy3 import AppPixivAPI
 from asyncio_extras import threadpool
-from pixivpy3 import PixivAPI
-from pixivpy3 import PixivError
 
 from joku.bot import Context
-
-
-class EncodingAwarePixivAPI(PixivAPI):
-    """
-    A custom encoding-aware Pixiv API.
-    """
-
-    def requests_call(self, method, url, headers=None, params=None, data=None, stream=False):
-        """ requests http/https call for Pixiv API """
-        if headers is None:
-            headers = {}
-        try:
-            if method == 'GET':
-                r = requests.get(url, params=params, headers=headers, stream=stream, **self.requests_kwargs)
-            elif method == 'POST':
-                r = requests.post(url, params=params, data=data, headers=headers, stream=stream,
-                                  **self.requests_kwargs)
-            elif method == 'DELETE':
-                r = requests.delete(url, params=params, data=data, headers=headers, stream=stream,
-                                    **self.requests_kwargs)
-            else:
-                raise PixivError('Unknown method: %s' % method)
-            r.encoding = "utf-8"
-            return r
-        except Exception as e:
-            raise PixivError('requests %s %s error: %s' % (method, url, e)) from e
 
 
 class Pixiv(object):
@@ -46,7 +20,9 @@ class Pixiv(object):
         self.bot = bot
 
         # This is the authentciated API.
-        self._pixiv_api = EncodingAwarePixivAPI()
+        self._pixiv_api = aiopixiv.PixivAPIv5()
+
+        self._sess = aiohttp.ClientSession()
 
     @commands.group(pass_context=True)
     async def pixiv(self, ctx: Context):
@@ -60,10 +36,9 @@ class Pixiv(object):
         Searches Pixiv using the specified tag.
         """
         await ctx.bot.type()
-        async with threadpool():
-            if not self._pixiv_api.access_token:
-                self._pixiv_api.auth(**ctx.bot.config.get("pixiv", {}))
-            data = self._pixiv_api.search_works(tag, per_page=100)
+        if not self._pixiv_api.access_token:
+            await self._pixiv_api.login(**ctx.bot.config.get("pixiv", {}))
+        data = await self._pixiv_api.search_works(tag, per_page=100)
 
         if data.get("status") == "failure":
             await ctx.bot.say(":x: Failed to download from pixiv.")
@@ -93,25 +68,36 @@ class Pixiv(object):
             "score": item["stats"]["score"]
         }
 
-        async with threadpool():
-            # Download the image.
-            r = self._pixiv_api.requests_call('GET', obb["image"],
-                                              headers={'Referer': "https://app-api.pixiv.net/"},
-                                              stream=True)
+        image_data = await self._pixiv_api.download_pixiv_image(obb["image"])
+        # Upload to catbox.moe, because pixiv sucks
+        fobj = BytesIO(image_data)
 
-            # Copy it into BytesIO, which wiull be uploaded to Discord.
-            fobj = BytesIO()
-            shutil.copyfileobj(r.raw, fobj)
-            # Seek back, so that it acutally uploads a file.
-            fobj.seek(0)
+        data = aiohttp.FormData()
+        data.add_field("reqtype", "fileupload")
+        data.add_field(
+            "fileToUpload",
+            fobj,
+            filename="upload.png"
+        )
 
-        await ctx.bot.say("`{title}`, by **{username}** (Illustration ID `{id}`):\n"
-                          "\n**{score}** score, **{total_bookmarks}** bookmarks, **{views}** views"
-                          "\n<{url}>".format(**obb))
+        async with self._sess.post("https://catbox.moe/user/api.php", data=data) as r:
+            if r.status != 200:
+                await ctx.bot.say(":x: An error occurred.")
+                ctx.bot.logger.error(await r.text())
+                return
 
-        await ctx.bot.type()
+            file_url = await r.text()
 
-        await ctx.bot.upload(fobj, filename=obb["image"].split("/")[-1])
+        # Create the embed object.
+        title = "{title} - (ID: {id})".format(title=item["title"], id=item["id"])
+
+        embed = discord.Embed(title=title)
+        embed.url = "http://www.pixiv.net/member_illust.php?mode=medium&illust_id={}".format(item["id"])
+        embed.set_author(name=item["user"]["name"],
+                         url="http://www.pixiv.net/member.php?id={}".format(item["user"]["id"]))
+        embed.set_image(url=file_url, height=360, width=480)
+
+        await ctx.bot.say("\u200b", embed=embed)
 
 
 def setup(bot):
