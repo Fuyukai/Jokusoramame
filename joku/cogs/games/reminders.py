@@ -56,7 +56,14 @@ class Reminders(object):
             # Non database-backed reminder.
             return
 
-        i = await r.table("reminders").get(r_id).delete().run(self.bot.rethinkdb.connection)
+        # Check for repeating reminders.
+        if record.get("repeating", False) is True:
+            # Move the next time down by repeat_time.
+            record["expiration"] = record["expiration"] + record["repeat_time"]
+            i = await r.table("reminders").insert(record, conflict="update").run(self.bot.rethinkdb.connection)
+        else:
+            # Remove it from the database.
+            i = await r.table("reminders").get(r_id).delete().run(self.bot.rethinkdb.connection)
         return i
 
     async def ready(self):
