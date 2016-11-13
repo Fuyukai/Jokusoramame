@@ -51,6 +51,8 @@ class Reminders(object):
         except:
             self.bot.logger.error("Failed to send reminder.")
             self.bot.logger.exception()
+            # Delete it from the DB.
+            record["repeating"] = False
 
         # Delete from the database.
         r_id = record.get("id")
