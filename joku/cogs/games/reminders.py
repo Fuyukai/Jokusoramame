@@ -17,6 +17,7 @@ from math import ceil
 import rethinkdb as r
 from parsedatetime import Calendar
 
+from joku import checks
 from joku.bot import Jokusoramame, Context
 from joku.utils import paginate_table
 
@@ -132,6 +133,33 @@ class Reminders(object):
             i = await r.table("reminders").insert(object).run(ctx.bot.rethinkdb.connection)
 
         await ctx.bot.say(":heavy_check_mark: Will remind you at `{}`.".format(dt))
+
+    @remind.command(pass_context=True)
+    @commands.check(checks.is_owner)
+    async def prune(self, ctx: Context):
+        """
+        Prunes dead reminders.
+        """
+        reminds = await r.table("reminders").run(ctx.bot.rethinkdb.connection)
+
+        delete_ids = []
+        async for rem in reminds:
+            channel = rem.get("channel_id")
+            user = rem.get("user_id")
+            channel = self.bot.manager.get_channel(channel)
+            if not channel:
+                delete_ids.append(rem["id"])
+                continue
+
+            # check if the server has that user
+            if not channel.server.get_member(user):
+                delete_ids.append(rem["id"])
+                continue
+
+        d = await r.table("reminders").get_all(*delete_ids).delete().run(self.bot.rethinkdb.connection)
+        d = d["deleted"]
+
+        await ctx.bot.say(":heavy_check_mark: Pruned `{}` reminders.".format(d))
 
     @remind.command(pass_context=True, aliases=["repeating"])
     async def repeat(self, ctx: Context, duration: str, *, reminder_text: str):
