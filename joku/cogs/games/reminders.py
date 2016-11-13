@@ -158,7 +158,8 @@ class Reminders(object):
             "expiration": datetime.datetime.utcnow().timestamp() + diff,
             "content": reminder_text,
             "repeating": True,
-            "repeat_time": diff
+            "repeat_time": diff,
+            "reminder_id": await r.table("reminders").count().run(ctx.bot.rethinkdb.connection)
         }
 
         # Add it to the database.
@@ -167,12 +168,33 @@ class Reminders(object):
         await ctx.bot.say(":heavy_check_mark: Will start reminding you at `{}`, then every `{}` seconds after.."
                           .format(dt, diff))
 
+    @remind.command(pass_context=True)
+    async def cancel(self, ctx: Context, *, reminder_id: int):
+        """
+        Cancels one of your reminders.
+        """
+        reminder = await r.table("reminders")\
+            .get_all(ctx.message.author.id, index="user_id") \
+            .filter({"reminder_id": reminder_id}).run(self.bot.rethinkdb.connection)
+
+        reminder = await self.bot.rethinkdb.to_list(reminder)
+        if not reminder:
+            await ctx.bot.say(":x: That reminder ID does not exist.")
+            return
+
+        # Delete the reminder from the DB.
+        i = await r.table("reminders") \
+            .get_all(ctx.message.author.id, index="user_id") \
+            .filter({"reminder_id": reminder_id}).delete().run(self.bot.rethinkdb.connection)
+
+        await ctx.bot.say(":heavy_check_mark: Deleted reminder.")
+
     @remind.command(pass_context=True, aliases=["list"])
     async def reminders(self, ctx: Context):
         """
         Shows your current reminders, and where they are.
         """
-        headers = ["Time", "Content", "Where", "Repeating"]
+        headers = ["ID", "Time", "Content", "Where", "Repeating"]
         items = []
 
         reminders = await r.table("reminders") \
@@ -185,11 +207,12 @@ class Reminders(object):
             dt = datetime.datetime.fromtimestamp(record["expiration"])
             # Truncate the content, if we should.
             content = record["content"]
-            if len(content) >= 30:
+            if len(content) >= 25:
                 # Truncate the end of it with `...`
-                content = content[:27] + "..."
+                content = content[:22] + "..."
 
             repeats = record.get("repeating", False)
+            reminder_id = record.get("reminder_id", "??")
 
             # Resolve the channel and server.
             channel = ctx.bot.manager.get_channel(record["channel_id"])
@@ -198,8 +221,12 @@ class Reminders(object):
                 name = "Unknown"
             else:
                 name = "{} -> #{}".format(channel.server.name, channel.name)
+            if len(name) >= 30:
+                name = name[:27] + "..."
 
-            row = [str(dt), content, name, str(repeats)]
+            fmt = dt.strftime("%Y-%m-%dT%H:%M:%S")
+
+            row = [reminder_id, fmt, content, name, str(repeats)]
             items.append(row)
 
         pages = paginate_table(items, headers)
