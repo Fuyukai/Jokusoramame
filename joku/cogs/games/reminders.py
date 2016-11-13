@@ -24,7 +24,7 @@ class Reminders(object):
     def __init__(self, bot: Jokusoramame):
         self.bot = bot
 
-        self._db_task = None
+        self._is_running_reminders = False
 
     async def _run_reminder(self, record: dict):
         channel = self.bot.get_channel(record["channel_id"])
@@ -44,7 +44,11 @@ class Reminders(object):
 
         # Send the message, and remove it from the database.
         fmt = ":alarm_clock: {.mention}, you wanted to be reminded of: `{}`".format(member, record["content"])
-        await self.bot.send_message(channel, fmt)
+        try:
+            await self.bot.send_message(channel, fmt)
+        except:
+            self.bot.logger.error("Failed to send reminder.")
+            self.bot.logger.exception()
 
         # Delete from the database.
         r_id = record.get("id")
@@ -57,8 +61,10 @@ class Reminders(object):
 
     async def ready(self):
         # Don't do anything if the DB task already exists.
-        if self._db_task:
+        if self._is_running_reminders:
             return
+
+        self._is_running_reminders = True
 
         # Scan the reminders table periodically,
         while True:
@@ -73,7 +79,6 @@ class Reminders(object):
                     if time_left < 300:
                         self.bot.loop.create_task(self._run_reminder(record))
 
-                    ...
                     # Otherwise, don't bother with the reminder.
 
             except Exception:
