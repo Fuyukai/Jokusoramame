@@ -105,6 +105,19 @@ class Core(object):
         tbl = tabulate.tabulate(items, headers, tablefmt="orgtbl")
         await ctx.bot.say("```{}```".format(tbl))
 
+    @shards.command(pass_context=True)
+    async def kill(self, ctx: Context, shard_id: int):
+        """
+        Kills a bot, by forcing it to logout.
+        """
+        bot = ctx.bot.manager.bots.get(shard_id)
+        loop = bot.loop
+
+        await ctx.bot.type()
+
+        fut = asyncio.run_coroutine_threadsafe(bot.logout(), loop)
+        await ctx.bot.say(":heavy_check_mark: Rebooting shard `{}`.".format(shard_id))
+
     @commands.command(pass_context=True)
     @commands.check(is_owner)
     async def changename(self, ctx: Context, *, name: str):
