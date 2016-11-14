@@ -22,6 +22,10 @@ from joku.bot import Jokusoramame, Context
 from joku.utils import paginate_table
 
 
+def clean(content: str) -> str:
+    return content.replace("`", "´")
+
+
 class Reminders(object):
     # Create the empty datetime to be used for the relative datetime.
     def __init__(self, bot: Jokusoramame):
@@ -46,7 +50,7 @@ class Reminders(object):
         await asyncio.sleep(reminder_time)
 
         # Send the message, and remove it from the database.
-        fmt = ":alarm_clock: {.mention}, you wanted to be reminded of: `{}`".format(member, record["content"])
+        fmt = ":alarm_clock: {.mention}, you wanted to be reminded of: `{}`".format(member, clean(record["content"]))
         try:
             await self.bot.send_message(channel, fmt)
         except:
@@ -63,6 +67,18 @@ class Reminders(object):
 
         # Check for repeating reminders.
         if record.get("repeating", False) is True:
+            # Check if it still exists in the database.
+
+            r_ = await self.bot.rethinkdb.to_list(
+                await r.table("reminders")
+                    .get_all(record["user_id"], index="user_id")
+                    .filter({"reminder_id": record.get("reminder_id")})
+                    .run(self.bot.rethinkdb.connection)
+            )
+            if not r_:
+                # No need to add it to the database again - it was cancelled.
+                return
+
             # Move the next time down by repeat_time.
             record["expiration"] = record["expiration"] + record["repeat_time"]
             i = await r.table("reminders").insert(record, conflict="update").run(self.bot.rethinkdb.connection)
@@ -288,6 +304,7 @@ class Reminders(object):
         )
 
         await ctx.bot.say(fmt)
+
 
 def setup(bot):
     bot.add_cog(Reminders(bot))
