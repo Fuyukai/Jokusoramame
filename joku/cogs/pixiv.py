@@ -8,6 +8,8 @@ import aiopixiv
 import aiohttp
 import discord
 import json
+
+import threading
 from discord.ext import commands
 from io import BytesIO
 from asyncio_extras import threadpool
@@ -15,14 +17,19 @@ from asyncio_extras import threadpool
 from joku.bot import Context
 
 
+class Local(threading.local):
+    pixiv = None
+    sess = None
+
+
 class Pixiv(object):
     def __init__(self, bot):
         self.bot = bot
 
         # This is the authentciated API.
-        self._pixiv_api = aiopixiv.PixivAPIv5()
+        Local.pixiv = aiopixiv.PixivAPIv5()
 
-        self._sess = aiohttp.ClientSession()
+        Local.sess = aiohttp.ClientSession()
 
     @commands.group(pass_context=True)
     async def pixiv(self, ctx: Context):
@@ -36,9 +43,9 @@ class Pixiv(object):
         Searches Pixiv using the specified tag.
         """
         await ctx.bot.type()
-        if not self._pixiv_api.access_token:
-            await self._pixiv_api.login(**ctx.bot.config.get("pixiv", {}))
-        data = await self._pixiv_api.search_works(tag, per_page=100)
+        if not Local.pixiv.access_token:
+            await Local.pixiv.login(**ctx.bot.config.get("pixiv", {}))
+        data = await Local.pixiv.search_works(tag, per_page=100)
 
         if data.get("status") == "failure":
             await ctx.bot.say(":x: Failed to download from pixiv.")
@@ -68,7 +75,7 @@ class Pixiv(object):
             "score": item["stats"]["score"]
         }
 
-        image_data = await self._pixiv_api.download_pixiv_image(obb["image"])
+        image_data = await Local.pixiv.download_pixiv_image(obb["image"])
         # Upload to catbox.moe, because pixiv sucks
         fobj = BytesIO(image_data)
 
@@ -80,7 +87,7 @@ class Pixiv(object):
             filename="upload.png"
         )
 
-        async with self._sess.post("https://catbox.moe/user/api.php", data=data) as r:
+        async with Local.sess.post("https://catbox.moe/user/api.php", data=data) as r:
             if r.status != 200:
                 await ctx.bot.say(":x: An error occurred.")
                 ctx.bot.logger.error(await r.text())
