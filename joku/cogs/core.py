@@ -18,15 +18,16 @@ from discord.ext.commands.bot import _default_help_command
 
 from joku.bot import Jokusoramame, Context
 from joku.checks import is_owner
+from joku.cogs._common import Cog
 
 
-class Core(object):
+class Core(Cog):
     """
     Core command class.
     """
 
     def __init__(self, bot: Jokusoramame):
-        self.bot = bot
+        super().__init__(bot)
 
         self._is_loaded = False
 

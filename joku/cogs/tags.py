@@ -17,10 +17,12 @@ import random
 import string
 import base64
 
+from joku.cogs._common import Cog
 
-class Tags(object):
+
+class Tags(Cog):
     def __init__(self, bot: Jokusoramame):
-        self.bot = bot
+        super().__init__(bot)
 
         # Create the Jinja2 environment.
         self.template_env = SandboxedEnvironment()

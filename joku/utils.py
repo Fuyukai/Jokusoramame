@@ -6,7 +6,7 @@ import typing
 import tabulate
 
 
-def paginate_large_message(message: str, use_codeblocks: bool=True) -> typing.List[str]:
+def paginate_large_message(message: str, use_codeblocks: bool = True) -> typing.List[str]:
     """
     Paginates a large message, delimited by code blocks.
 

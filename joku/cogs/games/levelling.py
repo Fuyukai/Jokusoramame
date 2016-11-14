@@ -10,6 +10,7 @@ from discord.ext import commands
 from discord.ext.commands import Context
 
 from joku.bot import Jokusoramame
+from joku.cogs._common import Cog
 from joku.utils import paginate_table
 
 INCREASING_FACTOR = 50
@@ -37,11 +38,7 @@ def get_next_level(exp: int):
     return l, levels[l - 1] - exp
 
 
-class Levelling(object):
-    def __init__(self, bot: Jokusoramame):
-        self.bot = bot
-        self.levels = levels
-
+class Levelling(Cog):
     async def on_message(self, message: discord.Message):
         # Add XP, and show if they levelled up.
         if message.author.bot:

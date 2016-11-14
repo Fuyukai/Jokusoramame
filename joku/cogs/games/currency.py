@@ -5,13 +5,11 @@ from discord.ext import commands
 import rethinkdb as r
 
 from joku.bot import Jokusoramame
+from joku.cogs._common import Cog
 from joku.redis import with_redis_cooldown
 
 
-class Currency(object):
-    def __init__(self, bot: Jokusoramame):
-        self.bot = bot
-
+class Currency(Cog):
     @commands.command(pass_context=True)
     @with_redis_cooldown(bucket="daily_currency")
     async def daily(self, ctx):

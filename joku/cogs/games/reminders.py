@@ -19,6 +19,7 @@ from parsedatetime import Calendar
 
 from joku import checks
 from joku.bot import Jokusoramame, Context
+from joku.cogs._common import Cog
 from joku.utils import paginate_table
 
 
@@ -26,10 +27,10 @@ def clean(content: str) -> str:
     return content.replace("`", "´")
 
 
-class Reminders(object):
+class Reminders(Cog):
     # Create the empty datetime to be used for the relative datetime.
     def __init__(self, bot: Jokusoramame):
-        self.bot = bot
+        super().__init__(bot)
 
         self._is_running_reminders = False
 

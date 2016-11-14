@@ -13,21 +13,17 @@ from discord.ext import commands
 from io import BytesIO
 
 from joku.bot import Context
+from joku.cogs._common import Cog
 
 
-class Local(threading.local):
-    pixiv = None
-    sess = None
-
-
-class Pixiv(object):
+class Pixiv(Cog):
     def __init__(self, bot):
-        self.bot = bot
+        super().__init__(bot)
 
         # This is the authentciated API.
-        Local.pixiv = aiopixiv.PixivAPIv5()
+        self.local.pixiv = aiopixiv.PixivAPIv5()
 
-        Local.sess = aiohttp.ClientSession(loop=asyncio.get_event_loop())
+        self.local.sess = aiohttp.ClientSession(loop=asyncio.get_event_loop())
 
     @commands.group(pass_context=True)
     async def pixiv(self, ctx: Context):

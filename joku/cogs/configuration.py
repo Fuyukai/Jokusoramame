@@ -9,6 +9,7 @@ from discord.ext import commands
 from discord.ext.commands import Context, MemberConverter, BadArgument, ChannelConverter
 
 from joku.bot import Jokusoramame
+from joku.cogs._common import Cog
 from joku.rethink import RethinkAdapter
 from joku.checks import has_permissions
 
@@ -19,16 +20,13 @@ class ArgumentParser(argparse.ArgumentParser):
         raise Exception(message)
 
 
-class Config(object):
+class Config(Cog):
     # TODO: Add more events
     VALID_EVENTS = (
         "joins",
         "leaves",
         "bans",  # implies unbans too
     )
-
-    def __init__(self, bot: Jokusoramame):
-        self.bot = bot
 
     @commands.group(pass_context=True, invoke_without_command=True)
     @has_permissions(manage_server=True)
@@ -86,7 +84,7 @@ class Config(object):
         await ctx.bot.say(":heavy_check_mark: Subscribed to event.")
 
     @notifications.command(pass_context=True, aliases=["unsub"])
-    async def unsubscribe(self, ctx: Context, *, event: str=None):
+    async def unsubscribe(self, ctx: Context, *, event: str = None):
         """
         Unsubscribe from an event that was subscribed in with `notifications subscribe`.
         """
@@ -191,8 +189,10 @@ class Config(object):
             # This means filtering by name and type.
             query = await r.table("settings") \
                 .get_all(ctx.message.server.id, index="server_id") \
-                .filter({"name": "ignore", "target": converted.id,
-                         "type": args.type}) \
+                .filter({
+                            "name": "ignore", "target": converted.id,
+                            "type": args.type
+                            }) \
                 .run(ctx.bot.rethinkdb.connection)
 
             got = await ctx.bot.rethinkdb.to_list(query)
@@ -208,8 +208,10 @@ class Config(object):
             # Check if the rule already exists.
             query = await r.table("settings") \
                 .get_all(ctx.message.server.id, index="server_id") \
-                .filter({"name": "ignore", "target": converted.id,
-                         "type": args.type}) \
+                .filter({
+                            "name": "ignore", "target": converted.id,
+                            "type": args.type
+                            }) \
                 .run(ctx.bot.rethinkdb.connection)
 
             got = await self.bot.rethinkdb.to_list(query)
@@ -218,8 +220,10 @@ class Config(object):
                 return
 
             # Add the rule.
-            built_dict = {"server_id": ctx.message.server.id, "name": "ignore",
-                          "target": converted.id, "type": args.type}
+            built_dict = {
+                "server_id": ctx.message.server.id, "name": "ignore",
+                "target": converted.id, "type": args.type
+                }
 
             result = await r.table("settings").insert(built_dict).run(self.bot.rethinkdb.connection)
             await ctx.bot.say(":heavy_check_mark: Added ignore rule.")

@@ -14,12 +14,10 @@ from discord.ext.commands import Context
 
 from joku.bot import Jokusoramame
 from joku.checks import is_owner
+from joku.cogs._common import Cog
 
 
-class Debug(object):
-    def __init__(self, bot: Jokusoramame):
-        self.bot = bot
-
+class Debug(Cog):
     @commands.command(pass_context=True)
     @commands.check(is_owner)
     async def load(self, ctx, *, cog):

@@ -10,6 +10,7 @@ import tabulate
 
 from joku.bot import Jokusoramame, Context
 from joku.checks import is_owner
+from joku.cogs._common import Cog
 
 unknown_events = {
     11: "HEARTBEAT_ACK",
@@ -18,10 +19,7 @@ unknown_events = {
 }
 
 
-class Events(object):
-    def __init__(self, bot: Jokusoramame):
-        self.bot = bot
-
+class Events(Cog):
     @commands.group(pass_context=True, invoke_without_command=True)
     async def events(self, ctx: Context):
         """

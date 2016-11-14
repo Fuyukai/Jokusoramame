@@ -5,13 +5,11 @@ import discord
 from discord.ext import commands
 
 from joku.bot import Jokusoramame, Context
+from joku.cogs._common import Cog
 from joku.utils import paginate_table
 
 
-class Todos(object):
-    def __init__(self, bot: Jokusoramame):
-        self.bot = bot
-
+class Todos(Cog):
     @commands.group(pass_context=True, invoke_without_command=True)
     async def todo(self, ctx: Context, *, target: discord.Member = None):
         """
