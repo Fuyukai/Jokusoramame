@@ -31,7 +31,7 @@ class Debug(Cog):
             d = eval(cmd, {"r": r, "asyncio": asyncio,
                            "member": ctx.message.author, "message": ctx.message,
                            "server": ctx.message.server, "channel": ctx.message.channel,
-                           "bot": ctx.bot})
+                           "bot": ctx.bot, "self": self})
             if inspect.isawaitable(d):
                 d = await d
         except Exception:
