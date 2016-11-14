@@ -2,17 +2,15 @@
 Cog for interacting with the Pixiv API.
 """
 import random
-import shutil
 
 import aiopixiv
 import aiohttp
+import asyncio
 import discord
-import json
 
 import threading
 from discord.ext import commands
 from io import BytesIO
-from asyncio_extras import threadpool
 
 from joku.bot import Context
 
@@ -29,7 +27,7 @@ class Pixiv(object):
         # This is the authentciated API.
         Local.pixiv = aiopixiv.PixivAPIv5()
 
-        Local.sess = aiohttp.ClientSession()
+        Local.sess = aiohttp.ClientSession(loop=asyncio.get_event_loop())
 
     @commands.group(pass_context=True)
     async def pixiv(self, ctx: Context):
