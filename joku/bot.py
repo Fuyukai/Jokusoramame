@@ -20,6 +20,7 @@ from logbook.compat import redirect_logging
 from logbook import StreamHandler
 
 from joku.rdblog import RdbLogAdapter
+from joku.utils import paginate_large_message
 from rethinkdb import ReqlDriverError
 
 from joku.redis import RedisAdapter
@@ -230,6 +231,24 @@ class Jokusoramame(Bot):
     async def login(self, *args, **kwargs):
         token = self.config["bot_token"]
         return await super().login(token)
+
+    # Overrides.
+    async def send_message(self, destination, content=None, *, tts=False, embed=None, use_codeblocks=False):
+        """
+        Sends a message, with pagination.
+
+        This will automatically split messages over 2000 chracters.
+        """
+        if not content:
+            return await super().send_message(destination, tts=tts, embed=embed)
+        pages = paginate_large_message(content, use_codeblocks=use_codeblocks)
+        messages = []
+        for page in pages:
+            messages.append(await super().send_message(destination, page, tts=tts, embed=embed))
+
+        if len(messages) == 1:
+            return messages[0]
+        return messages
 
     async def connect(self):
         self.ws = await DiscordWebSocket.from_client(self)

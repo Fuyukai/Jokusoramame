@@ -6,6 +6,37 @@ import typing
 import tabulate
 
 
+def paginate_large_message(message: str, use_codeblocks: bool=True) -> typing.List[str]:
+    """
+    Paginates a large message, delimited by code blocks.
+
+    :param message: The message to paginate.
+    :return: A list of message pages.
+    """
+    pages = []
+    current_message = message
+
+    while True:
+        # 1993 - used for ``` and ```.
+        if len(current_message) < 1993:
+            # Add it to pages, and break.
+            if use_codeblocks:
+                pages.append("```{}```".format(current_message))
+            else:
+                pages.append(current_message)
+            break
+
+        # Get the first 1993 chars from it, and reset current_message.
+        new_message, current_message = current_message[:1993], current_message[1993:]
+        if use_codeblocks:
+            pages.append("```{}```".format(new_message))
+        else:
+            pages.append(new_message)
+
+    # Return the list of pages.
+    return pages
+
+
 def paginate_table(rows: list, headers: typing.Iterable, table_format="orgtbl",
                    limit=2000) -> typing.List[str]:
     """
