@@ -17,26 +17,9 @@ class Cog(metaclass=_CogMeta):
     data. This makes the cogs semi thread-safe.
     """
 
-    class local(threading.local):
-        bot = None
-
     def __init__(self, bot: Jokusoramame):
+        self.local = threading.local()
         self.local.bot = bot
-
-    def __setattr__(self, key, value):
-        if hasattr(self, key):
-            super().__setattr__(key, value)
-        else:
-            # Set it on the thread-local object instead.
-            setattr(self.local, key, value)
-
-    def __getattribute__(self, item):
-        # Get the local.
-        local = super().__getattribute__("local")
-        if hasattr(local, item):
-            return getattr(local, item)
-
-        return super().__getattribute__(item)
 
     @property
     def bot(self) -> 'Jokusoramame':

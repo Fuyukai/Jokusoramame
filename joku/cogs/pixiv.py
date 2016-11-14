@@ -37,9 +37,9 @@ class Pixiv(Cog):
         Searches Pixiv using the specified tag.
         """
         await ctx.bot.type()
-        if not Local.pixiv.access_token:
-            await Local.pixiv.login(**ctx.bot.config.get("pixiv", {}))
-        data = await Local.pixiv.search_works(tag, per_page=100)
+        if not self.local.pixiv.access_token:
+            await self.local.pixiv.login(**ctx.bot.config.get("pixiv", {}))
+        data = await self.local.pixiv.search_works(tag, per_page=100)
 
         if data.get("status") == "failure":
             await ctx.bot.say(":x: Failed to download from pixiv.")
@@ -69,7 +69,7 @@ class Pixiv(Cog):
             "score": item["stats"]["score"]
         }
 
-        image_data = await Local.pixiv.download_pixiv_image(obb["image"])
+        image_data = await self.local.pixiv.download_pixiv_image(obb["image"])
         # Upload to catbox.moe, because pixiv sucks
         fobj = BytesIO(image_data)
 
@@ -81,7 +81,7 @@ class Pixiv(Cog):
             filename="upload.png"
         )
 
-        async with Local.sess.post("https://catbox.moe/user/api.php", data=data) as r:
+        async with self.local.sess.post("https://catbox.moe/user/api.php", data=data) as r:
             if r.status != 200:
                 await ctx.bot.say(":x: An error occurred.")
                 ctx.bot.logger.error(await r.text())
