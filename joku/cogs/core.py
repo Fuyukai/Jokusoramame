@@ -176,25 +176,32 @@ class Core(object):
         if command is None:
             # List the commands.
             base = "**Commands:**\nUse `{}help <command>` for more information about each command.\n\n".format(prefix)
-            for n, (name, cls) in enumerate(ctx.bot.cogs.items()):
-                # Increment N, so we start at 1 index instead of 0.
-                n += 1
-
+            counter = 1
+            for (name, cls) in ctx.bot.cogs.items():
                 cmds = []
 
-                # Get a list of commands on the cog.
+                # Get a list of commands on the cog, by inspecting the members for any Command instances.
                 members = inspect.getmembers(cls)
                 for cname, m in members:
                     if isinstance(m, Command):
+                        if m.parent is not None:
+                            # Construct a new name, using the parent name.
+                            new_name = m.full_parent_name + " " + m.name
+                        else:
+                            new_name = m.name
                         # Check if the author can run the command.
                         try:
                             if self.can_run_recursive(ctx, m):
-                                cmds.append("`" + m.name + "`")
+                                cmds.append("`" + new_name + "`")
                         except CheckFailure:
                             pass
 
-                base += "**{}. {}: ** {}\n".format(n, name, ' '.join(cmds) if cmds else "`No commands available to "
-                                                                                        "you.`")
+                # Make sure the user can run any commands for this cog.
+                if cmds:
+                    base += "**{}. {}: ** {}\n".format(counter, name, ' '.join(cmds))
+                    # Increment the counter here.
+                    # Why? We don't want to increment it if the user can't use that cog.
+                    counter += 1
 
             await ctx.bot.say(base)
         else:
