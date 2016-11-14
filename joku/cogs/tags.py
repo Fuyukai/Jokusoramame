@@ -74,7 +74,7 @@ class Tags(object):
 
         await ctx.bot.say(", ".join([x['name'] for x in server_tags]))
 
-    @tag.command(pass_context=True)
+    @tag.command(pass_context=True, aliases=["edit"])
     async def create(self, ctx, name: str, *, content: str):
         """
         Creates a new tag.
