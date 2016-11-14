@@ -165,9 +165,11 @@ class Tags(object):
         try:
             templ = self.template_env.from_string(content)
             rendered = templ.render(**args)
-        except Exception:
+        except Exception as e:
             traceback.print_exc()
-            rendered = "**Error when compiling template:**\n```{}```".format(''.join(traceback.format_exc()))
+            rendered = "**Error when compiling template:**\n`{}`".format(e)
+            await ctx.bot.send_message(ctx.message.channel, rendered)
+            return
 
         try:
             await ctx.bot.send_message(ctx.message.channel, rendered)
