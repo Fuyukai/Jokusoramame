@@ -199,7 +199,7 @@ class Core(Cog):
 
                 # Make sure the user can run any commands for this cog.
                 if cmds:
-                    base += "**{}. {}: ** {}\n".format(counter, name, ' '.join(cmds))
+                    base += "**{}. {}: ** {}\n".format(counter, name, ' **|** '.join(reversed(sorted(cmds))))
                     # Increment the counter here.
                     # Why? We don't want to increment it if the user can't use that cog.
                     counter += 1
