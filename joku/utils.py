@@ -4,6 +4,14 @@ Common utilities shared across the bot.
 import typing
 
 import tabulate
+import numpy as np
+
+
+def reject_outliers(data, m=2):
+    """
+    Rejects outliers from a numpy array.
+    """
+    return data[abs(data - np.mean(data)) < m * np.std(data)]
 
 
 def paginate_large_message(message: str, use_codeblocks: bool = True) -> typing.List[str]:

@@ -1,17 +1,24 @@
 """
 cancer
 """
+from io import BytesIO
 from math import floor, ceil
 
 import discord
-import rethinkdb as r
-import tabulate
-from discord.ext import commands
-from discord.ext.commands import Context
+from asyncio_extras import threadpool
 
-from joku.bot import Jokusoramame
+import rethinkdb as r
+from discord.ext import commands
+
+import matplotlib as mpl
+mpl.use('Agg')
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+from joku.bot import Jokusoramame, Context
 from joku.cogs._common import Cog
-from joku.utils import paginate_table
+from joku.utils import paginate_table, reject_outliers
 
 INCREASING_FACTOR = 50
 
@@ -118,6 +125,37 @@ class Levelling(Cog):
         await ctx.bot.say(base)
         for page in pages:
             await ctx.bot.say(page)
+
+    @level.command(pass_context=True)
+    async def plot(self, ctx: Context):
+        """
+        Plots the XP curve for this server.
+        """
+        users = await ctx.bot.rethinkdb.get_multiple_users(*ctx.message.server.members, order_by=r.desc("xp"))
+
+        await ctx.bot.type()
+
+        async with threadpool():
+            with plt.style.context("seaborn-pastel"):
+                lvls = np.array([user["level"] for user in users])
+                plt.hist(lvls, bins=np.arange(lvls.min(), lvls.max()+1))
+
+                plt.xlabel("Level")
+                plt.ylabel("Frequency")
+                plt.title("Level frequency for {}".format(ctx.message.server.name))
+
+                buf = BytesIO()
+                plt.savefig(buf, format="png")
+
+                # Don't send 0-byte files
+                buf.seek(0)
+
+                # Cleanup.
+                plt.clf()
+                plt.cla()
+
+        await ctx.bot.upload(buf, filename="plot.png")
+
 
     @level.command(pass_context=True)
     async def next(self, ctx, *, target: discord.Member = None):
