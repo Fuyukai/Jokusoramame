@@ -137,7 +137,8 @@ class Levelling(Cog):
 
         async with threadpool():
             with plt.style.context("seaborn-pastel"):
-                lvls = np.array([user["level"] for user in users])
+                lvls = np.array([user["level"] for user in users if user["level"] >= 0])
+                lvls = reject_outliers(lvls)
                 plt.hist(lvls, bins=np.arange(lvls.min(), lvls.max()+1))
 
                 plt.xlabel("Level")
