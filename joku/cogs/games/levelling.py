@@ -11,6 +11,7 @@ import rethinkdb as r
 from discord.ext import commands
 
 import matplotlib as mpl
+
 mpl.use('Agg')
 
 import matplotlib.pyplot as plt
@@ -94,7 +95,7 @@ class Levelling(Cog):
         await ctx.bot.say("User **{}** is level `{}`.".format(user.name, level))
 
     @level.command(pass_context=True, aliases=["top"])
-    async def leaderboard(self, ctx: Context, *, num: int=10):
+    async def leaderboard(self, ctx: Context, *, num: int = 10):
         """
         Shows the top 10 people in this server.
 
@@ -139,7 +140,7 @@ class Levelling(Cog):
             with plt.style.context("seaborn-pastel"):
                 lvls = np.array([user["level"] for user in users if user["level"] >= 0])
                 lvls = reject_outliers(lvls)
-                plt.hist(lvls, bins=np.arange(lvls.min(), lvls.max()+1))
+                plt.hist(lvls, bins=np.arange(lvls.min(), lvls.max() + 1))
 
                 plt.xlabel("Level")
                 plt.ylabel("Frequency")
@@ -156,7 +157,6 @@ class Levelling(Cog):
                 plt.cla()
 
         await ctx.bot.upload(buf, filename="plot.png")
-
 
     @level.command(pass_context=True)
     async def next(self, ctx, *, target: discord.Member = None):

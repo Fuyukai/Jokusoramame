@@ -88,7 +88,6 @@ class Core(Cog):
             return can_run
 
     @commands.group(pass_context=True, invoke_without_command=True)
-    @commands.check(is_owner)
     async def shards(self, ctx: Context):
         """
         Shows shard status.
@@ -107,6 +106,7 @@ class Core(Cog):
         await ctx.bot.say("```{}```".format(tbl))
 
     @shards.command(pass_context=True)
+    @commands.check(is_owner)
     async def kill(self, ctx: Context, shard_id: int):
         """
         Kills a bot, by forcing it to logout.
@@ -118,6 +118,20 @@ class Core(Cog):
 
         fut = asyncio.run_coroutine_threadsafe(bot.logout(), loop)
         await ctx.bot.say(":heavy_check_mark: Rebooting shard `{}`.".format(shard_id))
+
+    @shards.command(pass_context=True)
+    @commands.check(is_owner)
+    async def restart(self, ctx: Context):
+        """
+        Forces a restart of all shards.
+        """
+        await ctx.bot.say("Rebooting all shards.")
+        # This injects the task into the shards WITHOUT yielding to the event loop.
+        for shard in ctx.bot.manager.bots.values():
+            asyncio.run_coroutine_threadsafe(shard.logout(), shard.loop)
+
+        # Now we yield to the loop, and let it kill us.
+        await asyncio.sleep(0)
 
     @commands.command(pass_context=True)
     @commands.check(is_owner)
