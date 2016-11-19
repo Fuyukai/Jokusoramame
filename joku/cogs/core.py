@@ -125,6 +125,8 @@ class Core(Cog):
         """
         Forces a restart of all shards.
         """
+        ctx.bot.manager.reload_config_file()
+
         await ctx.bot.say(":hourglass: Scheduling a reboot for all shards...")
         # This injects the task into the shards WITHOUT yielding to the event loop.
         for shard in ctx.bot.manager.bots.values():
