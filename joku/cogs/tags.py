@@ -136,10 +136,8 @@ class Tags(Cog):
             # We don't want to catch any non-command not found errors.
             return
 
-        # This is mostly copy/pasted from `process_commands`
-
-        # Try and load the tag.
-        cmd = ctx.invoked_with
+        # Extract the tag from the message content.
+        cmd = ctx.message.content[len(ctx.prefix):]
 
         # Load the tag.
         tag = await ctx.bot.rethinkdb.get_tag(ctx.message.server, cmd)
