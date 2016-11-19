@@ -13,6 +13,7 @@ import discord
 import logbook
 import logging
 
+import threading
 from discord.ext import commands
 from discord.ext.commands import Bot, CommandInvokeError, CheckFailure, MissingRequiredArgument
 from discord.gateway import DiscordWebSocket, ReconnectWebSocket, ResumeWebSocket
@@ -72,9 +73,6 @@ class Jokusoramame(Bot):
 
         self._rotator_task = None  # type: asyncio.Task
         self._avatar_rotator = None  # type: asyncio.Task
-
-    def __del__(self):
-        self.loop.set_exception_handler(lambda *args, **kwargs: None)
 
     # Utility functions.
     def get_member(self, id: str):
