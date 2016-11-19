@@ -15,6 +15,9 @@ class DNDCop(Cog):
         if message.server is None:
             return
 
+        if message.author.bot:
+            return
+
         enabled = ((await self.bot.rethinkdb.get_setting(message.server, "dndcop")) or {}).get("status") == 1
 
         if enabled:
