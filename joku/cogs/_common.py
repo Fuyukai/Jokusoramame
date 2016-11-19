@@ -27,3 +27,7 @@ class Cog(metaclass=_CogMeta):
         :return: The bot instance associated with this thread.
         """
         return self.local.bot
+
+    @classmethod
+    def setup(cls, bot: Jokusoramame):
+        bot.add_cog(cls(bot))

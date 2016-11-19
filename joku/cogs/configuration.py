@@ -6,9 +6,9 @@ import shlex
 
 import rethinkdb as r
 from discord.ext import commands
-from discord.ext.commands import Context, MemberConverter, BadArgument, ChannelConverter
+from discord.ext.commands import MemberConverter, BadArgument, ChannelConverter
 
-from joku.bot import Jokusoramame
+from joku.bot import Jokusoramame, Context
 from joku.cogs._common import Cog
 from joku.rethink import RethinkAdapter
 from joku.checks import has_permissions
@@ -133,6 +133,33 @@ class Config(Cog):
         }
         await ctx.bot.rethinkdb.set_setting(ctx.message.server, **d)
         await ctx.bot.say(":heavy_check_mark: Updated message for event `{}` to `{}`.".format(event, msg))
+
+    @commands.command(pass_context=True)
+    @has_permissions(manage_server=True, manage_messages=True)
+    async def dndcop(self, ctx: Context, *, status: str=None):
+        """
+        Manages the Do Not Disturb Cop.
+
+        The DND Cop automatically deletes any messages of users with Do Not Disturb or Invisible on.
+        """
+        if status is None:
+            # Check the status.
+            setting = await ctx.bot.rethinkdb.get_setting(ctx.message.server, "dndcop")
+            if setting.get("status") == 1:
+                await ctx.bot.say("DND Cop is currently **on.**")
+            else:
+                await ctx.bot.say("DND Cop is currently **off.**")
+        else:
+            if status.lower() == "on":
+                await ctx.bot.rethinkdb.set_setting(ctx.message.server, "dndcop", status=1)
+                await ctx.bot.say(":heavy_check_mark: Turned DND Cop on.")
+                return
+            elif status.lower() == "off":
+                await ctx.bot.rethinkdb.set_setting(ctx.message.server, "dndcop", status=0)
+                await ctx.bot.say(":heavy_check_mark: Turned DND Cop off.")
+                return
+            else:
+                await ctx.bot.say(":x: No.")
 
     @commands.command(pass_context=True)
     @has_permissions(manage_server=True, manage_channels=True)
