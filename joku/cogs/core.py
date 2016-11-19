@@ -125,13 +125,38 @@ class Core(Cog):
         """
         Forces a restart of all shards.
         """
-        await ctx.bot.say("Rebooting all shards.")
+        await ctx.bot.say(":hourglass: Scheduling a reboot for all shards...")
         # This injects the task into the shards WITHOUT yielding to the event loop.
         for shard in ctx.bot.manager.bots.values():
             asyncio.run_coroutine_threadsafe(shard.logout(), shard.loop)
 
         # Now we yield to the loop, and let it kill us.
         await asyncio.sleep(0)
+
+    @commands.command(pass_context=True)
+    @commands.check(is_owner)
+    async def reloadall(self, ctx):
+        """
+        Reloads all modules.
+        """
+        # Reload the config file so that all cogs are ready.
+        ctx.bot.manager.reload_config_file()
+
+        # Reload this shard
+        for extension in ctx.bot.extensions.copy():
+            ctx.bot.unload_extension(extension)
+            try:
+                ctx.bot.load_extension(extension)
+            except BaseException as e:
+                ctx.bot.logger.exception()
+            else:
+                ctx.bot.logger.info("Reloaded {}.".format(extension))
+
+        await ctx.bot.say(":heavy_check_mark: Reloaded shard.")
+
+    @commands.command()
+    async def test(self):
+        await self.bot.say("aaa")
 
     @commands.command(pass_context=True)
     @commands.check(is_owner)

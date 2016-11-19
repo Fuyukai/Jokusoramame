@@ -45,6 +45,11 @@ class Manager(object):
         # The events counter.
         self.events = collections.Counter()
 
+        # The manager lock.
+        self._manager_lock = threading.RLock()
+
+        self.config = {}
+
     def _start_in_thread(self, id: int, func: callable):
         t = threading.Thread(target=func)
         self.threads[id] = t
@@ -113,6 +118,15 @@ class Manager(object):
 
         return t
 
+    def load_config(self) -> dict:
+        try:
+            cfg = sys.argv[1]
+        except IndexError:
+            cfg = "config.yml"
+
+        with open(cfg) as f:
+            return yaml.load(f)
+
     def start_all(self):
         """
         Starts all the bots.
@@ -130,8 +144,7 @@ class Manager(object):
             self.logger.error("Could not find default config file - copied new one, please edit and restart the bot.")
             return
 
-        with open(cfg) as f:
-            self.config = yaml.load(f)
+        self.config = self.load_config()
 
         # Check if dev mode.
         if self.config.get("developer_mode", False):
@@ -206,3 +219,13 @@ class Manager(object):
         """
         for bot in self.bots.values():
             yield from bot.get_all_channels()
+
+    def reload_config_file(self):
+        """
+        Reloads the config file for a bot.
+        """
+        with self._manager_lock:
+            self.config = self.load_config()
+            for bot in self.bots.values():
+                # re-assign the config on each bot instance
+                bot.config = self.config

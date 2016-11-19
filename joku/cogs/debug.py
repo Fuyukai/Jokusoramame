@@ -28,10 +28,12 @@ class Debug(Cog):
     @commands.check(is_owner)
     async def eval(self, ctx, *, cmd):
         try:
-            d = eval(cmd, {"r": r, "asyncio": asyncio,
-                           "member": ctx.message.author, "message": ctx.message,
-                           "server": ctx.message.server, "channel": ctx.message.channel,
-                           "bot": ctx.bot, "self": self})
+            d = eval(cmd, {
+                "r": r, "asyncio": asyncio,
+                "member": ctx.message.author, "message": ctx.message,
+                "server": ctx.message.server, "channel": ctx.message.channel,
+                "bot": ctx.bot, "self": self
+                })
             if inspect.isawaitable(d):
                 d = await d
         except Exception:
@@ -49,18 +51,6 @@ class Debug(Cog):
 
         Only usable by the owner.
         """
-
-    @debug.command(pass_context=True)
-    async def reloadall(self, ctx):
-        """
-        Reloads all modules.
-        """
-        for extension in ctx.bot.extensions.copy():
-            ctx.bot.unload_extension(extension)
-            ctx.bot.logger.info("Reloaded {}.".format(extension))
-            ctx.bot.load_extension(extension)
-
-        await ctx.bot.say("Reloaded all.")
 
     @debug.command(pass_context=True)
     async def reload(self, ctx, module: str):
