@@ -7,10 +7,10 @@ from discord.ext import commands
 from joku.cogs._common import Cog
 
 
-class DNDCop(Cog):
+class InvisCop(Cog):
     async def on_message(self, message: discord.Message):
         """
-        Checks for people on DND, and deletes their message.
+        Checks for people on invisible, and deletes their message.
         """
         if message.server is None:
             return
@@ -23,7 +23,7 @@ class DNDCop(Cog):
         if enabled:
             # Check the author's status for being not ONLINE or AWAY.
             assert isinstance(message.author, discord.Member)
-            if message.author.status not in [discord.Status.online, discord.Status.idle]:
+            if message.author.status is discord.Status.offline:
                 # Check if they have Manage Messages for this channel.
                 # If they do, don't delete their message.
                 if message.author.permissions_in(message.channel).manage_messages:
@@ -36,4 +36,4 @@ class DNDCop(Cog):
                     # oh well
                     return
 
-setup = DNDCop.setup
+setup = InvisCop.setup

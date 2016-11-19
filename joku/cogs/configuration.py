@@ -136,27 +136,27 @@ class Config(Cog):
 
     @commands.command(pass_context=True)
     @has_permissions(manage_server=True, manage_messages=True)
-    async def dndcop(self, ctx: Context, *, status: str=None):
+    async def inviscop(self, ctx: Context, *, status: str=None):
         """
-        Manages the Do Not Disturb Cop.
+        Manages the Invisible cop
 
-        The DND Cop automatically deletes any messages of users with Do Not Disturb or Invisible on.
+        The Invisible Cop automatically deletes any messages of users with Invisible on.
         """
         if status is None:
             # Check the status.
             setting = await ctx.bot.rethinkdb.get_setting(ctx.message.server, "dndcop")
             if setting.get("status") == 1:
-                await ctx.bot.say("DND Cop is currently **on.**")
+                await ctx.bot.say("Invis Cop is currently **on.**")
             else:
-                await ctx.bot.say("DND Cop is currently **off.**")
+                await ctx.bot.say("Invis Cop is currently **off.**")
         else:
             if status.lower() == "on":
                 await ctx.bot.rethinkdb.set_setting(ctx.message.server, "dndcop", status=1)
-                await ctx.bot.say(":heavy_check_mark: Turned DND Cop on.")
+                await ctx.bot.say(":heavy_check_mark: Turned Invis Cop on.")
                 return
             elif status.lower() == "off":
                 await ctx.bot.rethinkdb.set_setting(ctx.message.server, "dndcop", status=0)
-                await ctx.bot.say(":heavy_check_mark: Turned DND Cop off.")
+                await ctx.bot.say(":heavy_check_mark: Turned Invis Cop off.")
                 return
             else:
                 await ctx.bot.say(":x: No.")
