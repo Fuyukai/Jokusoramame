@@ -20,7 +20,7 @@ class DNDCop(Cog):
         if enabled:
             # Check the author's status for being not ONLINE or AWAY.
             assert isinstance(message.author, discord.Member)
-            if message.author.status not in [discord.Status.online, discord.Status.away]:
+            if message.author.status not in [discord.Status.online, discord.Status.idle]:
                 # Check if they have Manage Messages for this channel.
                 # If they do, don't delete their message.
                 if message.author.permissions_in(message.channel).manage_messages:
