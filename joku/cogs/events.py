@@ -2,7 +2,10 @@
 Cog that handles event listeners and such.
 """
 import datetime
+from math import floor
+
 import discord
+import time
 
 import rethinkdb as r
 from discord.ext import commands
@@ -39,6 +42,7 @@ class Events(Cog):
         Shows all events the bot has received since it started logging.
         """
         message = await ctx.bot.say(":hourglass: Loading events... (this may take some time!)")
+        time_before = time.time()
         # This abuses RethinkDB to count the events.
         q = await r.table("events")\
             .group("t")\
@@ -52,8 +56,10 @@ class Events(Cog):
 
         headers = ("Event", "Frequency")
         table = tabulate.tabulate(l, headers=headers, tablefmt="orgtbl")
+        time_after = time.time()
 
-        await ctx.bot.edit_message(message, "```{}```".format(table))
+        await ctx.bot.edit_message(message, "```{}```\n**Took {} seconds.**".format(table,
+                                                                                    floor(time_after - time_before)))
 
     @events.command(pass_context=True)
     async def seq(self, ctx: Context):
