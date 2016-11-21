@@ -21,6 +21,7 @@ class SharedState(ConnectionState):
     _servers = {}
     _voice_clients = {}
     _private_channels = {}
+    _private_channels_by_user = {}
 
     def __init__(self, dispatch, chunker, syncer, max_messages, *, loop):
         self.loop = loop
