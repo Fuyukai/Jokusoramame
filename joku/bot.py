@@ -13,7 +13,6 @@ import discord
 import logbook
 import logging
 
-import threading
 from discord.ext import commands
 from discord.ext.commands import Bot, CommandInvokeError, CheckFailure, MissingRequiredArgument
 from discord.gateway import DiscordWebSocket, ReconnectWebSocket, ResumeWebSocket
@@ -27,6 +26,8 @@ from rethinkdb import ReqlDriverError
 
 from joku.redis import RedisAdapter
 from joku.rethink import RethinkAdapter
+
+from joku import manager
 
 try:
     import yaml
@@ -52,7 +53,7 @@ class Jokusoramame(Bot):
         # Get the shard ID.
         shard_id = kwargs.get("shard_id", 0)
 
-        self.manager = kwargs.get("manager")  # type: threadmanager.Manager
+        self.manager = kwargs.get("manager")  # type: manager.SingleLoopManager
 
         self.config = config
 

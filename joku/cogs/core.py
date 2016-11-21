@@ -1,7 +1,9 @@
 """
 Core commands.
 """
+import datetime
 import inspect
+import platform
 
 import aiohttp
 import asyncio
@@ -10,12 +12,14 @@ import json
 
 import threading
 
+import git
 import tabulate
 from discord.ext import commands
 from discord.ext.commands import Command, CheckFailure
 import psutil
 from discord.ext.commands.bot import _default_help_command
 
+from joku import VERSION
 from joku.bot import Jokusoramame, Context
 from joku.checks import is_owner
 from joku.cogs._common import Cog
@@ -210,12 +214,53 @@ class Core(Cog):
         await self.bot.say(":heavy_check_mark: Changed username.")
 
     @commands.command(pass_context=True)
-    async def info(self, ctx):
+    async def info(self, ctx: Context):
         """
         Shows botto info.
         """
-        await ctx.bot.say(":exclamation: **See <https://github.com/SunDwarf/Jokusoramame>, "
-                          "or join the server at https://discord.gg/uQwVat8.**")
+        repo = git.Repo()
+        curr_branch = repo.active_branch
+        commits = list(repo.iter_commits(curr_branch, max_count=3))
+
+        memory_usage = psutil.Process().memory_full_info().uss / 1024 ** 2
+
+        me = ctx.message.server.me  # type: discord.Member
+
+        d = "**Git Log:**\n"
+        for commit in commits:
+            d += "[`{}`](https://github.com/SunDwarf/Jokusoramame/commit/{}) {}\n".format(
+                commit.hexsha[len(commit.hexsha) - 6:len(commit.hexsha)],
+                commit.hexsha,
+                commit.message.split("\n")[0]
+            )
+
+        owner = ctx.bot.get_member(ctx.bot.owner_id)  # type: discord.Member
+
+        embed = discord.Embed(description=d)
+        embed.set_author(name=str(owner), icon_url=owner.avatar_url)
+
+        embed.colour = me.colour
+
+        embed.url = "https://discord.gg/uQwVat8"
+        embed.title = "Official Server Invite"
+
+        # Add the required fields.
+        embed.add_field(name="Shards", value=ctx.bot.shard_count)
+        embed.add_field(name="Memory usage", value="{:.2f} MiB".format(memory_usage))
+        embed.add_field(name="Version", value=VERSION)
+
+        embed.add_field(name="Servers", value=str(sum(1 for x in ctx.bot.manager.get_all_servers())))
+        embed.add_field(name="Users", value=str(sum(1 for x in ctx.bot.manager.get_all_members())))
+        embed.add_field(name="Unique users", value=str(ctx.bot.manager.unique_member_count))
+
+        embed.add_field(name="Python version", value=platform.python_version())
+        embed.add_field(name="Hostname", value=platform.node())
+        embed.add_field(name="discord.py version", value=discord.__version__)
+
+        embed.set_footer(text="Powered by asyncio", icon_url=ctx.message.server.me.avatar_url)
+        embed.timestamp = datetime.datetime.utcnow()
+
+        await ctx.bot.say(embed=embed)
 
     @commands.command(pass_context=True)
     async def invite(self, ctx):
