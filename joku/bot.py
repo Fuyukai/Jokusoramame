@@ -88,6 +88,10 @@ class Jokusoramame(Bot):
         self._rotator_task = None  # type: asyncio.Task
         self._avatar_rotator = None  # type: asyncio.Task
 
+        # Our own task.
+        # We can use this to kill ourselves by running `self.own_task.cancel()`.
+        self.own_task = None  # type: asyncio.Task
+
     # Utility functions.
     def get_member(self, id: str):
         """

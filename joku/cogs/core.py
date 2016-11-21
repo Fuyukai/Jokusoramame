@@ -175,6 +175,10 @@ class Core(Cog):
         """
         Reloads all the modules for every shard.
         """
+        if not isinstance(ctx.bot.manager, SingleLoopManager):
+            await ctx.bot.say(":x: Cannot reload all shards inside a ThreadManager.")
+            return
+
         # Reload the config file.
         ctx.bot.manager.reload_config_file()
 
