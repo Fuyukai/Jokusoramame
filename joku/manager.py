@@ -111,6 +111,13 @@ class SingleLoopManager(object):
         if fut is None:
             self.logger.info("Loading shard {}...".format(shard_id))
         else:
+            try:
+                res = fut.result()
+            except Exception as e:
+                self.logger.exception()
+            else:
+                self.logger.info("Shard {} returned {}".format(res, shard_id))
+
             self.logger.info("Reloading shard {}...".format(shard_id))
         bot = Jokusoramame(self.config, shard_id=shard_id, shard_count=shard_count,
                            manager=self, state=SharedState)
