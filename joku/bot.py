@@ -17,6 +17,7 @@ import threading
 from discord.ext import commands
 from discord.ext.commands import Bot, CommandInvokeError, CheckFailure, MissingRequiredArgument
 from discord.gateway import DiscordWebSocket, ReconnectWebSocket, ResumeWebSocket
+from discord.state import ConnectionState
 from logbook.compat import redirect_logging
 from logbook import StreamHandler
 
@@ -26,7 +27,6 @@ from rethinkdb import ReqlDriverError
 
 from joku.redis import RedisAdapter
 from joku.rethink import RethinkAdapter
-from joku import threadmanager
 
 try:
     import yaml
@@ -40,6 +40,15 @@ StreamHandler(sys.stderr).push_application()
 
 class Jokusoramame(Bot):
     def __init__(self, config: dict, *args, **kwargs):
+        """
+        Creates a new instance of the bot.
+
+        :param config: The config to create this with.
+
+        :param manager: The bot manager to use.
+        :param state: The type of state to use. This can either be the vanilla ConnectionState, or a modified subclass.
+        """
+
         # Get the shard ID.
         shard_id = kwargs.get("shard_id", 0)
 
@@ -55,6 +64,11 @@ class Jokusoramame(Bot):
 
         # Call init.
         super().__init__(command_prefix=self.get_command_prefix, *args, **kwargs)
+
+        # Override ConnectionState.
+        self.connection = kwargs.get("state", ConnectionState) \
+            (self.dispatch, self.request_offline_members,
+             self._syncer, self.connection.max_messages, loop=self.loop)
 
         self.app_id = ""
         self.owner_id = ""

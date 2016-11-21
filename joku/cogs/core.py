@@ -19,6 +19,8 @@ from discord.ext.commands.bot import _default_help_command
 from joku.bot import Jokusoramame, Context
 from joku.checks import is_owner
 from joku.cogs._common import Cog
+from joku.manager import SingleLoopManager
+from joku.threadmanager import ThreadManager
 
 
 class Core(Cog):
@@ -30,6 +32,16 @@ class Core(Cog):
         super().__init__(bot)
 
         self._is_loaded = False
+
+    async def on_channel_create(self, channel: discord.Channel):
+        if channel.server is None:
+            return
+
+        perms = channel.permissions_for(channel.server.me)
+        if not perms.send_messages and perms.read_messages:
+            return
+
+        await self.bot.send_message(channel, "first")
 
     async def ready(self):
         if self.bot.shard_id != 0:
@@ -92,15 +104,11 @@ class Core(Cog):
         """
         Shows shard status.
         """
-        headers = ["Thread", "Status", "Servers", "Members"]
+        headers = ["Shard", "Servers", "Members"]
         items = []
 
-        for (thread_id, thread), bot in zip(ctx.bot.manager.threads.items(), ctx.bot.manager.bots.values()):
-            assert isinstance(thread, threading.Thread)
-            if thread.is_alive():
-                items.append((thread_id, "Alive", len(bot.servers), len(list(bot.get_all_members()))))
-            else:
-                items.append((thread_id, "Dead", 0, 0))
+        for bot_id, bot in ctx.bot.manager.bots.items():
+            items.append((bot_id, len(bot.servers), sum(1 for i in bot.get_all_members())))
 
         tbl = tabulate.tabulate(items, headers, tablefmt="orgtbl")
         await ctx.bot.say("```{}```".format(tbl))
@@ -112,12 +120,14 @@ class Core(Cog):
         Kills a bot, by forcing it to logout.
         """
         bot = ctx.bot.manager.bots.get(shard_id)
-        loop = bot.loop
+        if not bot:
+            await ctx.bot.say(":x: That shard does not exist.")
 
-        await ctx.bot.type()
-
-        fut = asyncio.run_coroutine_threadsafe(bot.logout(), loop)
         await ctx.bot.say(":heavy_check_mark: Rebooting shard `{}`.".format(shard_id))
+        if isinstance(ctx.bot.manager, ThreadManager):
+            asyncio.run_coroutine_threadsafe(bot.logout(), bot.loop)
+        else:
+            bot.loop.create_task(bot.logout())
 
     @shards.command(pass_context=True)
     @commands.check(is_owner)
@@ -130,16 +140,19 @@ class Core(Cog):
         await ctx.bot.say(":hourglass: Scheduling a reboot for all shards...")
         # This injects the task into the shards WITHOUT yielding to the event loop.
         for shard in ctx.bot.manager.bots.values():
-            asyncio.run_coroutine_threadsafe(shard.logout(), shard.loop)
+            if isinstance(ctx.bot.manager, ThreadManager):
+                asyncio.run_coroutine_threadsafe(shard.logout(), shard.loop)
+            elif isinstance(ctx.bot.manager, SingleLoopManager):
+                shard.loop.create_task(shard.logout())
 
         # Now we yield to the loop, and let it kill us.
         await asyncio.sleep(0)
 
     @commands.command(pass_context=True)
     @commands.check(is_owner)
-    async def reloadall(self, ctx):
+    async def reloadshard(self, ctx):
         """
-        Reloads all modules.
+        Reloads all modules for a shard.
         """
         # Reload the config file so that all cogs are ready.
         ctx.bot.manager.reload_config_file()
@@ -155,6 +168,27 @@ class Core(Cog):
                 ctx.bot.logger.info("Reloaded {}.".format(extension))
 
         await ctx.bot.say(":heavy_check_mark: Reloaded shard.")
+
+    @commands.command(pass_context=True)
+    @commands.check(is_owner)
+    async def reloadall(self, ctx: Context):
+        """
+        Reloads all the modules for every shard.
+        """
+        # Reload the config file.
+        ctx.bot.manager.reload_config_file()
+
+        for shard in ctx.bot.manager.bots.copy().values():
+            for extension in shard.extensions.copy():
+                shard.unload_extension(extension)
+                try:
+                    shard.load_extension(extension)
+                except BaseException as e:
+                    shard.logger.exception()
+                else:
+                    shard.logger.info("Reloaded {}.".format(extension))
+
+            await ctx.bot.say(":heavy_check_mark: Reloaded shard `{}`.".format(shard.shard_id))
 
     @commands.command()
     async def test(self):

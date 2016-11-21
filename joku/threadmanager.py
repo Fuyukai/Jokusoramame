@@ -29,7 +29,7 @@ class ManagerLocal(threading.local):
     bot = None
 
 
-class Manager(object):
+class ThreadManager(object):
     def __init__(self):
         self.threads = {}
 

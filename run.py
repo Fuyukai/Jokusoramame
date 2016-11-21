@@ -1,10 +1,10 @@
-from joku.threadmanager import Manager
+from joku.manager import SingleLoopManager
 
 
 def main():
     # Create a new thread Manager.
-    m = Manager()
-    m.start_all()
+    m = SingleLoopManager()
+    m.run()
 
 
 if __name__ == "__main__":

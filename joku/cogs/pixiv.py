@@ -21,9 +21,9 @@ class Pixiv(Cog):
         super().__init__(bot)
 
         # This is the authentciated API.
-        self.local.pixiv = aiopixiv.PixivAPIv5()
+        self.pixiv = aiopixiv.PixivAPIv5()
 
-        self.local.sess = aiohttp.ClientSession(loop=asyncio.get_event_loop())
+        self.sess = aiohttp.ClientSession(loop=asyncio.get_event_loop())
 
     @commands.group(pass_context=True)
     async def pixiv(self, ctx: Context):
@@ -37,9 +37,9 @@ class Pixiv(Cog):
         Searches Pixiv using the specified tag.
         """
         await ctx.bot.type()
-        if not self.local.pixiv.access_token:
-            await self.local.pixiv.login(**ctx.bot.config.get("pixiv", {}))
-        data = await self.local.pixiv.search_works(tag, per_page=100)
+        if not self.pixiv.access_token:
+            await self.pixiv.login(**ctx.bot.config.get("pixiv", {}))
+        data = await self.pixiv.search_works(tag, per_page=100)
 
         if data.get("status") == "failure":
             await ctx.bot.say(":x: Failed to download from pixiv.")
@@ -69,7 +69,7 @@ class Pixiv(Cog):
             "score": item["stats"]["score"]
         }
 
-        image_data = await self.local.pixiv.download_pixiv_image(obb["image"])
+        image_data = await self.pixiv.download_pixiv_image(obb["image"])
         # Upload to catbox.moe, because pixiv sucks
         fobj = BytesIO(image_data)
 
@@ -81,7 +81,7 @@ class Pixiv(Cog):
             filename="upload.png"
         )
 
-        async with self.local.sess.post("https://catbox.moe/user/api.php", data=data) as r:
+        async with self.sess.post("https://catbox.moe/user/api.php", data=data) as r:
             if r.status != 200:
                 await ctx.bot.say(":x: An error occurred.")
                 ctx.bot.logger.error(await r.text())
