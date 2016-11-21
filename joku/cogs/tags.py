@@ -1,16 +1,18 @@
 """
 Generic tag bot, yay.
 """
+import asyncio
 import shlex
 
 import traceback
+from concurrent.futures import ProcessPoolExecutor
 
 import discord
 from discord.ext import commands
 from discord.ext.commands import CommandError, CommandNotFound, CommandInvokeError
 from jinja2.sandbox import SandboxedEnvironment
 
-from joku.bot import Jokusoramame
+from joku.bot import Jokusoramame, Context
 
 # Import a few modules, for usage inside the renderer.
 import random
@@ -23,19 +25,13 @@ from joku.cogs._common import Cog
 class Tags(Cog):
     def __init__(self, bot: Jokusoramame):
         super().__init__(bot)
+        self._executor = ProcessPoolExecutor()
 
-        # Create the Jinja2 environment.
-        self.template_env = SandboxedEnvironment()
-        self.template_env.globals.update({
-            "random": random,
-            "string": string,
-            "base64": base64,
-            "list": list,
-            "tuple": tuple,
-            "dict": dict
-        })
+    def __del__(self):
+        self._executor.shutdown(wait=False)
 
-    @commands.group(pass_context=True, invoke_without_command=True)
+    @commands.group(pass_context=True, invoke_without_command=True,
+                    aliases=["tags"])
     async def tag(self, ctx, *, name: str):
         """
         Tags are like aliases or autoresponses that can be added to the bot.
@@ -63,7 +59,7 @@ class Tags(Cog):
                           "**Last modified:** `{lm}`\n"
                           "**Value:** `{content}`".format(**tmp))
 
-    @tag.command(pass_context=True)
+    @tag.command(pass_context=True, aliases=["list"])
     async def all(self, ctx):
         """
         Shows all the tags for the current server
@@ -105,7 +101,7 @@ class Tags(Cog):
         await ctx.bot.rethinkdb.save_tag(ctx.message.server, name, content, owner=owner_id)
         await ctx.bot.say(":heavy_check_mark: Tag **{}** saved.".format(name))
 
-    @tag.command(pass_context=True)
+    @tag.command(pass_context=True, aliases=["remove"])
     async def delete(self, ctx, *, name: str):
         """
         Deletes a tag.
@@ -128,10 +124,30 @@ class Tags(Cog):
         await ctx.bot.rethinkdb.delete_tag(ctx.message.server, name)
         await ctx.bot.say(":skull_and_crossbones: Tag deleted.")
 
+    @staticmethod
+    def _render_template(content: str, params: dict):
+        """
+        Renders a template inside a the ProcessPoolExecutor.
+
+        :param content: The content of the template to render.
+        """
+        template_env = SandboxedEnvironment()
+        template_env.globals.update({
+            "random": random,
+            "string": string,
+            "base64": base64,
+            "list": list,
+            "tuple": tuple,
+            "dict": dict
+        })
+
+        tmpl = template_env.from_string(content)
+        return tmpl.render(**params)
+
     # Unlike other bots, tags are registered like full commands.
     # So, they're entirely handled inside on_command_error.
     # This will catch the CommandNotFound, and try and find the tag.
-    async def on_command_error(self, exc: CommandError, ctx):
+    async def on_command_error(self, exc: CommandError, ctx: Context):
         if not isinstance(exc, CommandNotFound):
             # We don't want to catch any non-command not found errors.
             return
@@ -163,13 +179,15 @@ class Tags(Cog):
 
         # Render the template, using the args.
         try:
-            templ = self.template_env.from_string(content)
-            rendered = templ.render(**args)
+            coro = ctx.bot.loop.run_in_executor(self._executor, self._render_template,
+                                                content, args)
+            coro = asyncio.wait_for(coro, timeout=5)
+            rendered = await coro
+        except asyncio.CancelledError as e:
+            rendered = "**Timed out waiting for template to render.**"
         except Exception as e:
-            traceback.print_exc()
+            traceback.print_exception(type(e), e, e.__traceback__)
             rendered = "**Error when compiling template:**\n`{}`".format(e)
-            await ctx.bot.send_message(ctx.message.channel, rendered)
-            return
 
         try:
             await ctx.bot.send_message(ctx.message.channel, rendered)
