@@ -268,30 +268,6 @@ class Core(Cog):
         await ctx.bot.say("**To invite the bot to your server, use this link: {}**".format(invite))
 
     @commands.command(pass_context=True)
-    async def stats(self, ctx):
-        """
-        Shows stats about the bot.
-        """
-        current_process = psutil.Process()
-
-        tmp = {
-            "shards": ctx.bot.manager.max_shards,
-            "servers": sum(1 for _ in ctx.bot.manager.get_all_servers()),
-            "members": sum(1 for _ in ctx.bot.manager.get_all_members()),
-            "unique_members": ctx.bot.manager.unique_member_count,
-            "channels": sum(1 for _ in ctx.bot.manager.get_all_channels()),
-            "shard": ctx.bot.shard_id,
-            "memory": (current_process.memory_info().rss / 1024 // 1024)
-        }
-
-        await ctx.bot.say("Currently connected to `{servers}` servers, "
-                          "with `{channels}` channels "
-                          "and `{members}` members (`{unique_members}` unique) "
-                          "across `{shards}` shards.\n"
-                          "Currently using **{memory}MB** of memory\n\n"
-                          "This is shard ID **{shard}**.".format(**tmp))
-
-    @commands.command(pass_context=True)
     async def help(self, ctx, *, command: str = None):
         """
         Help command.
