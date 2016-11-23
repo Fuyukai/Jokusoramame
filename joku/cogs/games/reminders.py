@@ -20,6 +20,7 @@ from parsedatetime import Calendar
 from joku import checks
 from joku.bot import Jokusoramame, Context
 from joku.cogs._common import Cog
+from joku.manager import SingleLoopManager
 from joku.utils import paginate_table
 
 
@@ -89,6 +90,14 @@ class Reminders(Cog):
         return i
 
     async def ready(self):
+        # Check if we're using a shared state and need to only run on shard 0.
+        if isinstance(self.bot.manager, SingleLoopManager):
+            # Because we're running on a single loop, we share the servers between shards.
+            # As such, this task only runs on one shard.
+            # Otherwise, it will spam the user with N messages (where N is number of shards).
+            if not self.bot.shard_id == 0:
+                return
+
         # Don't do anything if the DB task already exists.
         if self._is_running_reminders:
             return
