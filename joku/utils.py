@@ -3,8 +3,22 @@ Common utilities shared across the bot.
 """
 import typing
 
+import discord
 import tabulate
 import numpy as np
+
+
+def calculate_server_shard(server: discord.Server, shard_count: int) -> int:
+    """
+    Calculates the shard that this server will run on with ``shard_count`` shards.
+
+    :param server: The server to check.
+    :param shard_count: The number of shards to calculate with.
+    """
+    if shard_count == 1:
+        return 0
+
+    return (server.id >> 22) % shard_count
 
 
 def reject_outliers(data, m=2):
