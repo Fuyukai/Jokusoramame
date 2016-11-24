@@ -195,10 +195,9 @@ class Levelling(Cog):
             await ctx.bot.say(":no_entry_sign: **Bots cannot have XP.**")
             return
 
-        level = await ctx.bot.rethinkdb.get_level(user)
         xp = await ctx.bot.rethinkdb.get_user_xp(user)
 
-        exp_required = get_next_exp_required(xp)[1]
+        level, exp_required = get_next_exp_required(xp)
 
         await ctx.bot.say("**{}** needs `{}` XP to advance to level `{}`.".format(user.name, exp_required,
                                                                                   level + 1))
