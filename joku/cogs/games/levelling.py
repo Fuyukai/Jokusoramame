@@ -16,6 +16,7 @@ mpl.use('Agg')
 
 import matplotlib.pyplot as plt
 import numpy as np
+from numpy.polynomial import Polynomial as P
 
 from joku.bot import Jokusoramame, Context
 from joku.cogs._common import Cog
@@ -23,27 +24,51 @@ from joku.utils import paginate_table, reject_outliers
 
 INCREASING_FACTOR = 50
 
-# Generate levels.
-levels = []
-current_factor = 50
-for x in range(0, 1000000):
-    levels.append(current_factor)
-    current_factor += INCREASING_FACTOR + (x * INCREASING_FACTOR)
+
+def get_level_from_exp(xp: int, a: int = INCREASING_FACTOR) -> int:
+    """
+    Gets the level from the experience number.
+
+    U(n) = a* (n*(n+1)  / 2), a ∈ ℝ, a > 0
+    :param a: The levelling up constant.
+    :param xp: The XP this user currently has.
+    """
+    # Make sure XP is below INCREASING_FACTOR.
+    if xp < a:
+        # Level 1
+        return 1
+
+    # The equation that we need to solve is (a/2)n**2 + (a/2)n - xp = 0.
+    # So we get numpy to find our roots.
+    ab = a / 2
+    # C, B, A
+    to_solve = [-xp, ab, ab]
+    poly = P(to_solve)
+
+    # Positive root + 1
+    root = poly.roots()[1] + 1
+    return int(floor(root))
 
 
-def get_level_from_exp(exp: int):
-    # I don't get it but ok
-    if exp < 50:
-        return 0
-    return floor(-0.5 + ((-4375 + 100 * exp) ** 0.5) / 50) + 1
+def get_next_exp_required(xp: int, a: int = INCREASING_FACTOR):
+    """
+    Gets the EXP required for the next level, based on the current EXP.
 
+    :param a: The levelling up constant.
+    :param xp: The XP this user currently has.
+    :return: The amount of XP required for the next level, and the current level.
+    """
+    # No complxes
+    if xp < a:
+        return 1, a - xp
 
-def get_next_level(exp: int):
-    if exp < 50:
-        return 0, 50 - exp
+    # Solve the current level.
+    current_level = get_level_from_exp(xp, a)
 
-    l = ceil(-0.5 + ((-4375 + 100 * exp) ** 0.5) / 50) + 1
-    return l, levels[l - 1] - exp
+    # Substitute in (n+1) to a* (n*(n+1)  / 2), where n == current_level
+    exp_required = int(a * ((current_level + 1) * (current_level + 2) / 2))
+
+    return current_level, exp_required - xp
 
 
 class Levelling(Cog):
@@ -173,7 +198,7 @@ class Levelling(Cog):
         level = await ctx.bot.rethinkdb.get_level(user)
         xp = await ctx.bot.rethinkdb.get_user_xp(user)
 
-        exp_required = get_next_level(xp)[1]
+        exp_required = get_next_exp_required(xp)[1]
 
         await ctx.bot.say("**{}** needs `{}` XP to advance to level `{}`.".format(user.name, exp_required,
                                                                                   level + 1))
