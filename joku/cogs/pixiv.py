@@ -62,7 +62,7 @@ class Pixiv(Cog):
         embed.url = "http://www.pixiv.net/member_illust.php?mode=medium&illust_id={}".format(item["id"])
         embed.set_author(name=item["user"]["name"],
                          url="http://www.pixiv.net/member.php?id={}".format(item["user"]["id"]))
-        embed.set_image(url=file_url, height=360, width=480)
+        embed.set_image(url=file_url)
         # Parse the timestamp from the data.
         timestamp = parse(item["created_time"])
         embed.timestamp = timestamp
