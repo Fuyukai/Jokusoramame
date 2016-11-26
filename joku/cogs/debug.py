@@ -6,6 +6,8 @@ import pprint
 import traceback
 import asyncio
 
+import sys
+
 import rethinkdb as r
 
 import discord
@@ -32,7 +34,8 @@ class Debug(Cog):
                 "r": r, "asyncio": asyncio,
                 "member": ctx.message.author, "message": ctx.message,
                 "server": ctx.message.server, "channel": ctx.message.channel,
-                "bot": ctx.bot, "self": self
+                "bot": ctx.bot, "self": self, "ctx": ctx,
+                **sys.modules
                 })
             if inspect.isawaitable(d):
                 d = await d
