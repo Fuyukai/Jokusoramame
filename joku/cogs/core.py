@@ -187,6 +187,7 @@ class Core(Cog):
         ctx.bot.manager.reload_config_file()
 
         for shard in ctx.bot.manager.bots.copy().values():
+            shard.extra_events = {}
             for extension in shard.extensions.copy():
                 shard.unload_extension(extension)
                 try:
