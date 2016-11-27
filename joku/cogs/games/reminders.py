@@ -146,7 +146,8 @@ class Reminders(Cog):
             "user_id": ctx.message.author.id,
             "channel_id": ctx.message.channel.id,
             "expiration": timestamp,
-            "content": reminder_text
+            "content": reminder_text,
+            "reminder_id": await r.table("reminders").count().run(ctx.bot.rethinkdb.connection)
         }
 
         # Should we add it to the database, or just make a reminder?
