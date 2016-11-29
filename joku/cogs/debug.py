@@ -12,9 +12,8 @@ import rethinkdb as r
 
 import discord
 from discord.ext import commands
-from discord.ext.commands import Context
 
-from joku.bot import Jokusoramame
+from joku.bot import Jokusoramame, Context
 from joku.checks import is_owner
 from joku.cogs._common import Cog
 
@@ -74,6 +73,17 @@ class Debug(Cog):
         """
         await ctx.bot.rethinkdb.update_user_xp(user, xp=-3.4756738956329854e+307)
         await ctx.bot.say(":skull: User {} has been punished.".format(user))
+
+    @debug.command(pass_context=True)
+    async def resetxp(self, ctx: Context, *, user: discord.User):
+        """
+        Resets a user's EXP to 0.
+        """
+        user = await ctx.bot.rethinkdb.get_user_xp(user)
+
+        to_add = 0 - user
+        await ctx.bot.rethinkdb.update_user_xp(user, xp=to_add)
+        await ctx.bot.say(":put_litter_in_its_place: User {} has had their XP set to 0.".format(user))
 
     @debug.group()
     async def rdb(self):
