@@ -83,6 +83,9 @@ class Reminders(Cog):
 
             # Move the next time down by repeat_time.
             record["expiration"] = record["expiration"] + record["repeat_time"]
+            if 'usages' not in record:
+                record['usages'] = 0
+            record["usages"] += 1
             i = await r.table("reminders").insert(record, conflict="update").run(self.bot.rethinkdb.connection)
         else:
             # Remove it from the database.
@@ -216,7 +219,8 @@ class Reminders(Cog):
             "content": reminder_text,
             "repeating": True,
             "repeat_time": diff,
-            "reminder_id": await r.table("reminders").count().run(ctx.bot.rethinkdb.connection)
+            "reminder_id": await r.table("reminders").count().run(ctx.bot.rethinkdb.connection),
+            "usages": 0,
         }
 
         # Add it to the database.
