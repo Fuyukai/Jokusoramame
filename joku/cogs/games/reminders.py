@@ -255,7 +255,7 @@ class Reminders(Cog):
         """
         Shows your current reminders, and where they are.
         """
-        headers = ["ID", "Time", "Content", "Where", "Repeating"]
+        headers = ["ID", "Time", "Content", "Where", "Repeating", "Usages"]
         items = []
 
         reminders = await r.table("reminders") \
@@ -274,6 +274,7 @@ class Reminders(Cog):
 
             repeats = record.get("repeating", False)
             reminder_id = record.get("reminder_id", "??")
+            usages = record.get("usages", 0)
 
             # Resolve the channel and server.
             channel = ctx.bot.manager.get_channel(record["channel_id"])
@@ -287,7 +288,7 @@ class Reminders(Cog):
 
             fmt = dt.strftime("%Y-%m-%dT%H:%M:%S")
 
-            row = [reminder_id, fmt, content, name, str(repeats)]
+            row = [reminder_id, fmt, content, name, str(repeats), usages]
             items.append(row)
 
         pages = paginate_table(items, headers)
