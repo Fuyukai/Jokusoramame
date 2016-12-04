@@ -93,3 +93,5 @@ ENV/
 config.yml
 rethinkdb_data/
 .idea/
+
+.atom-build.yml
