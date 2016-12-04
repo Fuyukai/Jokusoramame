@@ -10,6 +10,7 @@ from discord.ext import commands
 
 from joku.bot import Context
 from joku.cogs._common import Cog
+from joku import checks
 
 
 class Moderation(Cog):
@@ -18,6 +19,8 @@ class Moderation(Cog):
     """
 
     @commands.command(pass_context=True)
+    @commands.cooldown(rate=1, per=5*60, type=commands.BucketType.server)
+    @checks.has_permissions(kick_members=True)
     async def islandbot(self, ctx: Context):
         """
         Who will be voted off of the island?
