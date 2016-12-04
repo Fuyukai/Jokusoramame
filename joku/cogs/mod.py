@@ -116,6 +116,10 @@ class Moderation(Cog):
             await ctx.bot.send_message(winner[0], "You have been voted off the island.")
         except discord.HTTPException:
             pass
-        await ctx.bot.kick(winner[0])
+
+        try:
+            await ctx.bot.kick(winner[0])
+        except discord.HTTPException:
+            await ctx.bot.send_message(channel, "The island is rigged")
 
 setup = Moderation.setup
