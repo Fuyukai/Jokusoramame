@@ -20,6 +20,8 @@ class Cog(metaclass=_CogMeta):
     def __init__(self, bot: Jokusoramame):
         self._bot = bot
 
+        self.logger = self.bot.logger
+
     @property
     def bot(self) -> 'Jokusoramame':
         """
