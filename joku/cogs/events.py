@@ -27,7 +27,7 @@ class Events(Cog):
     def __init__(self, bot):
         super().__init__(bot)
 
-        self.gw_logger = logbook.Logger("discord.gateway")
+        self.gw_logger = logbook.Logger("discord.gateway:shard-{}".format(self.bot.shard_id))
 
     @commands.group(pass_context=True, invoke_without_command=True)
     async def events(self, ctx: Context):
