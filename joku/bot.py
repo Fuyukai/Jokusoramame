@@ -225,7 +225,8 @@ class Jokusoramame(Bot):
             await asyncio.sleep(300)
 
     async def on_message(self, message):
-        self.logger.info("Recieved message: {message.content} from {message.author.display_name}{bot}"
+        self.logger.info("Recieved message: {message.content} "
+                         "from {message.author.display_name} ({message.author.name}){bot}"
                          .format(message=message, bot=" [BOT]" if message.author.bot else ""))
         self.logger.info(" On channel: #{message.channel.name}".format(message=message))
 
