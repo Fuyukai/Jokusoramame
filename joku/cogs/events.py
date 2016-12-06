@@ -6,6 +6,7 @@ from math import floor
 
 import discord
 import time
+import logbook
 
 import rethinkdb as r
 from discord.ext import commands
@@ -23,6 +24,11 @@ unknown_events = {
 
 
 class Events(Cog):
+    def __init__(self, bot):
+        super().__init__(bot)
+
+        self.gw_logger = logbook.Logger("discord.gateway")
+
     @commands.group(pass_context=True, invoke_without_command=True)
     async def events(self, ctx: Context):
         """
@@ -78,6 +84,8 @@ class Events(Cog):
             event = unknown_events.get(data.get("op"))
             if not event:
                 self.bot.logger.warn("Caught None-event: `{}`".format(event))
+
+        self.gw_logger.info("[{}] {}".format(event, data.get("d", {})))
 
         if event == "PRESENCE_UPDATE":
             # Manually format this event here.
