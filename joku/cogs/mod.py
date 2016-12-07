@@ -125,4 +125,29 @@ class Moderation(Cog):
         except discord.HTTPException:
             await ctx.bot.send_message(channel, "The island is rigged")
 
+    @commands.command(pass_context=True)
+    @checks.has_permissions(manage_nicknames=True)
+    async def massnick(self, ctx: Context, prefix: str="", suffix: str=""):
+        """
+        Mass-nicknames an entire server.
+        """
+        coros = []
+
+        for member in ctx.message.server.members:
+            coros.append(ctx.bot.change_nickname(member, prefix + member.name + suffix))
+
+        fut = asyncio.gather(*coros, return_exceptions=True, loop=ctx.bot.loop)
+
+        while not fut.done():
+            await self.bot.type()
+            await asyncio.sleep(5)
+
+        count = sum(1 for i in fut.result() if not isinstance(i, Exception))
+        failed = ctx.message.server.member_count - count
+
+        await ctx.bot.say(
+            ":heavy_check_mark: Updated `{}` nicknames - failed to change `{}` nicknames.".format(count, failed)
+        )
+
+
 setup = Moderation.setup
