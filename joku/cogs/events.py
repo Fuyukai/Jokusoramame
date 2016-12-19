@@ -18,6 +18,7 @@ from joku.cogs._common import Cog
 
 unknown_events = {
     11: "HEARTBEAT_ACK",
+    10: "READY",
     9: "INVALIDATE_SESSION",
     7: "RECONNECT"
 }
