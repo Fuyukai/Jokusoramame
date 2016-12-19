@@ -50,9 +50,9 @@ class Events(Cog):
         message = await ctx.bot.say(":hourglass: Loading events... (this may take some time!)")
         time_before = time.time()
         # This abuses RethinkDB to count the events.
-        q = await r.table("events")\
-            .group("t")\
-            .count()\
+        q = await r.table("events") \
+            .group("t") \
+            .count() \
             .run(ctx.bot.rdblog.connection)
 
         # Get a list of events.
@@ -85,7 +85,7 @@ class Events(Cog):
             if not event:
                 self.bot.logger.warn("Caught None-event: `{}`".format(event))
 
-        self.gw_logger.info("[{}] {}".format(event, data.get("d", {})))
+        # self.gw_logger.info("[{}] {}".format(event, data.get("d", {})))
 
         if event == "PRESENCE_UPDATE":
             # Manually format this event here.

@@ -20,7 +20,7 @@ class RethinkAdapter(object):
     """
 
     def __init__(self, bot):
-        self.connection = None
+        self.connection = None  # type: r.Connection
 
         self.bot = bot
         self.logger = bot.logger  # type: logbook.Logger

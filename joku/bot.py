@@ -286,6 +286,8 @@ class Jokusoramame(Bot):
                 self.ws = await DiscordWebSocket.from_client(self, resume=resume)
             except discord.ConnectionClosed as e:
                 await self.close()
+                await self.rethinkdb.connection.close()
+                await self.rdblog.connection.close()
                 if e.code != 1000:
                     raise
 

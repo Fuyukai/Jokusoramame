@@ -199,10 +199,6 @@ class Core(Cog):
 
             await ctx.bot.say(":heavy_check_mark: Reloaded shard `{}`.".format(shard.shard_id))
 
-    @commands.command()
-    async def test(self):
-        await self.bot.say("aaa")
-
     @commands.command(pass_context=True)
     @commands.check(is_owner)
     async def changename(self, ctx: Context, *, name: str):
@@ -309,6 +305,32 @@ class Core(Cog):
         else:
             # Use the default help command.
             await _default_help_command(ctx, *command.split(" "))
+
+    def _get_uptime_text(self, start_time: int) -> str:
+        # copied from robo danno
+        now = datetime.datetime.utcnow()
+        delta = now - datetime.datetime.fromtimestamp(start_time)
+        hours, remainder = divmod(int(delta.total_seconds()), 3600)
+        minutes, seconds = divmod(remainder, 60)
+        days, hours = divmod(hours, 24)
+        fmt = '{h}h {m}m {s}s'
+        if days:
+            fmt = '{d}d ' + fmt
+
+        return fmt.format(d=days, h=hours, m=minutes, s=seconds)
+
+    @commands.command(pass_context=True)
+    async def uptime(self, ctx: Context):
+        """
+        Shows the bot's uptime.
+        """
+
+        em = discord.Embed(title="Uptime statistics")
+
+        em.add_field(name="Bot Uptime", value=self._get_uptime_text(ctx.bot.manager.start_time))
+        em.add_field(name="Shard Uptime", value=self._get_uptime_text(ctx.bot.startup_time))
+
+        await ctx.bot.say(embed=em)
 
 
 def setup(bot: Jokusoramame):

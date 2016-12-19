@@ -6,6 +6,8 @@ import collections
 import aiohttp
 import discord
 import functools
+
+import time
 from discord.http import HTTPClient
 from discord.state import ConnectionState
 from logbook import Logger
@@ -66,6 +68,8 @@ class SingleLoopManager(object):
         self.config = {}
 
         self.events = collections.Counter()
+
+        self.start_time = time.time()
 
     def __del__(self):
         asyncio.get_event_loop().set_exception_handler(lambda *args, **kwargs: None)
