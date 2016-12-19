@@ -72,7 +72,7 @@ class Debug(Cog):
             await ctx.bot.say(embed=sem)
 
         if stderr:
-            rem = discord.Embed(description="```\n" + stderr.decode() + "\n```")
+            rem = discord.Embed(title="stderr", description="```\n" + stderr.decode() + "\n```")
             await ctx.bot.say(embed=rem)
 
     @debug.command(pass_context=True)
