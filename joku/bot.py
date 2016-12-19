@@ -10,6 +10,7 @@ import time
 import random
 
 import discord
+import itertools
 import logbook
 import logging
 
@@ -112,13 +113,11 @@ class Jokusoramame(Bot):
         return ["j" + s for s in "!?^&$}#~:"]
 
     async def rotate_game_text(self):
-        while True:
+        for i in itertools.cycle(self.config.get("game_rotation", [])):
             await self.change_presence(
-                game=discord.Game(name="[Shard {}/{}] {} Servers".format(
-                    self.shard_id + 1, self.shard_count, len(self.servers)
-                )), status=discord.Status.online
+                game=discord.Game(name=i), status=discord.Status.online
             )
-            await asyncio.sleep(60)
+            await asyncio.sleep(15)
 
     async def on_command_error(self, exception, context):
         """
@@ -219,6 +218,9 @@ class Jokusoramame(Bot):
         await super().on_message(message)
 
     async def on_message_edit(self, before: discord.Message, message: discord.Message):
+        if before.content == message.content:
+            pass
+
         await self.on_message(message)
 
     def run(self):

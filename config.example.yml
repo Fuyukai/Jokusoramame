@@ -24,5 +24,6 @@ redis:
 # If it is, the bot will be booted in non-sharded mode, beware!
 developer_mode: false
 
-# Should the bot cycle avatars?
-cycle_avatars: true
+# The game text rotation.
+game_rotation:
+  - "Type j!help for help!"
