@@ -165,7 +165,7 @@ class Events(Cog):
         })
         await self.bot.send_message(channel, msg)
 
-    async def on_member_unban(self, server: discord.Server, member: discord.Member):
+    async def on_member_unban(self, server: discord.Server, member: discord.User):
         obb = {
             "t": "GUILD_BAN_REMOVE",
             "member_id": member.id,

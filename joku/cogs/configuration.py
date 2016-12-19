@@ -25,7 +25,8 @@ class Config(Cog):
     VALID_EVENTS = (
         "joins",
         "leaves",
-        "bans",  # implies unbans too
+        "bans",
+        "unbans",
     )
 
     @commands.group(pass_context=True, invoke_without_command=True)
