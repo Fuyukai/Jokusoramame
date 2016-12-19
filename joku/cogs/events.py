@@ -83,7 +83,7 @@ class Events(Cog):
         if not event:
             event = unknown_events.get(data.get("op"))
             if not event:
-                self.bot.logger.warn("Caught None-event: `{}`".format(event))
+                self.bot.logger.warn("Caught None-event: `{}` ({})".format(event, data))
 
         # self.gw_logger.info("[{}] {}".format(event, data.get("d", {})))
 
