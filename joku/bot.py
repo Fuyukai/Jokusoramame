@@ -192,37 +192,9 @@ class Jokusoramame(Bot):
 
         self._rotator_task = self.loop.create_task(self.rotate_game_text())
 
-        if self.shard_id == 0:
-            # Start the avatar rotator.
-            if self._avatar_rotator is None:
-                self._avatar_rotator = self.loop.create_task(self._rotate_avatar())
-            else:
-                try:
-                    if self._avatar_rotator.done():
-                        # Get the exception and kill it.
-                        self._avatar_rotator.result()
-                except Exception:
-                    self.logger.exception()
-
         new_time = time.time() - self.startup_time
 
         self.logger.info("Bot ready in {} seconds.".format(new_time))
-
-    async def _rotate_avatar(self):
-        if not self.config.get("cycle_avatars", True):
-            return
-        while True:
-            # Pick a random avatar from the `avatars/` directory.
-            scanned = os.scandir("avatars/")
-            r = random.choice([_ for _ in scanned])
-            p = r.path
-            with open(p, 'rb') as f:
-                data = f.read()
-            # Set the avy.
-            await self.edit_profile(avatar=data)
-
-            # Sleep for 300 seconds.
-            await asyncio.sleep(300)
 
     async def on_message(self, message):
         self.logger.info("Recieved message: {message.content} "

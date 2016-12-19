@@ -207,8 +207,24 @@ class Core(Cog):
 
         This command is only usable by the owner.
         """
-        await self.bot.edit_profile(username=name)
-        await self.bot.say(":heavy_check_mark: Changed username.")
+        await ctx.bot.edit_profile(username=name)
+        await ctx.bot.say(":heavy_check_mark: Changed username.")
+
+    @commands.command(pass_context=True)
+    @commands.check(is_owner)
+    async def changeavy(self, ctx: Context, *, url: str):
+        """
+        Changes the current avatar of the bot.
+
+        This command is only usable by the owner.
+        """
+        async with aiohttp.ClientSession() as sess:
+            async with sess.get(url) as f:
+                body = await f.read()
+
+                await ctx.bot.edit_profile(avatar=body)
+
+        await ctx.bot.say(":heavy_check_mark: Changed avatar.")
 
     @commands.command(pass_context=True)
     async def info(self, ctx: Context):
