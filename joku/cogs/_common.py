@@ -12,11 +12,6 @@ class _CogMeta(type):
 
 
 class Cog(metaclass=_CogMeta):
-    """
-    A common class for all cogs. This makes the class body ordered, and provides a `local` which stores thread-local
-    data. This makes the cogs semi thread-safe.
-    """
-
     def __init__(self, bot: Jokusoramame):
         self._bot = bot
 
