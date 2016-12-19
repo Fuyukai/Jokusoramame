@@ -256,7 +256,7 @@ class RethinkAdapter(object):
 
         return d
 
-    async def get_user_currency(self, user: discord.User) -> dict:
+    async def get_user_currency(self, user: discord.User) -> int:
         """
         Gets the user's current currency.
         """
@@ -287,11 +287,12 @@ class RethinkAdapter(object):
 
         return d
 
-    async def get_setting(self, server: discord.Server, setting_name: str) -> dict:
+    async def get_setting(self, server: discord.Server, setting_name: str, default=None) -> dict:
         """
         Gets a setting from RethinkDB.
         :param server: The server to get the setting from.
         :param setting_name: The name to retrieve.
+        :param default: The default value.
         """
         d = await r.table("settings") \
             .get_all(server.id, index="server_id") \
@@ -302,7 +303,7 @@ class RethinkAdapter(object):
         # There should only be one, anyway.
         fetched = await d.fetch_next()
         if not fetched:
-            return None
+            return default
 
         i = await d.next()
         return i
