@@ -69,6 +69,23 @@ class Events(Cog):
                                                                                     floor(time_after - time_before)))
 
     @events.command(pass_context=True)
+    @commands.check(is_owner)
+    async def clean(self, ctx: Context):
+        """
+        Removes all PRESCENCE_UPDATE events from the log.
+
+        This can take multiple hours to clean.
+        """
+        await ctx.bot.say(":hourglass: Cleaning...")
+        coro = r.table("events") \
+            .filter({"t": "PRESCENCE_UPDATE"}) \
+            .delete() \
+            .run(ctx.bot.rdblog.connection)
+
+        await coro
+        await ctx.bot.say(":ok: Cleaned up.")
+
+    @events.command(pass_context=True)
     async def seq(self, ctx: Context):
         """
         Shows the current sequence number.
