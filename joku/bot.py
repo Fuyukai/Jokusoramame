@@ -234,6 +234,7 @@ class Jokusoramame(Bot):
         """
         if not content:
             return await super().send_message(destination, tts=tts, embed=embed)
+
         pages = paginate_large_message(content, use_codeblocks=use_codeblocks)
         messages = []
         for page in pages:
@@ -245,9 +246,6 @@ class Jokusoramame(Bot):
 
     async def connect(self):
         self.ws = await DiscordWebSocket.from_client(self)
-        # Send the CHANGE_PRESCENCE to DND.
-        await self.change_presence(game=discord.Game(name="Loading Jokusoramame.."),
-                                   status=discord.Status.do_not_disturb)
 
         while not self.is_closed:
             try:
