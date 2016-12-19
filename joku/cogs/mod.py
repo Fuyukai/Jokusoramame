@@ -26,9 +26,11 @@ class Moderation(Cog):
         # Rolestate
         setting = await self.bot.rethinkdb.get_setting(member.server, "rolestate", {})
         if setting.get("status") == 1:
-            roles = await self.bot.rethinkdb.get_rolestate_for_member(member)
+            roles, nick = await self.bot.rethinkdb.get_rolestate_for_member(member)
 
             await self.bot.add_roles(member, *roles)
+            if nick:
+                await self.bot.change_nickname(member, nick)
 
     @commands.command(pass_context=True)
     @commands.cooldown(rate=1, per=5 * 60, type=commands.BucketType.server)

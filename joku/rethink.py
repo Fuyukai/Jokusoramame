@@ -435,6 +435,7 @@ class RethinkAdapter(object):
             "server_id": member.server.id,
             "user_id": member.id,
             "roles": role_ids,
+            "user_nickname": member.nick,
             "saved_at": datetime.datetime.now(tz=pytz.timezone("UTC")),
         }
 
@@ -454,7 +455,8 @@ class RethinkAdapter(object):
             .insert(obb, return_changes=True, conflict="update") \
             .run(self.connection)
 
-    async def get_rolestate_for_member(self, member: discord.Member) -> typing.List[discord.Role]:
+    async def get_rolestate_for_member(self, member: discord.Member) \
+            -> typing.Tuple[typing.List[discord.Role], str]:
         """
         Gets the saved roles for a member.
 
@@ -465,15 +467,14 @@ class RethinkAdapter(object):
             .get_all(member.server.id, index="server_id") \
             .filter({"user_id": member.id}) \
             .limit(1) \
-            .get_field("roles") \
             .run(self.connection)
 
         try:
-            role_list = (await self.to_list(cursor))[0]
+            obb = (await self.to_list(cursor))[0]
         except IndexError:
-            return []
+            return [], ""
 
-        return [get_role(member.server, role_id) for role_id in role_list]
+        return [get_role(member.server, role_id) for role_id in obb["roles"]], obb["user_nickname"]
 
     # Internals
 
