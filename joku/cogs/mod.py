@@ -33,6 +33,27 @@ class Moderation(Cog):
                 await self.bot.change_nickname(member, nick)
 
     @commands.command(pass_context=True)
+    @checks.has_permissions(ban_members=True)
+    @commands.bot_has_permissions(ban_members=True)
+    async def xban(self, ctx: Context, user_id: str):
+        """
+        Cross-bans a user.
+        """
+        if user_id in [m.id for m in ctx.message.server.members]:
+            await ctx.bot.say(":x: This command is used for banning members not in the server.")
+            return
+
+        try:
+            user = await ctx.bot.get_user_info(user_id)
+            await ctx.bot.http.ban(user_id, ctx.message.server.id, 0)
+        except discord.Forbidden:
+            await ctx.bot.say(":x: 403 FORBIDDEN")
+        except discord.NotFound:
+            await ctx.bot.say(":x: User not found.")
+        else:
+            await ctx.bot.say(":heavy_check_mark: Banned user {}.".format(user.name))
+
+    @commands.command(pass_context=True)
     @commands.cooldown(rate=1, per=5 * 60, type=commands.BucketType.server)
     @checks.has_permissions(kick_members=True)
     async def islandbot(self, ctx: Context):
