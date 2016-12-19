@@ -277,7 +277,7 @@ class Core(Cog):
         await ctx.bot.say(embed=embed)
 
     @commands.command(pass_context=True)
-    async def source(self, ctx: Context, *, command: str):
+    async def source(self, ctx: Context, *, command: str=None):
         """
         Shows the source code for a specific command.
         """
@@ -308,7 +308,7 @@ class Core(Cog):
 
         # One of our commands.
         location = os.path.relpath(src.co_filename).replace('\\', '/')
-        final_url = '<{}/blob/master/{}#L{}-L{}>'.format(source_url, location, firstlineno,
+        final_url = '{}/blob/master/{}#L{}-L{}'.format(source_url, location, firstlineno,
                                                          firstlineno + len(lines) - 1)
         await ctx.bot.say(final_url)
 
