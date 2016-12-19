@@ -55,6 +55,22 @@ class Debug(Cog):
         """
 
     @debug.command(pass_context=True)
+    async def update(self, ctx: Context):
+        await ctx.bot.say("Pulling from Git...")
+
+        process = await asyncio.create_subprocess_exec("git", "pull", stdout=asyncio.subprocess.PIPE,
+                                                       stderr=asyncio.subprocess.PIPE)
+        (stdout, stderr) = await process.communicate()
+
+        if stdout:
+            sem = discord.Embed(title="stdout", description="```\n" + stdout.decode() + "\n```")
+            await ctx.bot.say(embed=sem)
+
+        if stderr:
+            rem = discord.Embed(description="```\n" + stderr.decode() + "\n```")
+            await ctx.bot.say(embed=rem)
+
+    @debug.command(pass_context=True)
     async def reload(self, ctx, module: str):
         try:
             ctx.bot.unload_extension(module)
@@ -81,7 +97,7 @@ class Debug(Cog):
         """
         user = await ctx.bot.rethinkdb.get_user_xp(user)
 
-        to_add = 0 - user
+        to_add = 0 - user["xp"]
         await ctx.bot.rethinkdb.update_user_xp(user, xp=to_add)
         await ctx.bot.say(":put_litter_in_its_place: User {} has had their XP set to 0.".format(user))
 
