@@ -8,6 +8,10 @@ import tabulate
 import numpy as np
 
 
+def get_role(server: discord.Server, role_id: str) -> discord.Role:
+    return discord.utils.get(server.roles, id=role_id)
+
+
 def calculate_server_shard(server: discord.Server, shard_count: int) -> int:
     """
     Calculates the shard that this server will run on with ``shard_count`` shards.

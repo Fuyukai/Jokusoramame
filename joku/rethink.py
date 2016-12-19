@@ -9,6 +9,8 @@ import discord
 import logbook
 import rethinkdb as r
 import pytz
+
+from joku.utils import get_role
 from rethinkdb.asyncio_net.net_asyncio import AsyncioCursor
 
 r.set_loop_type("asyncio")
@@ -420,6 +422,58 @@ class RethinkAdapter(object):
             .run(self.connection)
 
         return [i1, i2]
+
+    # Role state
+    async def save_rolestate(self, member: discord.Member):
+        """
+        Saves the rolestate for a specified member.
+        """
+        role_ids = [role.id for role in member.roles if role is not member.server.default_role
+                    and role.position < member.server.me.top_role.position]
+
+        obb = {
+            "server_id": member.server.id,
+            "user_id": member.id,
+            "roles": role_ids,
+            "saved_at": datetime.datetime.now(tz=pytz.timezone("UTC")),
+        }
+
+        # Get the existing ID to overwrite, if possible
+        cursor = await r.table("rolestate") \
+            .get_all(member.server.id, index="server_id") \
+            .filter({"user_id": member.id}) \
+            .limit(1) \
+            .get_field("id") \
+            .run(self.connection)
+
+        l = await self.to_list(cursor)
+        if l:
+            obb["id"] = l[0]
+
+        return await r.table("rolestate") \
+            .insert(obb, return_changes=True, conflict="update") \
+            .run(self.connection)
+
+    async def get_rolestate_for_member(self, member: discord.Member) -> typing.List[discord.Role]:
+        """
+        Gets the saved roles for a member.
+
+        :param member: The member to get the roles of.
+        :return: A list of roles that this member should have.
+        """
+        cursor = await r.table("rolestate") \
+            .get_all(member.server.id, index="server_id") \
+            .filter({"user_id": member.id}) \
+            .limit(1) \
+            .get_field("roles") \
+            .run(self.connection)
+
+        try:
+            role_list = (await self.to_list(cursor))[0]
+        except IndexError:
+            return []
+
+        return [get_role(member.server, role_id) for role_id in role_list]
 
     # Internals
 

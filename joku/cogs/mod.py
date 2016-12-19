@@ -18,8 +18,20 @@ class Moderation(Cog):
     Non-generic moderation cog.
     """
 
+    async def on_member_remove(self, member: discord.Member):
+        # Rolestate
+        await self.bot.rethinkdb.save_rolestate(member)
+
+    async def on_member_join(self, member: discord.Member):
+        # Rolestate
+        setting = await self.bot.rethinkdb.get_setting(member.server, "rolestate", {})
+        if setting.get("status") == 1:
+            roles = await self.bot.rethinkdb.get_rolestate_for_member(member)
+
+            await self.bot.add_roles(member, *roles)
+
     @commands.command(pass_context=True)
-    @commands.cooldown(rate=1, per=5*60, type=commands.BucketType.server)
+    @commands.cooldown(rate=1, per=5 * 60, type=commands.BucketType.server)
     @checks.has_permissions(kick_members=True)
     async def islandbot(self, ctx: Context):
         """
@@ -135,7 +147,7 @@ class Moderation(Cog):
 
     @commands.command(pass_context=True)
     @checks.has_permissions(manage_nicknames=True)
-    async def massnick(self, ctx: Context, prefix: str="", suffix: str=""):
+    async def massnick(self, ctx: Context, prefix: str = "", suffix: str = ""):
         """
         Mass-nicknames an entire server.
         """
