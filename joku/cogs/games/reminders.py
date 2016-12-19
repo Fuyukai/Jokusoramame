@@ -10,6 +10,7 @@ import asyncio
 
 import datetime
 
+import discord
 import tabulate
 from discord.ext import commands
 from math import ceil
@@ -150,7 +151,8 @@ class Reminders(Cog):
             "channel_id": ctx.message.channel.id,
             "expiration": timestamp,
             "content": reminder_text,
-            "reminder_id": await r.table("reminders").count().run(ctx.bot.rethinkdb.connection)
+            "reminder_id": (await r.table("reminders").get_all(ctx.message.author.id, index="user_id")
+                                  .count().run(ctx.bot.rethinkdb.connection)) + 1,
         }
 
         # Should we add it to the database, or just make a reminder?
@@ -219,7 +221,8 @@ class Reminders(Cog):
             "content": reminder_text,
             "repeating": True,
             "repeat_time": diff,
-            "reminder_id": await r.table("reminders").count().run(ctx.bot.rethinkdb.connection),
+            "reminder_id": (await r.table("reminders").get_all(ctx.message.author.id, index="user_id")
+                                  .count().run(ctx.bot.rethinkdb.connection)) + 1,
             "usages": 0,
         }
 
@@ -309,17 +312,22 @@ class Reminders(Cog):
             await ctx.bot.say(":x: This reminder does not exist.")
             return
 
+        reminder = reminder[0]
+
         if reminder.get("user_id") != ctx.message.author.id and \
                         ctx.message.author.id == ctx.bot.owner_id:
             await ctx.bot.say(":x: This reminder does not exist.")
             return
 
-        fmt = "**`{id}`:**\nChannel: {channel}\nContent: `{content}`".format(
-            id=reminder.get("reminder_id"), channel=reminder.get("channel_id"),
-            content=reminder.get("content")
-        )
+        channel = discord.utils.get(ctx.bot.get_all_channels(), id=reminder.get("channel_id"))
+        channel = channel.mention if channel else "<unknown>"
 
-        await ctx.bot.say(fmt)
+        em = discord.Embed(title="Reminder {}".format(reminder_id), description="```\n" + reminder.get("content") +
+                                                                                "```\n")
+        em.add_field(name="Channel", value=channel)
+        em.add_field(name="Repeating", value=reminder.get("repeating", False))
+
+        await ctx.bot.say(embed=em)
 
 
 def setup(bot):
