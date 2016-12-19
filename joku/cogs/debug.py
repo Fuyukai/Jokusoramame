@@ -56,6 +56,11 @@ class Debug(Cog):
 
     @debug.command(pass_context=True)
     async def update(self, ctx: Context):
+        """
+        Update the bot from git.
+
+        It is recommended to do a reloadall after this command.
+        """
         await ctx.bot.say("Pulling from Git...")
 
         process = await asyncio.create_subprocess_exec("git", "pull", stdout=asyncio.subprocess.PIPE,
