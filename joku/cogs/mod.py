@@ -66,6 +66,10 @@ class Moderation(Cog):
             chosen.append(r)
             authors.remove(r)
 
+        if not chosen:
+            await ctx.bot.say(":x: Nobody entered the raffle")
+            return
+
         fmt = ":island: These people are up for vote:\n\n{}\n\nMention to vote.".format(
             "\n".join(m.mention for m in chosen)
         )
@@ -112,7 +116,11 @@ class Moderation(Cog):
 
         # Count the votes.
         counted = collections.Counter(votes)
-        winner = counted.most_common()[0]
+        try:
+            winner = counted.most_common()[0]
+        except IndexError:
+            await ctx.bot.say(":bomb: Nobody voted")
+            return
 
         await ctx.bot.say(":medal: The winner is {}, with `{}` votes!".format(winner[0].mention, winner[1]))
         try:
