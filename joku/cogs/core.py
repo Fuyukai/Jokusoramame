@@ -3,6 +3,7 @@ Core commands.
 """
 import datetime
 import inspect
+import os
 import platform
 
 import aiohttp
@@ -274,6 +275,42 @@ class Core(Cog):
         embed.timestamp = datetime.datetime.utcnow()
 
         await ctx.bot.say(embed=embed)
+
+    @commands.command(pass_context=True)
+    async def source(self, ctx: Context, *, command: str):
+        """
+        Shows the source code for a specific command.
+        """
+        source_url = 'https://github.com/SunDwarf/Jokusoramame'
+        if command is None:
+            await self.bot.say(source_url)
+            return
+
+        # copied from robo danno
+        code_path = command.split(' ')
+        obj = ctx.bot
+        for cmd in code_path:
+            try:
+                obj = obj.get_command(cmd)
+                if obj is None:
+                    await ctx.bot.say(':x: No such command: `{}`'.format(cmd))
+                    return
+            except AttributeError:
+                await self.bot.say(':x: `{.name}` command has no subcommands'.format(obj))
+                return
+
+        # Get the code object from the callback
+        src = obj.callback.__code__
+        lines, firstlineno = inspect.getsourcelines(src)
+        if not obj.callback.__module__.startswith('joku'):
+            await ctx.bot.say(":x: Cannot get source for non-bot items.")
+            return
+
+        # One of our commands.
+        location = os.path.relpath(src.co_filename).replace('\\', '/')
+        final_url = '<{}/blob/master/{}#L{}-L{}>'.format(source_url, location, firstlineno,
+                                                         firstlineno + len(lines) - 1)
+        await ctx.bot.say(final_url)
 
     @commands.command(pass_context=True)
     async def invite(self, ctx):
