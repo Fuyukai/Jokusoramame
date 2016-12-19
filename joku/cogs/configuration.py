@@ -144,7 +144,7 @@ class Config(Cog):
         """
         if status is None:
             # Check the status.
-            setting = await ctx.bot.rethinkdb.get_setting(ctx.message.server, "dndcop")
+            setting = await ctx.bot.rethinkdb.get_setting(ctx.message.server, "dndcop", {})
             if setting.get("status") == 1:
                 await ctx.bot.say("Invis Cop is currently **on.**")
             else:
@@ -171,7 +171,7 @@ class Config(Cog):
         """
         if status is None:
             # Check the status.
-            setting = await ctx.bot.rethinkdb.get_setting(ctx.message.server, "rolestate")
+            setting = await ctx.bot.rethinkdb.get_setting(ctx.message.server, "rolestate", {})
             if setting.get("status") == 1:
                 await ctx.bot.say("Rolestate is currently **on.**")
             else:
