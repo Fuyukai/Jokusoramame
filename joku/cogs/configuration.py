@@ -162,6 +162,33 @@ class Config(Cog):
                 await ctx.bot.say(":x: No.")
 
     @commands.command(pass_context=True)
+    @has_permissions(manage_server=True, manage_roles=True)
+    async def rolestate(self, ctx: Context, *, status: str=None):
+        """
+        Manages rolestate.
+
+        This will automatically save roles for users who have left the server.
+        """
+        if status is None:
+            # Check the status.
+            setting = await ctx.bot.rethinkdb.get_setting(ctx.message.server, "rolestate")
+            if setting.get("status") == 1:
+                await ctx.bot.say("Rolestate is currently **on.**")
+            else:
+                await ctx.bot.say("Rolestate is currently **off.**")
+        else:
+            if status.lower() == "on":
+                await ctx.bot.rethinkdb.set_setting(ctx.message.server, "rolestate", status=1)
+                await ctx.bot.say(":heavy_check_mark: Turned Rolestate on.")
+                return
+            elif status.lower() == "off":
+                await ctx.bot.rethinkdb.set_setting(ctx.message.server, "rolestate", status=0)
+                await ctx.bot.say(":heavy_check_mark: Turned Rolestate off.")
+                return
+            else:
+                await ctx.bot.say(":x: No.")
+
+    @commands.command(pass_context=True)
     @has_permissions(manage_server=True, manage_channels=True)
     async def ignore(self, ctx: Context, *, args: str = None):
         """
