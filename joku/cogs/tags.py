@@ -46,18 +46,12 @@ class Tags(Cog):
 
         owner = ctx.bot.get_member(tag_obb["owner_id"])
 
-        tmp = {
-            "name": tag_obb["name"],
-            "owner": owner.name if owner else "<Unknown>",
-            "lm": tag_obb["last_modified"],
-            "content": tag_obb["content"]
-        }
+        em = discord.Embed(title=tag_obb["name"], description=tag_obb["content"])
+        em.add_field(name="Owner", value=owner.mention if owner else "<Unknown>")
+        em.add_field(name="Last Modified", value=tag_obb["last_modified"].isoformat())
 
         # Display the tag info.
-        await ctx.bot.say("**Tag name:** `{name}`\n"
-                          "**Owner:** `{owner}`\n"
-                          "**Last modified:** `{lm}`\n"
-                          "**Value:** `{content}`".format(**tmp))
+        await ctx.bot.say(embed=em)
 
     @tag.command(pass_context=True, aliases=["list"])
     async def all(self, ctx):
