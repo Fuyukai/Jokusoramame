@@ -104,7 +104,7 @@ class Levelling(Cog):
             ))
 
     @commands.group(pass_context=True, invoke_without_command=True)
-    async def level(self, ctx, *, target: discord.Member = None):
+    async def level(self, ctx: Context, *, target: discord.Member = None):
         """
         Shows the current level for somebody.
 
@@ -115,9 +115,16 @@ class Levelling(Cog):
             await ctx.bot.say(":no_entry_sign: **Bots cannot have XP.**")
             return
 
-        level = await ctx.bot.rethinkdb.get_level(user)
+        all_users = await ctx.bot.rethinkdb.get_multiple_users(*ctx.message.server.members, order_by=r.desc("xp"))
 
-        await ctx.bot.say("User **{}** is level `{}`.".format(user.name, level))
+        index, u = next(filter(lambda j: j[1]["user_id"] == user.id, enumerate(all_users)))
+
+        embed = discord.Embed(title=user.nick or user.name)
+        embed.add_field(name="Level", value=str(u["level"]))
+        embed.add_field(name="Rank", value="{} / {}".format(index + 1, len(all_users)))
+        embed.add_field(name="XP", value=str(u["xp"]))
+
+        await ctx.bot.say(embed=embed)
 
     @level.command(pass_context=True, aliases=["top"])
     async def leaderboard(self, ctx: Context, *, num: int = 10):
