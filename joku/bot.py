@@ -119,16 +119,30 @@ class Jokusoramame(Bot):
             )
             await asyncio.sleep(15)
 
-    async def on_command_error(self, exception, context):
+    async def on_command_error(self, exception, context: 'Context'):
         """
         Handles command errors.
         """
         if isinstance(exception, CommandInvokeError):
             # Regular error.
-            await self.send_message(context.message.channel, "\U0001f6ab An error has occurred and has been logged.")
+            await self.send_message(context.message.channel, "\U0001f6ab This kills the bot (An error has happened "
+                                                             "and has been logged.)")
             lines = traceback.format_exception(type(exception),
                                                exception.__cause__, exception.__cause__.__traceback__)
             self.logger.error(''.join(lines))
+
+            # Log to the error channel.
+            error_channel_id = str(self.config.get("log_channels", {}).get("error_channel", ""))
+            error_channel = self.manager.get_channel(error_channel_id)
+
+            if not error_channel:
+                self.logger.error("Could not find error channel!")
+            else:
+                fmt = "Server: {}\nChannel: {}\nCommand: {}\n\n{}".format(context.message.server.name,
+                                                                          context.message.channel.name,
+                                                                          context.invoked_with,
+                                                                          ''.join(lines))
+                await self.send_message(error_channel, fmt, use_codeblocks=True)
             return
 
         # Switch based on isinstance.

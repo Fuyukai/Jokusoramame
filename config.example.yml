@@ -27,3 +27,7 @@ developer_mode: false
 # The game text rotation.
 game_rotation:
   - "Type j!help for help!"
+
+# Log channel IDs.
+log_channels:
+  error_channel: 0
