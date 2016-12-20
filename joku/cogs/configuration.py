@@ -116,7 +116,7 @@ class Config(Cog):
         await ctx.bot.say(":heavy_check_mark: Unsubscribed from event.")
 
     @notifications.command(pass_context=True)
-    async def msg(self, ctx: Context, event: str, *, msg: str):
+    async def msg(self, ctx: Context, event: str, *, msg: str=None):
         """
         Allows editing the message sent for each event.
         """
@@ -127,13 +127,21 @@ class Config(Cog):
             await ctx.bot.say(":x: That is not a valid event.")
             return
 
-        d = {
-            "setting_name": "event_msg",
-            "event": event,
-            "msg": msg
-        }
-        await ctx.bot.rethinkdb.set_setting(ctx.message.server, **d)
-        await ctx.bot.say(":heavy_check_mark: Updated message for event `{}` to `{}`.".format(event, msg))
+        if msg:
+            d = {
+                "setting_name": "event_msg",
+                "event": event,
+                "msg": msg
+            }
+            await ctx.bot.rethinkdb.set_setting(ctx.message.server, **d)
+            await ctx.bot.say(":heavy_check_mark: Updated message for event `{}` to `{}`.".format(event, msg))
+
+        else:
+            _, msg = await ctx.bot.rethinkdb.get_event_message(ctx.message.server, event)
+            if msg is None:
+                await ctx.bot.say("**There is no custom message set for this event.**")
+            else:
+                await ctx.bot.say("The custom message for this event is: `{}`".format(msg))
 
     @commands.command(pass_context=True)
     @has_permissions(manage_server=True, manage_messages=True)

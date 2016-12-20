@@ -199,7 +199,6 @@ class RethinkAdapter(object):
         return d
 
     # XP
-
     async def get_level(self, user: discord.User):
         u = await self.create_or_get_user(user)
         return u["level"]
@@ -336,11 +335,11 @@ class RethinkAdapter(object):
 
         l = await self.to_list(message)
         if not l:
-            return
+            return channel, default
 
         message = l[0].get("msg", default)
 
-        return [channel, message]
+        return channel, message
 
     # Ignores
     async def is_channel_ignored(self, channel: discord.Channel, type_: str = "levelling"):
