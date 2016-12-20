@@ -78,7 +78,7 @@ class Events(Cog):
         """
         await ctx.bot.say(":hourglass: Cleaning...")
         coro = r.table("events") \
-            .filter({"t": "PRESCENCE_UPDATE"}) \
+            .filter({"t": "PRESENCE_UPDATE"}) \
             .delete() \
             .run(ctx.bot.rdblog.connection)
 
