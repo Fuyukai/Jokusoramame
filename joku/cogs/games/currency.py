@@ -4,7 +4,7 @@ import tabulate
 from discord.ext import commands
 import rethinkdb as r
 
-from joku.bot import Jokusoramame
+from joku.bot import Jokusoramame, Context
 from joku.cogs._common import Cog
 from joku.redis import with_redis_cooldown
 
@@ -16,8 +16,17 @@ class Currency(Cog):
         """
         Gives you your daily credits.
         """
-        await ctx.bot.rethinkdb.update_user_currency(ctx.message.author, 50)
-        await ctx.bot.say(":money_with_wings: **You have been given your daily `§50`.**")
+        amount = self.rng.randint(40, 60)
+
+        await ctx.bot.rethinkdb.update_user_currency(ctx.message.author, amount)
+        await ctx.bot.say(":money_with_wings: **You have earned `§{}` today.**".format(amount))
+
+    @commands.group(pass_context=True, invoke_without_command=True)
+    async def store(self, ctx: Context):
+        """
+        Store command
+        """
+        await ctx.bot.say("TODO")
 
     @commands.group(pass_context=True, invoke_without_command=True)
     async def currency(self, ctx, *, target: discord.User = None):
