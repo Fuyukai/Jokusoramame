@@ -147,7 +147,7 @@ class RethinkAdapter(object):
 
         exists = await iterator.fetch_next()
         if not exists:
-            return {}
+            return
 
         tag = await iterator.next()
 

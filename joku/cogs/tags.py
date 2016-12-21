@@ -91,7 +91,7 @@ class Tags(Cog):
         content = content.replace("@everyone", "@\u200beveryone").replace("@here", "@\u200bhere")
 
         # Set the tag.
-        await ctx.bot.rethinkdb.save_tag(ctx.message.server, name, content, owner=owner_id)
+        await ctx.bot.rethinkdb.save_tag(ctx.message.server, name, content, {}, owner=owner_id)
         await ctx.bot.say(":heavy_check_mark: Tag **{}** saved.".format(name))
 
     @tag.command(pass_context=True, aliases=["remove"])
