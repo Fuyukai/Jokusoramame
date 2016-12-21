@@ -313,6 +313,10 @@ class Core(Cog):
         await ctx.bot.say(final_url)
 
     @commands.command(pass_context=True)
+    async def pong(self, ctx: Context):
+        await ctx.bot.say("Fuck you")
+
+    @commands.command(pass_context=True)
     async def invite(self, ctx):
         invite = discord.utils.oauth_url(ctx.bot.app_id)
         await ctx.bot.say("**To invite the bot to your server, use this link: {}**".format(invite))
