@@ -3,6 +3,7 @@ from collections import OrderedDict
 import threading
 
 import aiohttp
+import random
 
 from joku.bot import Jokusoramame
 
@@ -21,6 +22,9 @@ class Cog(metaclass=_CogMeta):
 
         # A cog-local session that can be used.
         self.session = aiohttp.ClientSession()
+
+        # A RNG that can be used by each cog.
+        self.rng = random.SystemRandom()
 
     def __unload(self):
         self.session.close()
