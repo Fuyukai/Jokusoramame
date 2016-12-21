@@ -2,6 +2,9 @@
 A Jinja2-based tag engine for tags.
 """
 import dill
+import random
+import string
+
 from joku.mp2 import ProcessPoolExecutor
 
 import asyncio
