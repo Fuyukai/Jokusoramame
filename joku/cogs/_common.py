@@ -2,6 +2,8 @@ from collections import OrderedDict
 
 import threading
 
+import aiohttp
+
 from joku.bot import Jokusoramame
 
 
@@ -16,6 +18,12 @@ class Cog(metaclass=_CogMeta):
         self._bot = bot
 
         self.logger = self.bot.logger
+
+        # A cog-local session that can be used.
+        self.session = aiohttp.ClientSession()
+
+    def __unload(self):
+        self.session.close()
 
     @property
     def bot(self) -> 'Jokusoramame':

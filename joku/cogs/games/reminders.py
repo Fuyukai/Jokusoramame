@@ -152,7 +152,7 @@ class Reminders(Cog):
             "expiration": timestamp,
             "content": reminder_text,
             "reminder_id": (await r.table("reminders").get_all(ctx.message.author.id, index="user_id")
-                                  .count().run(ctx.bot.rethinkdb.connection)) + 1,
+                            .count().run(ctx.bot.rethinkdb.connection)) + 1,
         }
 
         # Should we add it to the database, or just make a reminder?
@@ -222,7 +222,7 @@ class Reminders(Cog):
             "repeating": True,
             "repeat_time": diff,
             "reminder_id": (await r.table("reminders").get_all(ctx.message.author.id, index="user_id")
-                                  .count().run(ctx.bot.rethinkdb.connection)) + 1,
+                            .count().run(ctx.bot.rethinkdb.connection)) + 1,
             "usages": 0,
         }
 
