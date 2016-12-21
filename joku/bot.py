@@ -159,6 +159,8 @@ class Jokusoramame(Bot):
 
     async def on_ready(self):
         self.logger.info("Loaded Jokusoramame, logged in as {}#{}.".format(self.user.name, self.user.discriminator))
+        self.logger.info("Servers: {}".format(len(self.servers)))
+        self.logger.info("Users: {}".format(self.manager.unique_member_count))
 
         app_info = await self.application_info()
         self.app_id = app_info.id
@@ -195,6 +197,9 @@ class Jokusoramame(Bot):
                 self.logger.exception()
             else:
                 self.logger.info("Loaded cog {}.".format(cog))
+
+        self.logger.info("Loaded {} cogs.".format(len(self.cogs)))
+        self.logger.info("Running with {} commands.".format(len(self.commands)))
 
         for name, cog in self.cogs.items():
             if hasattr(cog, "ready"):

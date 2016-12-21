@@ -4,9 +4,11 @@ Cog that handles event listeners and such.
 import datetime
 from math import floor
 
+import collections
 import discord
 import time
 import logbook
+from discord.ext.commands import Command
 
 import rethinkdb as r
 from discord.ext import commands
@@ -29,6 +31,31 @@ class Events(Cog):
         super().__init__(bot)
 
         self.gw_logger = logbook.Logger("discord.gateway:shard-{}".format(self.bot.shard_id))
+
+        self.current_commands = collections.deque(maxlen=20)
+
+    async def on_command(self, command: Command, ctx: Context):
+        """
+        Called when a command is ran.
+        """
+        d = {
+            "ctx": ctx,
+            "command": command,
+            "timestamp": datetime.datetime.utcnow()
+        }
+        self.current_commands.append(d)
+
+    @commands.command(pass_context=True)
+    async def backlog(self, ctx: Context):
+        """
+        Show the most recent 20 commands.
+        """
+        fmt = ""
+        for command in self.current_commands:
+            fmt += "[{ctx.message.server.name}][{ctx.message.channel.name}]: " \
+                   "[{ctx.message.author.name}] -> [{ctx.invoked_with}]\n".format(ctx=command["ctx"])
+
+        await ctx.bot.say(fmt, use_codeblocks=True)
 
     @commands.group(pass_context=True, invoke_without_command=True)
     async def events(self, ctx: Context):
