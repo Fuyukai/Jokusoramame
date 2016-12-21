@@ -137,7 +137,7 @@ class RethinkAdapter(object):
             tags.append(await iterator.next())
         return tags
 
-    async def get_tag(self, server: discord.Server, name: str):
+    async def get_tag(self, server: discord.Server, name: str) -> dict:
         """
         Gets a tag from the database.
         """
@@ -147,13 +147,14 @@ class RethinkAdapter(object):
 
         exists = await iterator.fetch_next()
         if not exists:
-            return None
+            return {}
 
         tag = await iterator.next()
 
         return tag
 
-    async def save_tag(self, server: discord.Server, name: str, content: str, *, owner: discord.User = None):
+    async def save_tag(self, server: discord.Server, name: str, content: str, variables: dict,
+                       *, owner: discord.User = None):
         """
         Saves a tag to the database.
 
@@ -171,7 +172,8 @@ class RethinkAdapter(object):
                 "content": content,
                 "owner_id": owner_id if owner_id else None,
                 "server_id": server.id,
-                "last_modified": datetime.datetime.now(tz=pytz.timezone("UTC"))
+                "last_modified": datetime.datetime.now(tz=pytz.timezone("UTC")),
+                "variables": variables
             }
 
         else:
@@ -179,6 +181,7 @@ class RethinkAdapter(object):
             d = current_tag
             d["content"] = content
             d["last_modified"] = datetime.datetime.now(tz=pytz.timezone("UTC"))
+            d["variables"] = variables
 
         d = await r.table("tags") \
             .insert(d, conflict="update") \

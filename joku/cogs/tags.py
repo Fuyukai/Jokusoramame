@@ -20,15 +20,14 @@ import string
 import base64
 
 from joku.cogs._common import Cog
+from joku.tagengine import TagEngine
 
 
 class Tags(Cog):
     def __init__(self, bot: Jokusoramame):
         super().__init__(bot)
-        self._executor = ProcessPoolExecutor()
 
-    def __del__(self):
-        self._executor.shutdown(wait=False)
+        self.engine = TagEngine(self.bot)
 
     @commands.group(pass_context=True, invoke_without_command=True,
                     aliases=["tags"])
@@ -148,19 +147,7 @@ class Tags(Cog):
 
         # Extract the tag from the message content.
         cmd = ctx.message.content[len(ctx.prefix):]
-
-        # Load the tag.
-        tag = await ctx.bot.rethinkdb.get_tag(ctx.message.server, cmd)
-
-        if not tag:
-            # The tag doesn't exist.
-            return
-
-        # Get the content from the tag.
-        content = tag["content"]
-
-        # Left strip any whitespace.
-        content = content.lstrip(" ")
+        cmd = cmd.split(" ")[0]
 
         # Create the arguments for the template.
         args = {
@@ -173,15 +160,17 @@ class Tags(Cog):
 
         # Render the template, using the args.
         try:
-            coro = ctx.bot.loop.run_in_executor(self._executor, self._render_template,
-                                                content, args)
-            coro = asyncio.wait_for(coro, timeout=5)
+            coro = self.engine.render_template(cmd, ctx=ctx, **args)
             rendered = await coro
-        except asyncio.CancelledError as e:
+        except (asyncio.CancelledError, asyncio.TimeoutError) as e:
             rendered = "**Timed out waiting for template to render.**"
         except Exception as e:
             traceback.print_exception(type(e), e, e.__traceback__)
             rendered = "**Error when compiling template:**\n`{}`".format(e)
+        else:
+            if rendered is None:
+                # Tag doesn't exist, return.
+                return
 
         try:
             await ctx.bot.send_message(ctx.message.channel, rendered)
