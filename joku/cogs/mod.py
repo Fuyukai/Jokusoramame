@@ -186,10 +186,13 @@ class Moderation(Cog):
             await asyncio.sleep(5)
 
         count = sum(1 for i in fut.result() if not isinstance(i, Exception))
+        forbidden = sum(1 for i in fut.result() if isinstance(i, discord.Forbidden))
+        httperror = sum(1 for i in fut.result() if isinstance(i, discord.HTTPException)) - forbidden
         failed = ctx.message.server.member_count - count
 
         await ctx.bot.say(
-            ":heavy_check_mark: Updated `{}` nicknames - failed to change `{}` nicknames.".format(count, failed)
+            ":heavy_check_mark: Updated `{}` nicknames - failed to change `{}` nicknames. "
+            "(`{}` forbidden, `{}` too long/other)".format(count, failed, forbidden, httperror)
         )
 
 
