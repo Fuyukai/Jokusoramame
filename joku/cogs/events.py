@@ -180,7 +180,7 @@ class Events(Cog):
             "member_id": message.author.id,
             "member_name": message.author.name,
             "server_id": message.server.id,
-            "channel_id": message.server.id,
+            "channel_id": message.channel.id,
             "old_content": old.content,
             "content": message.content
         }
