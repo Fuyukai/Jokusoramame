@@ -56,6 +56,7 @@ class RdbLogAdapter(object):
         """
         Logs an item to the database.
         """
+        return
         obb["timestamp"] = datetime.datetime.now(tz=pytz.timezone("UTC"))
 
         i = await r.table("events").insert(obb, conflict="replace").run(self.connection)
