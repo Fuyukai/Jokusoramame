@@ -53,8 +53,9 @@ class Reminders(Cog):
         await asyncio.sleep(reminder_time)
 
         # Send the message, and remove it from the database.
-        fmt = ":alarm_clock: {.mention}, you wanted to be reminded of: `{}`".format(member, clean(record["content"]))
         try:
+            fmt = ":alarm_clock: {.mention}, you wanted to be reminded of: `{}`".format(member,
+                                                                                        clean(record["content"]))
             await self.bot.send_message(channel, fmt)
         except:
             self.bot.logger.error("Failed to send reminder.")
