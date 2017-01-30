@@ -104,14 +104,13 @@ class Levelling(Cog):
 
             if message.channel.permissions_for(message.guild.me).embed_links:
                 em = discord.Embed(title="Level up!")
-                em.description = "**{} is now level {}!**".format(message.author.name, new_level)
+                em.description = "**{} is now level {}!** " \
+                                 "Current XP: {}".format(message.author.name, new_level, user["xp"])
 
                 xp = user["xp"]
                 required = get_next_exp_required(xp)[1]
                 next_xp = xp + required
-                em.add_field(name="Current XP", value="{} XP".format(xp))
                 em.add_field(name="Required for next level", value="{} XP".format(required))
-                em.add_field(name="Next level up", value="{} XP".format(next_xp))
                 em.add_field(name="Rank", value="{} / {}".format(index + 1, len(all_users)))
 
                 em.colour = discord.Colour.green()
@@ -138,9 +137,14 @@ class Levelling(Cog):
         index, u = next(filter(lambda j: j[1]["user_id"] == str(user.id), enumerate(all_users)))
 
         embed = discord.Embed(title=user.nick or user.name)
+        embed.set_thumbnail(url=ctx.message.author.avatar_url)
+
         embed.add_field(name="Level", value=str(u["level"]))
         embed.add_field(name="Rank", value="{} / {}".format(index + 1, len(all_users)))
         embed.add_field(name="XP", value=str(u["xp"]))
+        required = get_next_exp_required(u["xp"])[1]
+
+        embed.add_field(name="XP required for next level", value=required)
 
         await ctx.channel.send(embed=embed)
 
