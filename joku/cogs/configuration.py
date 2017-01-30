@@ -75,11 +75,11 @@ class Config(Cog):
         # It also signifies what channel to spam for the events.
         if not d:
             # Setting doesn't exist, create a new dict which has the event in it.
-            d = {"events": {event: ctx.message.channel.id}}
+            d = {"events": {event: str(ctx.message.channel.id)}}
         else:
             # Setting does exist, make a new dict, and then flip the setting bool.
             d = {"events": d["events"]}
-            d["events"][event] = ctx.message.channel.id
+            d["events"][event] = str(ctx.message.channel.id)
 
         await ctx.bot.rethinkdb.set_setting(ctx.message.guild, setting_name="events", **d)
         await ctx.channel.send(":heavy_check_mark: Subscribed to event.")
