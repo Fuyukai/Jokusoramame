@@ -136,7 +136,7 @@ class Moderation(Cog):
                     continue
 
                 if m == next_message.author:
-                    await ctx.send(channel, "I am not a tool for assisted suicide")
+                    await ctx.send("I am not a tool for assisted suicide")
                     continue
 
                 # Add them to the votes, and add the author to the voted count.
