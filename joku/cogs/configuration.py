@@ -36,7 +36,7 @@ class Config(Cog):
         Allows you to edit which events you are subscribed to on this bot.
         """
         assert isinstance(ctx.bot.rethinkdb, RethinkAdapter)
-        welcome_setting = await ctx.bot.rethinkdb.get_setting(ctx.message.server, "events")
+        welcome_setting = await ctx.bot.rethinkdb.get_setting(ctx.message.guild, "events")
 
         if welcome_setting is None:
             await ctx.channel.send("Your server's notification settings is **off**.")
@@ -70,7 +70,7 @@ class Config(Cog):
             return
 
         # Add it to the events dict.
-        d = await self.bot.rethinkdb.get_setting(ctx.message.server, "events")
+        d = await self.bot.rethinkdb.get_setting(ctx.message.guild, "events")
         # Below, we use the channel ID as it is truthy.
         # It also signifies what channel to spam for the events.
         if not d:
@@ -81,7 +81,7 @@ class Config(Cog):
             d = {"events": d["events"]}
             d["events"][event] = ctx.message.channel.id
 
-        await ctx.bot.rethinkdb.set_setting(ctx.message.server, setting_name="events", **d)
+        await ctx.bot.rethinkdb.set_setting(ctx.message.guild, setting_name="events", **d)
         await ctx.channel.send(":heavy_check_mark: Subscribed to event.")
 
     @notifications.command(pass_context=True, aliases=["unsub"])
@@ -101,7 +101,7 @@ class Config(Cog):
             await ctx.channel.send(":x: That event is not a valid event.")
             return
 
-        d = await ctx.bot.rethinkdb.get_setting(ctx.message.server, "events")
+        d = await ctx.bot.rethinkdb.get_setting(ctx.message.guild, "events")
         if not d:
             # No need to unsub.
             await ctx.channel.send(":heavy_check_mark: Unsubscribed from event.")
@@ -112,7 +112,7 @@ class Config(Cog):
             d['events'] = {}
 
         d['events'][event] = False
-        await ctx.bot.rethinkdb.set_setting(ctx.message.server, setting_name="events", **d)
+        await ctx.bot.rethinkdb.set_setting(ctx.message.guild, setting_name="events", **d)
         await ctx.channel.send(":heavy_check_mark: Unsubscribed from event.")
 
     @notifications.command(pass_context=True)
@@ -133,11 +133,11 @@ class Config(Cog):
                 "event": event,
                 "msg": msg
             }
-            await ctx.bot.rethinkdb.set_setting(ctx.message.server, **d)
+            await ctx.bot.rethinkdb.set_setting(ctx.message.guild, **d)
             await ctx.channel.send(":heavy_check_mark: Updated message for event `{}` to `{}`.".format(event, msg))
 
         else:
-            _, msg = await ctx.bot.rethinkdb.get_event_message(ctx.message.server, event)
+            _, msg = await ctx.bot.rethinkdb.get_event_message(ctx.message.guild, event)
             if msg is None:
                 await ctx.channel.send("**There is no custom message set for this event.**")
             else:
@@ -153,18 +153,18 @@ class Config(Cog):
         """
         if status is None:
             # Check the status.
-            setting = await ctx.bot.rethinkdb.get_setting(ctx.message.server, "dndcop", {})
+            setting = await ctx.bot.rethinkdb.get_setting(ctx.message.guild, "dndcop", {})
             if setting.get("status") == 1:
                 await ctx.channel.send("Invis Cop is currently **on.**")
             else:
                 await ctx.channel.send("Invis Cop is currently **off.**")
         else:
             if status.lower() == "on":
-                await ctx.bot.rethinkdb.set_setting(ctx.message.server, "dndcop", status=1)
+                await ctx.bot.rethinkdb.set_setting(ctx.message.guild, "dndcop", status=1)
                 await ctx.channel.send(":heavy_check_mark: Turned Invis Cop on.")
                 return
             elif status.lower() == "off":
-                await ctx.bot.rethinkdb.set_setting(ctx.message.server, "dndcop", status=0)
+                await ctx.bot.rethinkdb.set_setting(ctx.message.guild, "dndcop", status=0)
                 await ctx.channel.send(":heavy_check_mark: Turned Invis Cop off.")
                 return
             else:
@@ -180,18 +180,18 @@ class Config(Cog):
         """
         if status is None:
             # Check the status.
-            setting = await ctx.bot.rethinkdb.get_setting(ctx.message.server, "rolestate", {})
+            setting = await ctx.bot.rethinkdb.get_setting(ctx.message.guild, "rolestate", {})
             if setting.get("status") == 1:
                 await ctx.channel.send("Rolestate is currently **on.**")
             else:
                 await ctx.channel.send("Rolestate is currently **off.**")
         else:
             if status.lower() == "on":
-                await ctx.bot.rethinkdb.set_setting(ctx.message.server, "rolestate", status=1)
+                await ctx.bot.rethinkdb.set_setting(ctx.message.guild, "rolestate", status=1)
                 await ctx.channel.send(":heavy_check_mark: Turned Rolestate on.")
                 return
             elif status.lower() == "off":
-                await ctx.bot.rethinkdb.set_setting(ctx.message.server, "rolestate", status=0)
+                await ctx.bot.rethinkdb.set_setting(ctx.message.guild, "rolestate", status=0)
                 await ctx.channel.send(":heavy_check_mark: Turned Rolestate off.")
                 return
             else:
@@ -251,7 +251,7 @@ class Config(Cog):
             # Try and get the ignore rule that is currently in the database.
             # This means filtering by name and type.
             query = await r.table("settings") \
-                .get_all(ctx.message.server.id, index="server_id") \
+                .get_all(ctx.message.guild.id, index="server_id") \
                 .filter({
                             "name": "ignore", "target": converted.id,
                             "type": args.type
@@ -270,7 +270,7 @@ class Config(Cog):
         elif args.add:
             # Check if the rule already exists.
             query = await r.table("settings") \
-                .get_all(ctx.message.server.id, index="server_id") \
+                .get_all(ctx.message.guild.id, index="server_id") \
                 .filter({
                             "name": "ignore", "target": converted.id,
                             "type": args.type
@@ -284,7 +284,7 @@ class Config(Cog):
 
             # Add the rule.
             built_dict = {
-                "server_id": ctx.message.server.id, "name": "ignore",
+                "server_id": ctx.message.guild.id, "name": "ignore",
                 "target": converted.id, "type": args.type
                 }
 
