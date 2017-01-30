@@ -176,12 +176,12 @@ class Moderation(Cog):
         """
         coros = []
 
-        for member in ctx.message.server.members:
+        for member in ctx.message.guild.members:
             coros.append(member.edit(nick=prefix + member.name + suffix))
 
         fut = asyncio.gather(*coros, return_exceptions=True, loop=ctx.bot.loop)
 
-        async with ctx.channel.typing:
+        async with ctx.channel.typing():
             await fut
 
         count = sum(1 for i in fut.result() if not isinstance(i, Exception))
