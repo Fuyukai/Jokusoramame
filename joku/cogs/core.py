@@ -113,7 +113,7 @@ class Core(Cog):
         items = []
 
         for bot_id, bot in ctx.bot.manager.bots.items():
-            items.append((bot_id, len(bot.servers), sum(1 for i in bot.get_all_members())))
+            items.append((bot_id, len(bot.guilds), sum(1 for i in bot.get_all_members())))
 
         tbl = tabulate.tabulate(items, headers, tablefmt="orgtbl")
         await ctx.channel.send("```{}```".format(tbl))
@@ -238,7 +238,7 @@ class Core(Cog):
 
         memory_usage = psutil.Process().memory_full_info().uss / 1024 ** 2
 
-        me = ctx.message.server.me  # type: discord.Member
+        me = ctx.message.guild.me  # type: discord.Member
 
         d = "**Git Log:**\n"
         for commit in commits:
@@ -271,7 +271,7 @@ class Core(Cog):
         embed.add_field(name="Hostname", value=platform.node())
         embed.add_field(name="discord.py version", value=discord.__version__)
 
-        embed.set_footer(text="Powered by asyncio", icon_url=ctx.message.server.me.avatar_url)
+        embed.set_footer(text="Powered by asyncio", icon_url=ctx.message.guild.me.avatar_url)
         embed.timestamp = datetime.datetime.utcnow()
 
         await ctx.channel.send(embed=embed)
