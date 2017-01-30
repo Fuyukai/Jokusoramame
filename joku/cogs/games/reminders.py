@@ -56,7 +56,7 @@ class Reminders(Cog):
         try:
             fmt = ":alarm_clock: {.mention}, you wanted to be reminded of: `{}`".format(member,
                                                                                         clean(record["content"]))
-            await self.bot.send_message(channel, fmt)
+            await channel.send(fmt)
         except:
             self.bot.logger.error("Failed to send reminder.")
             self.bot.logger.exception()
