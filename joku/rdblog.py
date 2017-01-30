@@ -69,13 +69,13 @@ class RdbLogAdapter(object):
         Typically used on `message_create`.
         """
         obb = {
-            "message_id": message.id,
+            "message_id": str(message.id),
             "content": message.content,
-            "member_id": message.author.id,
+            "member_id": str(message.author.id),
             "member_nick": message.author.nick if isinstance(message.author, discord.Member) else None,
-            "member_name": message.author.name,
-            "server_id": message.server.id,
-            "channel_id": message.channel.id,
+            "member_name": str(message.author.name),
+            "server_id": str(message.guild.id),
+            "channel_id": str(message.channel.id),
             "t": t
         }
 

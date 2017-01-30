@@ -78,7 +78,7 @@ class Moderation(Cog):
                 if next_message.author == message.guild.me:
                     continue
                 # Do some checks on the user to make sure we can kick them.
-                if next_message.author.server_permissions.administrator:
+                if next_message.author.guild_permissions.administrator:
                     continue
 
                 if next_message.author.top_role >= message.guild.me.top_role:
