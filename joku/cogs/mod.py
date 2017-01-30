@@ -28,7 +28,7 @@ class Moderation(Cog):
         if setting.get("status") == 1:
             roles, nick = await self.bot.rethinkdb.get_rolestate_for_member(member)
 
-            await member.add_roles(*roles)
+            await member.edit(roles=roles)
             if nick:
                 await member.edit(nick=nick)
 
