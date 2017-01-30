@@ -188,8 +188,6 @@ class Levelling(Cog):
         """
         users = await ctx.bot.rethinkdb.get_multiple_users(*ctx.message.guild.members, order_by=r.desc("xp"))
 
-        
-
         async with threadpool():
             with plt.style.context("seaborn-pastel"):
                 lvls = np.array([user["level"] for user in users if user["level"] >= 0])
@@ -198,7 +196,7 @@ class Levelling(Cog):
 
                 plt.xlabel("Level")
                 plt.ylabel("Frequency")
-                plt.title("Level frequency for {}".format(ctx.message.server.name))
+                plt.title("Level frequency for {}".format(ctx.message.guild.name))
 
                 buf = BytesIO()
                 plt.savefig(buf, format="png")
@@ -210,7 +208,7 @@ class Levelling(Cog):
                 plt.clf()
                 plt.cla()
 
-        await ctx.bot.upload(buf, filename="plot.png")
+        await ctx.channel.send(file=buf, filename="plot.png")
 
     @level.command(pass_context=True)
     async def next(self, ctx, *, target: discord.Member = None):
@@ -229,7 +227,7 @@ class Levelling(Cog):
         level, exp_required = get_next_exp_required(xp)
 
         await ctx.channel.send("**{}** needs `{}` XP to advance to level `{}`.".format(user.name, exp_required,
-                                                                                  level + 1))
+                                                                                       level + 1))
 
     @commands.command(pass_context=True, aliases=["exp"])
     async def xp(self, ctx, *, target: discord.Member = None):
