@@ -45,7 +45,7 @@ class Debug(Cog):
 
         await ctx.channel.send("`" + repr(d) + "`")
 
-    @commands.group()
+    @commands.group(pass_context=False)
     @commands.check(is_owner)
     async def debug(self):
         """
@@ -105,6 +105,20 @@ class Debug(Cog):
         to_add = 0 - user_xp
         await ctx.bot.rethinkdb.update_user_xp(user, xp=to_add)
         await ctx.channel.send(":put_litter_in_its_place: User **{}** has had their XP set to 0.".format(user))
+
+    @debug.command(pass_context=True)
+    async def resetlvl(self, ctx: Context, *, user: discord.Member):
+        """
+        Resets a user's level to 0.
+        """
+        user = await ctx.bot.rethinkdb.create_or_get_user(user)
+        user["level"] = 0
+
+        d = await r.table("users") \
+            .insert(user, conflict="update", return_changes=True) \
+            .run(ctx.bot.rethinkdb.connection)
+
+        await ctx.channel.send("`{}`".format(d))
 
     @debug.group()
     async def rdb(self):
