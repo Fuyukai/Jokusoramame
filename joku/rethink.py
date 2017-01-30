@@ -7,11 +7,11 @@ import typing
 
 import discord
 import logbook
+
 import rethinkdb as r
 import pytz
 
 from joku.utils import get_role
-from rethinkdb.asyncio_net.net_asyncio import AsyncioCursor
 
 r.set_loop_type("asyncio")
 
@@ -84,13 +84,13 @@ class RethinkAdapter(object):
 
     # Generic actions
     async def create_or_get_user(self, user: discord.User) -> dict:
-        iterator = await r.table("users").get_all(user.id, index="user_id").run(self.connection)
+        iterator = await r.table("users").get_all(str(user.id), index="user_id").run(self.connection)
 
         exists = await iterator.fetch_next()
         if not exists:
             # Create a new user.
             return {
-                "user_id": user.id,
+                "user_id": str(user.id),
                 "xp": 0,
                 "rep": 0,
                 "currency": 200,
@@ -107,7 +107,7 @@ class RethinkAdapter(object):
         """
         Gets multiple users.
         """
-        ids = [u.id for u in users]
+        ids = [str(u.id) for u in users]
 
         # Do a get_all using the ids as the items.
         _q = r.table("users").get_all(*ids, index="user_id")
@@ -121,12 +121,12 @@ class RethinkAdapter(object):
         return users
 
     # Tags
-    async def get_all_tags_for_server(self, server: discord.Server):
+    async def get_all_tags_for_server(self, guild: discord.Guild):
         """
         Returns all tags for a server
         """
         iterator = await r.table("tags") \
-            .get_all(server.id, index="server_id").run(self.connection)
+            .get_all(str(guild.id), index="server_id").run(self.connection)
 
         exists = iterator.fetch_next()
         if not exists:
@@ -137,12 +137,12 @@ class RethinkAdapter(object):
             tags.append(await iterator.next())
         return tags
 
-    async def get_tag(self, server: discord.Server, name: str) -> dict:
+    async def get_tag(self, guild: discord.Guild, name: str) -> dict:
         """
         Gets a tag from the database.
         """
         iterator = await r.table("tags") \
-            .get_all(server.id, index="server_id") \
+            .get_all(str(guild.id), index="server_id") \
             .filter({"name": name}).run(self.connection)
 
         exists = await iterator.fetch_next()
@@ -153,7 +153,7 @@ class RethinkAdapter(object):
 
         return tag
 
-    async def save_tag(self, server: discord.Server, name: str, content: str, variables: dict,
+    async def save_tag(self, guild: discord.Guild, name: str, content: str, variables: dict,
                        *, owner: discord.User = None):
         """
         Saves a tag to the database.
@@ -161,17 +161,17 @@ class RethinkAdapter(object):
         Will overwrite the tag if applicable.
         """
         if isinstance(owner, discord.User):
-            owner_id = owner.id
+            owner_id = str(owner.id)
         else:
             owner_id = owner
 
-        current_tag = await self.get_tag(server, name)
+        current_tag = await self.get_tag(guild, name)
         if current_tag is None:
             d = {
                 "name": name,
                 "content": content,
                 "owner_id": owner_id if owner_id else None,
-                "server_id": server.id,
+                "server_id": str(guild.id),
                 "last_modified": datetime.datetime.now(tz=pytz.timezone("UTC")),
                 "variables": variables
             }
@@ -189,12 +189,12 @@ class RethinkAdapter(object):
 
         return d
 
-    async def delete_tag(self, server: discord.Server, name: str):
+    async def delete_tag(self, guild: discord.Guild, name: str):
         """
         Deletes a tag.
         """
         d = await r.table("tags") \
-            .get_all(server.id, index="server_id") \
+            .get_all(str(guild.id), index="server_id") \
             .filter({"name": name}) \
             .delete() \
             .run(self.connection)
@@ -272,20 +272,20 @@ class RethinkAdapter(object):
 
     # Settings
 
-    async def set_setting(self, server: discord.Server, setting_name: str, **values: dict) -> dict:
+    async def set_setting(self, guild: discord.Guild, setting_name: str, **values: dict) -> dict:
         """
         Sets a setting.
-        :param server: The server to set the setting in.
+        :param guild: The server to set the setting in.
         :param setting_name: The name to use.
         :param values: The values to insert into the settings.
         """
         # Try and find the ID.
-        setting = await self.get_setting(server, setting_name)
+        setting = await self.get_setting(guild, setting_name)
         if not setting:
-            d = {"server_id": server.id, "name": setting_name, **values}
+            d = {"server_id": str(guild.id), "name": setting_name, **values}
         else:
             # Use the ID we have.
-            d = {"server_id": server.id, "name": setting_name, "id": setting["id"], **values}
+            d = {"server_id": str(guild.id), "name": setting_name, "id": setting["id"], **values}
 
         d = await r.table("settings") \
             .insert(d, conflict="update") \
@@ -293,15 +293,15 @@ class RethinkAdapter(object):
 
         return d
 
-    async def get_setting(self, server: discord.Server, setting_name: str, default=None) -> dict:
+    async def get_setting(self, guild: discord.Guild, setting_name: str, default=None) -> dict:
         """
         Gets a setting from RethinkDB.
-        :param server: The server to get the setting from.
+        :param guild: The server to get the setting from.
         :param setting_name: The name to retrieve.
         :param default: The default value.
         """
         d = await r.table("settings") \
-            .get_all(server.id, index="server_id") \
+            .get_all(str(guild.id), index="server_id") \
             .filter({"name": setting_name}) \
             .run(self.connection)
 
@@ -314,12 +314,12 @@ class RethinkAdapter(object):
         i = await d.next()
         return i
 
-    async def get_event_message(self, server: discord.Server, event: str, default: str = "") \
-            -> typing.Tuple[discord.Channel, str]:
+    async def get_event_message(self, guild: discord.Guild, event: str, default: str = "") \
+            -> typing.Tuple[discord.TextChannel, str]:
         """
         Gets an event message, if the event exists.
         """
-        enabled = await self.get_setting(server, "events")
+        enabled = await self.get_setting(guild, "events")
         if not enabled:
             return
 
@@ -327,12 +327,12 @@ class RethinkAdapter(object):
         if not events.get(event):
             return
 
-        channel = server.get_channel(events[event])
+        channel = guild.get_channel(events[event])
         if not channel:
             return
 
         message = await r.table("settings") \
-            .get_all(server.id, index="server_id") \
+            .get_all(str(guild.id), index="server_id") \
             .filter({"name": "event_msg", "event": event}) \
             .run(self.connection)
 
@@ -345,12 +345,12 @@ class RethinkAdapter(object):
         return channel, message
 
     # Ignores
-    async def is_channel_ignored(self, channel: discord.Channel, type_: str = "levelling"):
+    async def is_channel_ignored(self, channel: discord.TextChannel, type_: str = "levelling"):
         """
         Checks if a channel has an ignore rule on it.
         """
         cursor = await r.table("settings") \
-            .get_all(channel.server.id, index="server_id") \
+            .get_all(str(channel.guild.id), index="server_id") \
             .filter({"name": "ignore", "target": channel.id, "type": type_}) \
             .run(self.connection)
 
@@ -367,7 +367,7 @@ class RethinkAdapter(object):
         Gets a list of TODO entries for a user.
         """
         items = await r.table("todos") \
-            .get_all(user.id, index="user_id") \
+            .get_all(str(user.id), index="user_id") \
             .order_by("priority") \
             .run(self.connection)
 
@@ -378,7 +378,7 @@ class RethinkAdapter(object):
         Adds a TODO for a user.
         """
         d = {
-            "user_id": user.id,
+            "user_id": str(user.id),
             "content": content
         }
 
@@ -395,7 +395,7 @@ class RethinkAdapter(object):
         Edits a user's TODO.
         """
         i = await r.table("todos") \
-            .get_all(user.id, index="user_id") \
+            .get_all(str(user.id), index="user_id") \
             .filter({"priority": index}) \
             .update({"content": new_content}, return_changes=True) \
             .run(self.connection)
@@ -410,14 +410,14 @@ class RethinkAdapter(object):
         """
         # Delete the entry with the specified index.
         i1 = await r.table("todos") \
-            .get_all(user.id, index="user_id") \
+            .get_all(str(user.id), index="user_id") \
             .filter({"priority": index}) \
             .delete(return_changes=True) \
             .run(self.connection)
 
         # Now move all of the indexes down.
         i2 = await r.table("todos") \
-            .get_all(user.id, index="user_id") \
+            .get_all(str(user.id), index="user_id") \
             .filter(r.row["priority"] > index) \
             .update({"priority": r.row["priority"] - 1},
                     return_changes=True) \
@@ -430,12 +430,12 @@ class RethinkAdapter(object):
         """
         Saves the rolestate for a specified member.
         """
-        role_ids = [role.id for role in member.roles if role is not member.server.default_role
-                    and role.position < member.server.me.top_role.position]
+        role_ids = [str(role.id) for role in member.roles if role is not member.guild.default_role
+                    and role.position < member.guild.me.top_role.position]
 
         obb = {
-            "server_id": member.server.id,
-            "user_id": member.id,
+            "server_id": str(member.guild.id),
+            "user_id": str(member.id),
             "roles": role_ids,
             "user_nickname": member.nick,
             "saved_at": datetime.datetime.now(tz=pytz.timezone("UTC")),
@@ -443,8 +443,8 @@ class RethinkAdapter(object):
 
         # Get the existing ID to overwrite, if possible
         cursor = await r.table("rolestate") \
-            .get_all(member.server.id, index="server_id") \
-            .filter({"user_id": member.id}) \
+            .get_all(str(member.guild.id), index="server_id") \
+            .filter({"user_id": str(member.id)}) \
             .limit(1) \
             .get_field("id") \
             .run(self.connection)
@@ -466,8 +466,8 @@ class RethinkAdapter(object):
         :return: A list of roles that this member should have.
         """
         cursor = await r.table("rolestate") \
-            .get_all(member.server.id, index="server_id") \
-            .filter({"user_id": member.id}) \
+            .get_all(str(member.guild.id), index="server_id") \
+            .filter({"user_id": str(member.id)}) \
             .limit(1) \
             .run(self.connection)
 
@@ -476,7 +476,7 @@ class RethinkAdapter(object):
         except IndexError:
             return [], ""
 
-        return [get_role(member.server, role_id) for role_id in obb["roles"]], obb["user_nickname"]
+        return [get_role(member.guild, int(role_id)) for role_id in obb["roles"]], obb["user_nickname"]
 
     # Internals
 

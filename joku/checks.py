@@ -5,14 +5,14 @@ from discord.ext.commands import CheckFailure, check
 
 
 def is_owner(ctx):
-    if ctx.message.author.id not in ["214796473689178133", ctx.bot.owner_id]:
+    if ctx.message.author.id not in [214796473689178133, ctx.bot.owner_id]:
         raise CheckFailure(message="You are not the owner.")
     return True
 
 
 def has_permissions(**perms):
     def predicate(ctx):
-        if ctx.message.author.id in ["214796473689178133", ctx.bot.owner_id]:
+        if ctx.message.author.id in [214796473689178133, ctx.bot.owner_id]:
             return True
         msg = ctx.message
         ch = msg.channel

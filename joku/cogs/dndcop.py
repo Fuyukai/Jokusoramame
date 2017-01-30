@@ -12,13 +12,13 @@ class InvisCop(Cog):
         """
         Checks for people on invisible, and deletes their message.
         """
-        if message.server is None:
+        if message.guild is None:
             return
 
         if message.author.bot:
             return
 
-        enabled = (await self.bot.rethinkdb.get_setting(message.server, "dndcop", {})).get("status") == 1
+        enabled = (await self.bot.rethinkdb.get_setting(message.guild, "dndcop", {})).get("status") == 1
 
         if enabled:
             # Check the author's status for being not ONLINE or AWAY.
@@ -31,7 +31,7 @@ class InvisCop(Cog):
 
                 # Delete their message.
                 try:
-                    await self.bot.delete_message(message)
+                    await message.delete()
                 except discord.Forbidden:
                     # oh well
                     return

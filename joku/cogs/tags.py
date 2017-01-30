@@ -40,7 +40,7 @@ class Tags(Cog):
         """
         tag_obb = await ctx.bot.rethinkdb.get_tag(ctx.message.server, name)
         if not tag_obb:
-            await ctx.bot.say("Tag not found.")
+            await ctx.channel.send("Tag not found.")
             return
 
         owner = ctx.bot.get_member(tag_obb["owner_id"])
@@ -50,7 +50,7 @@ class Tags(Cog):
         em.add_field(name="Last Modified", value=tag_obb["last_modified"].isoformat())
 
         # Display the tag info.
-        await ctx.bot.say(embed=em)
+        await ctx.channel.send(embed=em)
 
     @tag.command(pass_context=True, aliases=["list"])
     async def all(self, ctx):
@@ -60,10 +60,10 @@ class Tags(Cog):
         # looks kinda bleak but i try my best *shrug*
         server_tags = await ctx.bot.rethinkdb.get_all_tags_for_server(ctx.message.server)
         if not server_tags:
-            await ctx.bot.say("This server has no tags.")
+            await ctx.channel.send("This server has no tags.")
             return
 
-        await ctx.bot.say(", ".join([x['name'] for x in server_tags]))
+        await ctx.channel.send(", ".join([x['name'] for x in server_tags]))
 
     @tag.command(pass_context=True, aliases=["edit"])
     async def create(self, ctx, name: str, *, content: str):
@@ -79,7 +79,7 @@ class Tags(Cog):
             if not ctx.message.author.server_permissions.administrator:
                 # Check if the owner_id matches the author id.
                 if ctx.message.author.id != existing_tag["owner_id"]:
-                    await ctx.bot.say(":x: You cannot edit somebody else's tag.")
+                    await ctx.channel.send(":x: You cannot edit somebody else's tag.")
                     return
 
             # Don't overwrite the owner_id.
@@ -92,7 +92,7 @@ class Tags(Cog):
 
         # Set the tag.
         await ctx.bot.rethinkdb.save_tag(ctx.message.server, name, content, {}, owner=owner_id)
-        await ctx.bot.say(":heavy_check_mark: Tag **{}** saved.".format(name))
+        await ctx.channel.send(":heavy_check_mark: Tag **{}** saved.".format(name))
 
     @tag.command(pass_context=True, aliases=["remove"])
     async def delete(self, ctx, *, name: str):
@@ -104,18 +104,18 @@ class Tags(Cog):
         existing_tag = await ctx.bot.rethinkdb.get_tag(ctx.message.server, name)
 
         if not existing_tag:
-            await ctx.bot.say(":x: This tag does not exist.")
+            await ctx.channel.send(":x: This tag does not exist.")
             return
 
         # Check the owner_id
         if not ctx.message.author.server_permissions.administrator:
             if existing_tag["owner_id"] != ctx.message.author.id:
-                await ctx.bot.say(":x: You do not have permission to edit this tag.")
+                await ctx.channel.send(":x: You do not have permission to edit this tag.")
                 return
 
         # Now, delete the tag.
         await ctx.bot.rethinkdb.delete_tag(ctx.message.server, name)
-        await ctx.bot.say(":skull_and_crossbones: Tag deleted.")
+        await ctx.channel.send(":skull_and_crossbones: Tag deleted.")
 
     @staticmethod
     def _render_template(content: str, params: dict):

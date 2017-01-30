@@ -91,9 +91,9 @@ class Pixiv(Cog):
         embed = await self.produce_embed(item)
         if embed:
             try:
-                await ctx.bot.say(embed=embed)
+                await ctx.channel.send(embed=embed)
             except discord.HTTPException:
-                await ctx.bot.say(":frowning: Discord didn't like our embed.")
+                await ctx.channel.send(":frowning: Discord didn't like our embed.")
 
     @_pixiv.command(pass_context=True)
     async def search(self, ctx: Context, *, tag: str):
@@ -106,14 +106,14 @@ class Pixiv(Cog):
         data = await self.pixiv.search_works(tag, per_page=100)
 
         if data.get("status") == "failure":
-            await ctx.bot.say(":x: Failed to download from pixiv.")
+            await ctx.channel.send(":x: Failed to download from pixiv.")
             return
 
         # 'response' is the actual data key
         illusts = data["response"]
 
         if not illusts:
-            await ctx.bot.say(":x: No results found.")
+            await ctx.channel.send(":x: No results found.")
             return
 
         # Sort the illusts by score.
@@ -124,9 +124,9 @@ class Pixiv(Cog):
         embed = await self.produce_embed(item)
 
         try:
-            await ctx.bot.say(embed=embed)
+            await ctx.channel.send(embed=embed)
         except discord.HTTPException:
-            await ctx.bot.say(":frowning: Discord didn't like our embed.")
+            await ctx.channel.send(":frowning: Discord didn't like our embed.")
 
 
 def setup(bot):

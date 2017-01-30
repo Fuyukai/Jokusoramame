@@ -32,9 +32,9 @@ class Todos(Cog):
 
         pages = paginate_table(rows, headers)
 
-        await ctx.bot.say(header)
+        await ctx.channel.send(header)
         for page in pages:
-            await ctx.bot.say(page)
+            await ctx.channel.send(page)
 
     @todo.command(pass_context=True)
     async def add(self, ctx: Context, *, content: str):
@@ -44,7 +44,7 @@ class Todos(Cog):
         i = await ctx.bot.rethinkdb.add_user_todo(ctx.message.author, content)
         # Get the new priority from the changes.
         priority = i["changes"][0]["new_val"]["priority"]
-        await ctx.bot.say(":heavy_check_mark: Added TODO item `{}`.".format(priority))
+        await ctx.channel.send(":heavy_check_mark: Added TODO item `{}`.".format(priority))
 
     @todo.command(pass_context=True)
     async def remove(self, ctx: Context, *, index: int):
@@ -52,16 +52,16 @@ class Todos(Cog):
         Removes an item from your TODO list.
         """
         if index < 1:
-            await ctx.bot.say(":x: Indexes must be above zero.")
+            await ctx.channel.send(":x: Indexes must be above zero.")
             return
         i = await ctx.bot.rethinkdb.delete_user_todo(ctx.message.author, index)
 
         removed = i[0]
         if removed["deleted"] == 0:
-            await ctx.bot.say(":x: Could not remove item.")
+            await ctx.channel.send(":x: Could not remove item.")
             return
 
-        await ctx.bot.say(":heavy_check_mark: Removed item at index `{}`.".format(index))
+        await ctx.channel.send(":heavy_check_mark: Removed item at index `{}`.".format(index))
 
 
 def setup(bot):

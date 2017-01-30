@@ -28,9 +28,9 @@ class Moderation(Cog):
         if setting.get("status") == 1:
             roles, nick = await self.bot.rethinkdb.get_rolestate_for_member(member)
 
-            await self.bot.add_roles(member, *roles)
+            await member.add_roles(*roles)
             if nick:
-                await self.bot.change_nickname(member, nick)
+                await member.edit(nick=nick)
 
     @commands.command(pass_context=True)
     @checks.has_permissions(ban_members=True)
@@ -40,21 +40,21 @@ class Moderation(Cog):
         Cross-bans a user.
         """
         if user_id in [m.id for m in ctx.message.server.members]:
-            await ctx.bot.say(":x: This command is used for banning members not in the server.")
+            await ctx.channel.send(":x: This command is used for banning members not in the server.")
             return
 
         try:
             user = await ctx.bot.get_user_info(user_id)
             await ctx.bot.http.ban(user_id, ctx.message.server.id, 0)
         except discord.Forbidden:
-            await ctx.bot.say(":x: 403 FORBIDDEN")
+            await ctx.channel.send(":x: 403 FORBIDDEN")
         except discord.NotFound:
-            await ctx.bot.say(":x: User not found.")
+            await ctx.channel.send(":x: User not found.")
         else:
-            await ctx.bot.say(":heavy_check_mark: Banned user {}.".format(user.name))
+            await ctx.channel.send(":heavy_check_mark: Banned user {}.".format(user.name))
 
     @commands.command(pass_context=True)
-    @commands.cooldown(rate=1, per=5 * 60, type=commands.BucketType.server)
+    @commands.cooldown(rate=1, per=5 * 60, type=commands.BucketType.guild)
     @checks.has_permissions(kick_members=True)
     async def islandbot(self, ctx: Context):
         """
@@ -66,7 +66,7 @@ class Moderation(Cog):
         # Begin the raffle!
         timeout = random.randrange(30, 60)
 
-        await ctx.bot.say(":warning: :warning: :warning: Raffle ends in **{}** seconds!".format(timeout))
+        await ctx.channel.send(":warning: :warning: :warning: Raffle ends in **{}** seconds!".format(timeout))
 
         # messages to collect
         messages = []
@@ -74,14 +74,14 @@ class Moderation(Cog):
         async def _inner():
             # inner closure point - this is killed by asyncio.wait()
             while True:
-                next_message = await ctx.bot.wait_for_message(channel=channel)
-                if next_message.author == message.server.me:
+                next_message = await ctx.bot.wait_for("message", check=lambda m: m.channel == channel)
+                if next_message.author == message.guild.me:
                     continue
                 # Do some checks on the user to make sure we can kick them.
                 if next_message.author.server_permissions.administrator:
                     continue
 
-                if next_message.author.top_role >= message.server.me.top_role:
+                if next_message.author.top_role >= message.guild.me.top_role:
                     continue
 
                 messages.append(next_message)
@@ -102,20 +102,20 @@ class Moderation(Cog):
             authors.remove(r)
 
         if not chosen:
-            await ctx.bot.say(":x: Nobody entered the raffle")
+            await ctx.channel.send(":x: Nobody entered the raffle")
             return
 
         fmt = ":island: These people are up for vote:\n\n{}\n\nMention to vote.".format(
             "\n".join(m.mention for m in chosen)
         )
-        await ctx.bot.say(fmt)
+        await ctx.channel.send(fmt)
 
         votes = []
         voted = []
 
         async def _inner2():
             while True:
-                next_message = await ctx.bot.wait_for_message(channel=channel)
+                next_message = await ctx.bot.wait_for("message", check=lambda m: m.channel == channel)
                 # Ignore bots.
                 if next_message.author.bot:
                     continue
@@ -136,7 +136,7 @@ class Moderation(Cog):
                     continue
 
                 if m == next_message.author:
-                    await ctx.bot.send_message(channel, "I am not a tool for assisted suicide")
+                    await ctx.send(channel, "I am not a tool for assisted suicide")
                     continue
 
                 # Add them to the votes, and add the author to the voted count.
@@ -154,19 +154,19 @@ class Moderation(Cog):
         try:
             winner = counted.most_common()[0]
         except IndexError:
-            await ctx.bot.say(":bomb: Nobody voted")
+            await ctx.channel.send(":bomb: Nobody voted")
             return
 
-        await ctx.bot.say(":medal: The winner is {}, with `{}` votes!".format(winner[0].mention, winner[1]))
+        await ctx.channel.send(":medal: The winner is {}, with `{}` votes!".format(winner[0].mention, winner[1]))
         try:
-            await ctx.bot.send_message(winner[0], "You have been voted off the island.")
+            await winner[0].send("You have been voted off the island.")
         except discord.HTTPException:
             pass
 
         try:
-            await ctx.bot.kick(winner[0])
+            await ctx.guild.kick(winner[0])
         except discord.HTTPException:
-            await ctx.bot.send_message(channel, "The island is rigged")
+            await ctx.send(channel, "The island is rigged")
 
     @commands.command(pass_context=True)
     @checks.has_permissions(manage_nicknames=True)
@@ -177,20 +177,19 @@ class Moderation(Cog):
         coros = []
 
         for member in ctx.message.server.members:
-            coros.append(ctx.bot.change_nickname(member, prefix + member.name + suffix))
+            coros.append(member.edit(nick=prefix + member.name + suffix))
 
         fut = asyncio.gather(*coros, return_exceptions=True, loop=ctx.bot.loop)
 
-        while not fut.done():
-            await self.bot.type()
-            await asyncio.sleep(5)
+        async with ctx.channel.typing:
+            await fut
 
         count = sum(1 for i in fut.result() if not isinstance(i, Exception))
         forbidden = sum(1 for i in fut.result() if isinstance(i, discord.Forbidden))
         httperror = sum(1 for i in fut.result() if isinstance(i, discord.HTTPException)) - forbidden
         failed = ctx.message.server.member_count - count
 
-        await ctx.bot.say(
+        await ctx.channel.send(
             ":heavy_check_mark: Updated `{}` nicknames - failed to change `{}` nicknames. "
             "(`{}` forbidden, `{}` too long/other)".format(count, failed, forbidden, httperror)
         )

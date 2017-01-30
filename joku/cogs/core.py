@@ -38,15 +38,15 @@ class Core(Cog):
 
         self._is_loaded = False
 
-    async def on_channel_create(self, channel: discord.Channel):
-        if channel.server is None:
+    async def on_channel_create(self, channel: discord.TextChannel):
+        if channel.guild is None:
             return
 
-        perms = channel.permissions_for(channel.server.me)
+        perms = channel.permissions_for(channel.guild.me)
         if not perms.send_messages and perms.read_messages:
             return
 
-        await self.bot.send_message(channel, "first")
+        await channel.send(channel, "first")
 
     async def ready(self):
         if self.bot.shard_id != 0:
@@ -116,7 +116,7 @@ class Core(Cog):
             items.append((bot_id, len(bot.servers), sum(1 for i in bot.get_all_members())))
 
         tbl = tabulate.tabulate(items, headers, tablefmt="orgtbl")
-        await ctx.bot.say("```{}```".format(tbl))
+        await ctx.channel.send("```{}```".format(tbl))
 
     @shards.command(pass_context=True)
     @commands.check(is_owner)
@@ -126,9 +126,9 @@ class Core(Cog):
         """
         bot = ctx.bot.manager.bots.get(shard_id)
         if not bot:
-            await ctx.bot.say(":x: That shard does not exist.")
+            await ctx.channel.send(":x: That shard does not exist.")
 
-        await ctx.bot.say(":heavy_check_mark: Rebooting shard `{}`.".format(shard_id))
+        await ctx.channel.send(":heavy_check_mark: Rebooting shard `{}`.".format(shard_id))
         if isinstance(ctx.bot.manager, ThreadManager):
             asyncio.run_coroutine_threadsafe(bot.logout(), bot.loop)
         else:
@@ -142,7 +142,7 @@ class Core(Cog):
         """
         ctx.bot.manager.reload_config_file()
 
-        await ctx.bot.say(":hourglass: Scheduling a reboot for all shards...")
+        await ctx.channel.send(":hourglass: Scheduling a reboot for all shards...")
         # This injects the task into the shards WITHOUT yielding to the event loop.
         for shard in ctx.bot.manager.bots.values():
             if isinstance(ctx.bot.manager, ThreadManager):
@@ -172,7 +172,7 @@ class Core(Cog):
             else:
                 ctx.bot.logger.info("Reloaded {}.".format(extension))
 
-        await ctx.bot.say(":heavy_check_mark: Reloaded shard.")
+        await ctx.channel.send(":heavy_check_mark: Reloaded shard.")
 
     @commands.command(pass_context=True)
     @commands.check(is_owner)
@@ -181,7 +181,7 @@ class Core(Cog):
         Reloads all the modules for every shard.
         """
         if not isinstance(ctx.bot.manager, SingleLoopManager):
-            await ctx.bot.say(":x: Cannot reload all shards inside a ThreadManager.")
+            await ctx.channel.send(":x: Cannot reload all shards inside a ThreadManager.")
             return
 
         # Reload the config file.
@@ -198,7 +198,7 @@ class Core(Cog):
                 else:
                     shard.logger.info("Reloaded {}.".format(extension))
 
-            await ctx.bot.say(":heavy_check_mark: Reloaded shard `{}`.".format(shard.shard_id))
+            await ctx.channel.send(":heavy_check_mark: Reloaded shard `{}`.".format(shard.shard_id))
 
     @commands.command(pass_context=True)
     @commands.check(is_owner)
@@ -208,8 +208,8 @@ class Core(Cog):
 
         This command is only usable by the owner.
         """
-        await ctx.bot.edit_profile(username=name)
-        await ctx.bot.say(":heavy_check_mark: Changed username.")
+        await ctx.bot.user.edit(username=name)
+        await ctx.channel.send(":heavy_check_mark: Changed username.")
 
     @commands.command(pass_context=True)
     @commands.check(is_owner)
@@ -223,9 +223,9 @@ class Core(Cog):
             async with sess.get(url) as f:
                 body = await f.read()
 
-                await ctx.bot.edit_profile(avatar=body)
+                await ctx.bot.user.edit(avatar=body)
 
-        await ctx.bot.say(":heavy_check_mark: Changed avatar.")
+        await ctx.channel.send(":heavy_check_mark: Changed avatar.")
 
     @commands.command(pass_context=True)
     async def info(self, ctx: Context):
@@ -274,7 +274,7 @@ class Core(Cog):
         embed.set_footer(text="Powered by asyncio", icon_url=ctx.message.server.me.avatar_url)
         embed.timestamp = datetime.datetime.utcnow()
 
-        await ctx.bot.say(embed=embed)
+        await ctx.channel.send(embed=embed)
 
     @commands.command(pass_context=True)
     async def source(self, ctx: Context, *, command: str=None):
@@ -283,7 +283,7 @@ class Core(Cog):
         """
         source_url = 'https://github.com/SunDwarf/Jokusoramame'
         if command is None:
-            await self.bot.say(source_url)
+            await ctx.channel.send(source_url)
             return
 
         # copied from robo danno
@@ -293,36 +293,36 @@ class Core(Cog):
             try:
                 obj = obj.get_command(cmd)
                 if obj is None:
-                    await ctx.bot.say(':x: No such command: `{}`'.format(cmd))
+                    await ctx.channel.send(':x: No such command: `{}`'.format(cmd))
                     return
             except AttributeError:
-                await self.bot.say(':x: `{.name}` command has no subcommands'.format(obj))
+                await ctx.channel.send(':x: `{.name}` command has no subcommands'.format(obj))
                 return
 
         # Get the code object from the callback
         src = obj.callback.__code__
         lines, firstlineno = inspect.getsourcelines(src)
         if not obj.callback.__module__.startswith('joku'):
-            await ctx.bot.say(":x: Cannot get source for non-bot items.")
+            await ctx.channel.send(":x: Cannot get source for non-bot items.")
             return
 
         # One of our commands.
         location = os.path.relpath(src.co_filename).replace('\\', '/')
         final_url = '{}/blob/master/{}#L{}-L{}'.format(source_url, location, firstlineno,
                                                          firstlineno + len(lines) - 1)
-        await ctx.bot.say(final_url)
+        await ctx.channel.send(final_url)
 
     @commands.command(pass_context=True)
     async def pong(self, ctx: Context):
-        await ctx.bot.say("Fuck you")
+        await ctx.channel.send("Fuck you")
 
     @commands.command(pass_context=True)
     async def invite(self, ctx):
         invite = discord.utils.oauth_url(ctx.bot.app_id)
-        await ctx.bot.say("**To invite the bot to your server, use this link: {}**".format(invite))
+        await ctx.channel.send("**To invite the bot to your server, use this link: {}**".format(invite))
 
     @commands.command(pass_context=True)
-    async def help(self, ctx, *, command: str = None):
+    async def help(self, ctx: Context, *, command: str = None):
         """
         Help command.
         """
@@ -358,7 +358,7 @@ class Core(Cog):
                     # Why? We don't want to increment it if the user can't use that cog.
                     counter += 1
 
-            await ctx.bot.say(base)
+            await ctx.channel.send(base)
         else:
             # Use the default help command.
             await _default_help_command(ctx, *command.split(" "))
@@ -387,7 +387,7 @@ class Core(Cog):
         em.add_field(name="Bot Uptime", value=self._get_uptime_text(ctx.bot.manager.start_time))
         em.add_field(name="Shard Uptime", value=self._get_uptime_text(ctx.bot.startup_time))
 
-        await ctx.bot.say(embed=em)
+        await ctx.channel.send(embed=em)
 
 
 def setup(bot: Jokusoramame):

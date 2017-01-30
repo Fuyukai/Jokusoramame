@@ -19,14 +19,14 @@ class Currency(Cog):
         amount = self.rng.randint(40, 60)
 
         await ctx.bot.rethinkdb.update_user_currency(ctx.message.author, amount)
-        await ctx.bot.say(":money_with_wings: **You have earned `§{}` today.**".format(amount))
+        await ctx.channel.send(":money_with_wings: **You have earned `§{}` today.**".format(amount))
 
     @commands.group(pass_context=True, invoke_without_command=True)
     async def store(self, ctx: Context):
         """
         Store command
         """
-        await ctx.bot.say("TODO")
+        await ctx.channel.send("TODO")
 
     @commands.group(pass_context=True, invoke_without_command=True)
     async def currency(self, ctx, *, target: discord.User = None):
@@ -37,11 +37,11 @@ class Currency(Cog):
         """
         user = target or ctx.message.author
         if user.bot:
-            await ctx.bot.say(":x: Bots cannot earn money.")
+            await ctx.channel.send(":x: Bots cannot earn money.")
             return
 
         currency = await ctx.bot.rethinkdb.get_user_currency(user)
-        await ctx.bot.say("User **{}** has `§{}`.".format(user, currency))
+        await ctx.channel.send("User **{}** has `§{}`.".format(user, currency))
 
     @currency.command(pass_context=True)
     async def richest(self, ctx):
@@ -75,7 +75,7 @@ class Currency(Cog):
 
         fmtted = base.format(table)
 
-        await ctx.bot.say(fmtted)
+        await ctx.channel.send(fmtted)
 
 
 def setup(bot):

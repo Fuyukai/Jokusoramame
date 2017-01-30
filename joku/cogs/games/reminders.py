@@ -140,7 +140,7 @@ class Reminders(Cog):
         calendar = Calendar()
         t_struct, parse_status = calendar.parse(duration)
         if parse_status == 0:
-            await ctx.bot.say(":x: Invalid time format.")
+            await ctx.channel.send(":x: Invalid time format.")
             return
 
         dt = datetime.datetime(*t_struct[:6])
@@ -165,7 +165,7 @@ class Reminders(Cog):
             # Add it to the database.
             i = await r.table("reminders").insert(object).run(ctx.bot.rethinkdb.connection)
 
-        await ctx.bot.say(":heavy_check_mark: Will remind you at `{}`.".format(dt))
+        await ctx.channel.send(":heavy_check_mark: Will remind you at `{}`.".format(dt))
 
     @remind.command(pass_context=True)
     @commands.check(checks.is_owner)
@@ -192,7 +192,7 @@ class Reminders(Cog):
         d = await r.table("reminders").get_all(*delete_ids).delete().run(self.bot.rethinkdb.connection)
         d = d["deleted"]
 
-        await ctx.bot.say(":heavy_check_mark: Pruned `{}` reminders.".format(d))
+        await ctx.channel.send(":heavy_check_mark: Pruned `{}` reminders.".format(d))
 
     @remind.command(pass_context=True, aliases=["repeating"])
     async def repeat(self, ctx: Context, duration: str, *, reminder_text: str):
@@ -203,7 +203,7 @@ class Reminders(Cog):
         calendar = Calendar()
         t_struct, parse_status = calendar.parse(duration)
         if parse_status == 0:
-            await ctx.bot.say(":x: Invalid time format.")
+            await ctx.channel.send(":x: Invalid time format.")
             return
 
         dt = datetime.datetime(*t_struct[:6])
@@ -212,7 +212,7 @@ class Reminders(Cog):
         diff = ceil((dt - datetime.datetime.utcnow()).total_seconds())
 
         if diff < 300:
-            await ctx.bot.say(":x: Cannot create a repeating reminder with a time under 5 minutes.")
+            await ctx.channel.send(":x: Cannot create a repeating reminder with a time under 5 minutes.")
             return
 
         object = {
@@ -230,7 +230,7 @@ class Reminders(Cog):
         # Add it to the database.
         i = await r.table("reminders").insert(object).run(ctx.bot.rethinkdb.connection)
 
-        await ctx.bot.say(":heavy_check_mark: Will start reminding you at `{}`, then every `{}` seconds after.."
+        await ctx.channel.send(":heavy_check_mark: Will start reminding you at `{}`, then every `{}` seconds after.."
                           .format(dt, diff))
 
     @remind.command(pass_context=True)
@@ -244,7 +244,7 @@ class Reminders(Cog):
 
         reminder = await self.bot.rethinkdb.to_list(reminder)
         if not reminder:
-            await ctx.bot.say(":x: That reminder ID does not exist.")
+            await ctx.channel.send(":x: That reminder ID does not exist.")
             return
 
         # Delete the reminder from the DB.
@@ -252,7 +252,7 @@ class Reminders(Cog):
             .get_all(ctx.message.author.id, index="user_id") \
             .filter({"reminder_id": reminder_id}).delete().run(self.bot.rethinkdb.connection)
 
-        await ctx.bot.say(":heavy_check_mark: Deleted reminder.")
+        await ctx.channel.send(":heavy_check_mark: Deleted reminder.")
 
     @remind.command(pass_context=True, aliases=["list"])
     async def reminders(self, ctx: Context):
@@ -297,7 +297,7 @@ class Reminders(Cog):
 
         pages = paginate_table(items, headers)
         for page in pages:
-            await ctx.bot.say(page)
+            await ctx.channel.send(page)
 
     @remind.command(pass_context=True)
     async def inspect(self, ctx: Context, *, reminder_id: int):
@@ -310,14 +310,14 @@ class Reminders(Cog):
 
         reminder = await self.bot.rethinkdb.to_list(reminder)
         if not reminder:
-            await ctx.bot.say(":x: This reminder does not exist.")
+            await ctx.channel.send(":x: This reminder does not exist.")
             return
 
         reminder = reminder[0]
 
         if reminder.get("user_id") != ctx.message.author.id and \
                         ctx.message.author.id == ctx.bot.owner_id:
-            await ctx.bot.say(":x: This reminder does not exist.")
+            await ctx.channel.send(":x: This reminder does not exist.")
             return
 
         channel = discord.utils.get(ctx.bot.get_all_channels(), id=reminder.get("channel_id"))
@@ -328,7 +328,7 @@ class Reminders(Cog):
         em.add_field(name="Channel", value=channel)
         em.add_field(name="Repeating", value=reminder.get("repeating", False))
 
-        await ctx.bot.say(embed=em)
+        await ctx.channel.send(embed=em)
 
 
 def setup(bot):

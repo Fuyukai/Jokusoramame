@@ -77,22 +77,22 @@ class TagEngine(object):
 
         return rendered, new_variables
 
-    async def render_template(self, tag_id: str, ctx: Context = None, server: discord.Server = None,
+    async def render_template(self, tag_id: str, ctx: Context = None, guild: discord.Guild = None,
                               **kwargs) -> str:
         """
         Renders a template.
 
         This will load all variables, render the template, and return the rendered template as output.
         """
-        server = server or ctx.message.server
+        guild = guild or ctx.message.guild
 
-        tag = await self.bot.rethinkdb.get_tag(server, tag_id)
+        tag = await self.bot.rethinkdb.get_tag(guild, tag_id)
         if not tag:
             return None
 
         final_template, new_variables = await self._render_template(tag, **kwargs)
 
-        await self.bot.rethinkdb.save_tag(server, tag_id, content=tag.get("content"),
+        await self.bot.rethinkdb.save_tag(guild, tag_id, content=tag.get("content"),
                                           variables=new_variables)
 
         return final_template

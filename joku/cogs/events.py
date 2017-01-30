@@ -52,10 +52,10 @@ class Events(Cog):
         """
         fmt = ""
         for command in self.current_commands:
-            fmt += "[{ctx.message.server.name}][{ctx.message.channel.name}]: " \
+            fmt += "[{ctx.message.guild.name}][{ctx.message.channel.name}]: " \
                    "[{ctx.message.author.name}] -> [{ctx.invoked_with}]\n".format(ctx=command["ctx"])
 
-        await ctx.bot.say(fmt, use_codeblocks=True)
+        await ctx.channel.send(fmt, use_codeblocks=True)
 
     @commands.group(pass_context=True, invoke_without_command=True)
     async def events(self, ctx: Context):
@@ -67,7 +67,7 @@ class Events(Cog):
 
         table = tabulate.tabulate(data, headers=headers, tablefmt="orgtbl")
 
-        await ctx.bot.say("```{}```".format(table))
+        await ctx.channel.send("```{}```".format(table))
 
     @events.command(pass_context=True)
     @commands.check(is_owner)
@@ -75,7 +75,7 @@ class Events(Cog):
         """
         Shows all events the bot has received since it started logging.
         """
-        message = await ctx.bot.say(":hourglass: Loading events... (this may take some time!)")
+        message = await ctx.channel.send(":hourglass: Loading events... (this may take some time!)")
         time_before = time.time()
         # This abuses RethinkDB to count the events.
         q = await r.table("events") \
@@ -92,8 +92,7 @@ class Events(Cog):
         table = tabulate.tabulate(l, headers=headers, tablefmt="orgtbl")
         time_after = time.time()
 
-        await ctx.bot.edit_message(message, "```{}```\n**Took {} seconds.**".format(table,
-                                                                                    floor(time_after - time_before)))
+        await message.edit("```{}```\n**Took {} seconds.**".format(table, floor(time_after - time_before)))
 
     @events.command(pass_context=True)
     @commands.check(is_owner)
@@ -103,14 +102,14 @@ class Events(Cog):
 
         This can take multiple hours to clean.
         """
-        await ctx.bot.say(":hourglass: Cleaning...")
+        await ctx.channel.send(":hourglass: Cleaning...")
         coro = r.table("events") \
             .filter({"t": "PRESENCE_UPDATE"}) \
             .delete() \
             .run(ctx.bot.rdblog.connection)
 
         await coro
-        await ctx.bot.say(":ok: Cleaned up.")
+        await ctx.channel.send(":ok: Cleaned up.")
 
     @events.command(pass_context=True)
     async def seq(self, ctx: Context):
@@ -118,7 +117,7 @@ class Events(Cog):
         Shows the current sequence number.
         """
         seq = ctx.bot.connection.sequence
-        await ctx.bot.say("Current sequence number: `{}`".format(seq))
+        await ctx.channel.send("Current sequence number: `{}`".format(seq))
 
     async def on_socket_response(self, data: dict):
         """
@@ -155,7 +154,7 @@ class Events(Cog):
         # Simply log the message.
         await self.bot.rdblog.log_message(message)
 
-    async def on_typing(self, channel: discord.Channel, user: discord.User, when: datetime.datetime):
+    async def on_typing(self, channel: discord.TextChannel, user: discord.User, when: datetime.datetime):
         obb = {
             "t": "TYPING_START",
             "member_id": user.id,
@@ -166,21 +165,21 @@ class Events(Cog):
     async def on_message_delete(self, message: discord.Message):
         obb = {
             "t": "MESSAGE_DELETE",
-            "member_id": message.author.id,
-            "member_name": message.author.name,
-            "server_id": message.server.id,
-            "channel_id": message.server.id,
-            "content": message.content
+            "member_id": str(message.author.id),
+            "member_name": str(message.author.name),
+            "server_id": str(message.guild.id),
+            "channel_id": str(message.guild.id),
+            "content": str(message.content)
         }
         await self.bot.rdblog.log(obb)
 
     async def on_message_edit(self, old: discord.Message, message: discord.Message):
         obb = {
             "t": "MESSAGE_UPDATE",
-            "member_id": message.author.id,
+            "member_id": str(message.author.id),
             "member_name": message.author.name,
-            "server_id": message.server.id,
-            "channel_id": message.channel.id,
+            "server_id": str(message.guild.id),
+            "channel_id": str(message.channel.id),
             "old_content": old.content,
             "content": message.content
         }
@@ -189,13 +188,13 @@ class Events(Cog):
     async def on_member_ban(self, member: discord.Member):
         obb = {
             "t": "GUILD_BAN_ADD",
-            "member_id": member.id,
+            "member_id": str(member.id),
             "member_name": member.name,
-            "server_id": member.server.id
+            "server_id": str(member.guild.id)
         }
         await self.bot.rdblog.log(obb)
 
-        i = await self.bot.rethinkdb.get_event_message(member.server, "bans", "`{member.name}` got **bent**")
+        i = await self.bot.rethinkdb.get_event_message(member.guild, "bans", "`{member.name}` got **bent**")
 
         if not i:
             return
@@ -204,21 +203,21 @@ class Events(Cog):
 
         msg = event_msg.format(**{
             "member": member,
-            "server": member.server,
+            "server": member.guild,
             "channel": channel
         })
-        await self.bot.send_message(channel, msg)
+        await member.guild.default_channel.send(msg)
 
-    async def on_member_unban(self, server: discord.Server, member: discord.User):
+    async def on_member_unban(self, guild: discord.Guild, member: discord.User):
         obb = {
             "t": "GUILD_BAN_REMOVE",
-            "member_id": member.id,
+            "member_id": str(member.id),
             "member_name": member.name,
-            "server_id": server.id
+            "server_id": str(guild.id)
         }
         await self.bot.rdblog.log(obb)
 
-        i = await self.bot.rethinkdb.get_event_message(server, "unbans", "`{member.name}` got **unbent**")
+        i = await self.bot.rethinkdb.get_event_message(guild, "unbans", "`{member.name}` got **unbent**")
 
         if not i:
             return
@@ -227,10 +226,10 @@ class Events(Cog):
 
         msg = event_msg.format(**{
             "member": member,
-            "server": server,
+            "server": guild,
             "channel": channel
         })
-        await self.bot.send_message(channel, msg)
+        await guild.default_channel.send(msg)
 
     async def on_member_join(self, member: discord.Member):
         """
@@ -242,13 +241,13 @@ class Events(Cog):
         # Log it in the database.
         obb = {
             "t": "GUILD_MEMBER_ADD",
-            "member_id": member.id,
+            "member_id": str(member.id),
             "member_name": member.name,
-            "server_id": member.server.id
+            "server_id": str(member.guild.id)
         }
         await self.bot.rdblog.log(obb)
 
-        i = await self.bot.rethinkdb.get_event_message(member.server, "joins", "Welcome {member.name}!")
+        i = await self.bot.rethinkdb.get_event_message(member.guild, "joins", "Welcome {member.name}!")
 
         if not i:
             return
@@ -257,22 +256,22 @@ class Events(Cog):
 
         msg = event_msg.format(**{
             "member": member,
-            "server": member.server,
+            "server": member.guild,
             "channel": channel
         })
-        await self.bot.send_message(channel, msg)
+        await member.guild.default_channel.send(msg)
 
     async def on_member_remove(self, member: discord.Member):
         # Log it in the database.
         obb = {
             "t": "GUILD_MEMBER_REMOVE",
-            "member_id": member.id,
+            "member_id": str(member.id),
             "member_name": member.name,
-            "server_id": member.server.id
+            "server_id": str(member.guild.id)
         }
         await self.bot.rdblog.log(obb)
 
-        i = await self.bot.rethinkdb.get_event_message(member.server, "leaves", "Bye {member.name}!")
+        i = await self.bot.rethinkdb.get_event_message(member.guild, "leaves", "Bye {member.name}!")
 
         if not i:
             return
@@ -281,10 +280,10 @@ class Events(Cog):
 
         msg = event_msg.format(**{
             "member": member,
-            "server": member.server,
+            "server": member.guild,
             "channel": channel
         })
-        await self.bot.send_message(channel, msg)
+        await member.guild.default_channel.send(msg)
 
 
 def setup(bot: Jokusoramame):

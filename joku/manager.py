@@ -12,6 +12,7 @@ from discord.http import HTTPClient
 from discord.state import ConnectionState
 from logbook import Logger
 from ruamel import yaml
+from weakref import WeakValueDictionary
 
 from joku.bot import Jokusoramame
 
@@ -20,19 +21,30 @@ class SharedState(ConnectionState):
     """
     A modified state that shares the servers, channels etc between bot instances.
     """
-    _servers = {}
+    _guilds = {}
     _voice_clients = {}
     _private_channels = {}
     _private_channels_by_user = {}
 
-    def __init__(self, dispatch, chunker, syncer, max_messages, *, loop):
+    # users cache for rewrite
+    _users = WeakValueDictionary()
+
+    # emojis cache?
+    _emojis = {}
+
+    shard_count = 0
+
+    def __init__(self, dispatch, chunker, syncer, http, *, loop):
         self.loop = loop
-        self.max_messages = max_messages
+        self.max_messages = 500
         self.dispatch = dispatch
         self.chunker = chunker
         self.syncer = syncer
+        self.http = http
         self.is_bot = None
         self._listeners = []
+        self._fetch_offline = True
+
         self.clear()
 
     def clear(self):
@@ -142,6 +154,7 @@ class SingleLoopManager(object):
         Starts the bot in sharded mode.
         """
         shard_count = await self.get_shard_count()
+        SharedState.shard_count = shard_count
 
         self.logger.info("Spawning {} instances of the bot.".format(shard_count))
 

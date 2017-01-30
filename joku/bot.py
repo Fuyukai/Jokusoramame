@@ -14,6 +14,7 @@ import itertools
 import logbook
 import logging
 
+from discord import Message
 from discord.ext import commands
 from discord.ext.commands import Bot, CommandInvokeError, CheckFailure, MissingRequiredArgument, CommandOnCooldown
 from discord.gateway import DiscordWebSocket, ReconnectWebSocket, ResumeWebSocket
@@ -69,8 +70,8 @@ class Jokusoramame(Bot):
 
         # Override ConnectionState.
         self.connection = kwargs.get("state", ConnectionState) \
-            (self.dispatch, self.request_offline_members,
-             self._syncer, self.connection.max_messages, loop=self.loop)
+            (dispatch=self.dispatch, chunker=self._chunker,
+             syncer=self._syncer, http=self.http, loop=self.loop)
 
         self.app_id = ""
         self.owner_id = ""
@@ -125,8 +126,8 @@ class Jokusoramame(Bot):
         """
         if isinstance(exception, CommandInvokeError):
             # Regular error.
-            await self.send_message(context.message.channel, "\U0001f6ab This kills the bot (An error has happened "
-                                                             "and has been logged.)")
+            await context.channel.send("\U0001f6ab This kills the bot (An error has happened "
+                                       "and has been logged.)")
             lines = traceback.format_exception(type(exception),
                                                exception.__cause__, exception.__cause__.__traceback__)
             self.logger.error(''.join(lines))
@@ -142,24 +143,24 @@ class Jokusoramame(Bot):
                                                                           context.message.channel.name,
                                                                           context.invoked_with,
                                                                           ''.join(lines))
-                await self.send_message(error_channel, fmt, use_codeblocks=True)
+                await context.channel.send(fmt, use_codeblocks=True)
             return
 
         # Switch based on isinstance.
         if isinstance(exception, CheckFailure):
             channel = context.message.channel
-            await self.send_message(channel, "\U0001f6ab Check failed: {}".format(' '.join(exception.args)))
+            await context.channel.send("\U0001f6ab Check failed: {}".format(' '.join(exception.args)))
 
         elif isinstance(exception, MissingRequiredArgument):
-            await self.send_message(context.message.channel, "\U0001f6ab Error: {}".format(' '.join(exception.args)))
+            await context.channel.send("\U0001f6ab Error: {}".format(' '.join(exception.args)))
 
         elif isinstance(exception, CommandOnCooldown):
-            await self.send_message(context.message.channel, "\U0001f6ab Command is on cooldown. Retry after {} "
-                                                             "seconds.".format(exception.retry_after))
+            await context.channel.send("\U0001f6ab Command is on cooldown. Retry after {} "
+                                       "seconds.".format(exception.retry_after))
 
     async def on_ready(self):
         self.logger.info("Loaded Jokusoramame, logged in as {}#{}.".format(self.user.name, self.user.discriminator))
-        self.logger.info("Servers: {}".format(len(self.servers)))
+        self.logger.info("Guilds: {}".format(len(self.guilds)))
         self.logger.info("Users: {}".format(self.manager.unique_member_count))
 
         app_info = await self.application_info()
@@ -218,14 +219,14 @@ class Jokusoramame(Bot):
 
         self.logger.info("Bot ready in {} seconds.".format(new_time))
 
-    async def on_message(self, message):
+    async def on_message(self, message: Message):
         self.logger.info("Recieved message: {message.content} "
                          "from {message.author.display_name} ({message.author.name}){bot}"
                          .format(message=message, bot=" [BOT]" if message.author.bot else ""))
         self.logger.info(" On channel: #{message.channel.name}".format(message=message))
 
-        if message.server is not None:
-            self.logger.info(" On server: {} ({})".format(message.server.name, message.server.id))
+        if message.guild is not None:
+            self.logger.info(" On server: {} ({})".format(message.guild.name, message.guild.id))
 
         # Check if an ignore rule exists for that channel.
         if self.rethinkdb.connection is None:
@@ -250,25 +251,6 @@ class Jokusoramame(Bot):
         token = self.config["bot_token"]
         return await super().login(token)
 
-    # Overrides.
-    async def send_message(self, destination, content=None, *, tts=False, embed=None, use_codeblocks=False):
-        """
-        Sends a message, with pagination.
-
-        This will automatically split messages over 2000 chracters.
-        """
-        if not content:
-            return await super().send_message(destination, tts=tts, embed=embed)
-
-        pages = paginate_large_message(content, use_codeblocks=use_codeblocks)
-        messages = []
-        for page in pages:
-            messages.append(await super().send_message(destination, page, tts=tts, embed=embed))
-
-        if len(messages) == 1:
-            return messages[0]
-        return messages
-
     async def connect(self):
         self.ws = await DiscordWebSocket.from_client(self)
 
@@ -281,8 +263,15 @@ class Jokusoramame(Bot):
                 self.ws = await DiscordWebSocket.from_client(self, resume=resume)
             except discord.ConnectionClosed as e:
                 await self.close()
-                await self.rethinkdb.connection.close()
-                await self.rdblog.connection.close()
+                try:
+                    await self.rethinkdb.connection.close()
+                except Exception:
+                    pass
+
+                try:
+                    await self.rdblog.connection.close()
+                except Exception:
+                    pass
                 if e.code != 1000:
                     raise
 

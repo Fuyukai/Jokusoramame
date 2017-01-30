@@ -6,7 +6,7 @@ import shlex
 
 import rethinkdb as r
 from discord.ext import commands
-from discord.ext.commands import MemberConverter, BadArgument, ChannelConverter
+from discord.ext.commands import MemberConverter, BadArgument, TextChannelConverter
 
 from joku.bot import Jokusoramame, Context
 from joku.cogs._common import Cog
@@ -39,7 +39,7 @@ class Config(Cog):
         welcome_setting = await ctx.bot.rethinkdb.get_setting(ctx.message.server, "events")
 
         if welcome_setting is None:
-            await ctx.bot.say("Your server's notification settings is **off**.")
+            await ctx.channel.send("Your server's notification settings is **off**.")
             return
 
         # Check the enabled dict.
@@ -49,7 +49,7 @@ class Config(Cog):
         else:
             features = ", ".join(name for name in enabled.keys() if enabled[name])
 
-        await ctx.bot.say("Current events subscribed to: **{}**.".format(features))
+        await ctx.channel.send("Current events subscribed to: **{}**.".format(features))
 
     @notifications.command(pass_context=True, aliases=["sub"])
     async def subscribe(self, ctx: Context, *, event: str = None):
@@ -58,7 +58,7 @@ class Config(Cog):
         To get a list of valid events, call this command without an argument.
         """
         if event is None:
-            await ctx.bot.say("Valid events are: `{}`".format("`, `".join(self.VALID_EVENTS)))
+            await ctx.channel.send("Valid events are: `{}`".format("`, `".join(self.VALID_EVENTS)))
             return
 
         # Add an "s" to the end of the event.
@@ -66,7 +66,7 @@ class Config(Cog):
             event += "s"
 
         if event not in self.VALID_EVENTS:
-            await ctx.bot.say(":x: That event is not a valid event.")
+            await ctx.channel.send(":x: That event is not a valid event.")
             return
 
         # Add it to the events dict.
@@ -82,7 +82,7 @@ class Config(Cog):
             d["events"][event] = ctx.message.channel.id
 
         await ctx.bot.rethinkdb.set_setting(ctx.message.server, setting_name="events", **d)
-        await ctx.bot.say(":heavy_check_mark: Subscribed to event.")
+        await ctx.channel.send(":heavy_check_mark: Subscribed to event.")
 
     @notifications.command(pass_context=True, aliases=["unsub"])
     async def unsubscribe(self, ctx: Context, *, event: str = None):
@@ -90,7 +90,7 @@ class Config(Cog):
         Unsubscribe from an event that was subscribed in with `notifications subscribe`.
         """
         if event is None:
-            await ctx.bot.say("Valid events are: `{}`".format("`, `".join(self.VALID_EVENTS)))
+            await ctx.channel.send("Valid events are: `{}`".format("`, `".join(self.VALID_EVENTS)))
             return
 
         # Add an "s" to the end of the event.
@@ -98,13 +98,13 @@ class Config(Cog):
             event += "s"
 
         if event not in self.VALID_EVENTS:
-            await ctx.bot.say(":x: That event is not a valid event.")
+            await ctx.channel.send(":x: That event is not a valid event.")
             return
 
         d = await ctx.bot.rethinkdb.get_setting(ctx.message.server, "events")
         if not d:
             # No need to unsub.
-            await ctx.bot.say(":heavy_check_mark: Unsubscribed from event.")
+            await ctx.channel.send(":heavy_check_mark: Unsubscribed from event.")
             return
 
         # Edit the event.
@@ -113,7 +113,7 @@ class Config(Cog):
 
         d['events'][event] = False
         await ctx.bot.rethinkdb.set_setting(ctx.message.server, setting_name="events", **d)
-        await ctx.bot.say(":heavy_check_mark: Unsubscribed from event.")
+        await ctx.channel.send(":heavy_check_mark: Unsubscribed from event.")
 
     @notifications.command(pass_context=True)
     async def msg(self, ctx: Context, event: str, *, msg: str=None):
@@ -124,7 +124,7 @@ class Config(Cog):
             event += "s"
 
         if event not in self.VALID_EVENTS:
-            await ctx.bot.say(":x: That is not a valid event.")
+            await ctx.channel.send(":x: That is not a valid event.")
             return
 
         if msg:
@@ -134,14 +134,14 @@ class Config(Cog):
                 "msg": msg
             }
             await ctx.bot.rethinkdb.set_setting(ctx.message.server, **d)
-            await ctx.bot.say(":heavy_check_mark: Updated message for event `{}` to `{}`.".format(event, msg))
+            await ctx.channel.send(":heavy_check_mark: Updated message for event `{}` to `{}`.".format(event, msg))
 
         else:
             _, msg = await ctx.bot.rethinkdb.get_event_message(ctx.message.server, event)
             if msg is None:
-                await ctx.bot.say("**There is no custom message set for this event.**")
+                await ctx.channel.send("**There is no custom message set for this event.**")
             else:
-                await ctx.bot.say("The custom message for this event is: `{}`".format(msg))
+                await ctx.channel.send("The custom message for this event is: `{}`".format(msg))
 
     @commands.command(pass_context=True)
     @has_permissions(manage_server=True, manage_messages=True)
@@ -155,20 +155,20 @@ class Config(Cog):
             # Check the status.
             setting = await ctx.bot.rethinkdb.get_setting(ctx.message.server, "dndcop", {})
             if setting.get("status") == 1:
-                await ctx.bot.say("Invis Cop is currently **on.**")
+                await ctx.channel.send("Invis Cop is currently **on.**")
             else:
-                await ctx.bot.say("Invis Cop is currently **off.**")
+                await ctx.channel.send("Invis Cop is currently **off.**")
         else:
             if status.lower() == "on":
                 await ctx.bot.rethinkdb.set_setting(ctx.message.server, "dndcop", status=1)
-                await ctx.bot.say(":heavy_check_mark: Turned Invis Cop on.")
+                await ctx.channel.send(":heavy_check_mark: Turned Invis Cop on.")
                 return
             elif status.lower() == "off":
                 await ctx.bot.rethinkdb.set_setting(ctx.message.server, "dndcop", status=0)
-                await ctx.bot.say(":heavy_check_mark: Turned Invis Cop off.")
+                await ctx.channel.send(":heavy_check_mark: Turned Invis Cop off.")
                 return
             else:
-                await ctx.bot.say(":x: No.")
+                await ctx.channel.send(":x: No.")
 
     @commands.command(pass_context=True)
     @has_permissions(manage_server=True, manage_roles=True)
@@ -182,20 +182,20 @@ class Config(Cog):
             # Check the status.
             setting = await ctx.bot.rethinkdb.get_setting(ctx.message.server, "rolestate", {})
             if setting.get("status") == 1:
-                await ctx.bot.say("Rolestate is currently **on.**")
+                await ctx.channel.send("Rolestate is currently **on.**")
             else:
-                await ctx.bot.say("Rolestate is currently **off.**")
+                await ctx.channel.send("Rolestate is currently **off.**")
         else:
             if status.lower() == "on":
                 await ctx.bot.rethinkdb.set_setting(ctx.message.server, "rolestate", status=1)
-                await ctx.bot.say(":heavy_check_mark: Turned Rolestate on.")
+                await ctx.channel.send(":heavy_check_mark: Turned Rolestate on.")
                 return
             elif status.lower() == "off":
                 await ctx.bot.rethinkdb.set_setting(ctx.message.server, "rolestate", status=0)
-                await ctx.bot.say(":heavy_check_mark: Turned Rolestate off.")
+                await ctx.channel.send(":heavy_check_mark: Turned Rolestate off.")
                 return
             else:
-                await ctx.bot.say(":x: No.")
+                await ctx.channel.send(":x: No.")
 
     @commands.command(pass_context=True)
     @has_permissions(manage_server=True, manage_channels=True)
@@ -223,17 +223,17 @@ class Config(Cog):
         if args is None:
             # Print the help text.
             h = parser.format_help()
-            await ctx.bot.say("```{}```".format(h))
+            await ctx.channel.send("```{}```".format(h))
             return
 
         try:
             args = parser.parse_args(shlex.split(args))
         except Exception as e:
-            await ctx.bot.say(":x: {}".format(' '.join(e.args)))
+            await ctx.channel.send(":x: {}".format(' '.join(e.args)))
             return
 
         if args.type not in ['commands', 'levels']:
-            await ctx.bot.say(":x: That is not a valid type.")
+            await ctx.channel.send(":x: That is not a valid type.")
             return
 
         # Try to convert the target.
@@ -241,9 +241,9 @@ class Config(Cog):
             converted = MemberConverter(ctx, args.target).convert()
         except BadArgument:
             try:
-                converted = ChannelConverter(ctx, args.target).convert()
+                converted = TextChannelConverter(ctx, args.target).convert()
             except BadArgument:
-                await ctx.bot.say(":x: Target was invalid or could not be found.")
+                await ctx.channel.send(":x: Target was invalid or could not be found.")
                 return
 
         # If it's a remove, try and remove it.
@@ -260,12 +260,12 @@ class Config(Cog):
 
             got = await ctx.bot.rethinkdb.to_list(query)
             if not got:
-                await ctx.bot.say(":x: This item does not have an ignore rule on it of that type.")
+                await ctx.channel.send(":x: This item does not have an ignore rule on it of that type.")
                 return
 
             # Remove the rule.
             await r.table("settings").get(got[0]["id"]).delete().run(ctx.bot.rethinkdb.connection)
-            await ctx.bot.say(":heavy_check_mark: Removed ignore rule.")
+            await ctx.channel.send(":heavy_check_mark: Removed ignore rule.")
             return
         elif args.add:
             # Check if the rule already exists.
@@ -279,7 +279,7 @@ class Config(Cog):
 
             got = await self.bot.rethinkdb.to_list(query)
             if got:
-                await ctx.bot.say(":x: This item already has a rule with that target.")
+                await ctx.channel.send(":x: This item already has a rule with that target.")
                 return
 
             # Add the rule.
@@ -289,7 +289,7 @@ class Config(Cog):
                 }
 
             result = await r.table("settings").insert(built_dict).run(self.bot.rethinkdb.connection)
-            await ctx.bot.say(":heavy_check_mark: Added ignore rule.")
+            await ctx.channel.send(":heavy_check_mark: Added ignore rule.")
 
 
 def setup(bot):

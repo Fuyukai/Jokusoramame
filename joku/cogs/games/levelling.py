@@ -78,7 +78,7 @@ class Levelling(Cog):
             return
 
         # No discord bots, thanks.
-        if message.server.id == "110373943822540800":
+        if message.guild.id == 110373943822540800:
             return
 
         # Check the spam quotient.
@@ -99,7 +99,7 @@ class Levelling(Cog):
             user["level"] = new_level
             await r.table("users").insert(user, conflict="update").run(self.bot.rethinkdb.connection)
 
-            await self.bot.send_message(message.channel, ":up: **{}, you are now level {}!**".format(
+            await message.channel.send(":up: **{}, you are now level {}!**".format(
                 message.author, new_level
             ))
 
@@ -112,19 +112,19 @@ class Levelling(Cog):
         """
         user = target or ctx.message.author
         if user.bot:
-            await ctx.bot.say(":no_entry_sign: **Bots cannot have XP.**")
+            await ctx.channel.send(":no_entry_sign: **Bots cannot have XP.**")
             return
 
-        all_users = await ctx.bot.rethinkdb.get_multiple_users(*ctx.message.server.members, order_by=r.desc("xp"))
+        all_users = await ctx.bot.rethinkdb.get_multiple_users(*ctx.message.guild.members, order_by=r.desc("xp"))
 
-        index, u = next(filter(lambda j: j[1]["user_id"] == user.id, enumerate(all_users)))
+        index, u = next(filter(lambda j: j[1]["user_id"] == str(user.id), enumerate(all_users)))
 
         embed = discord.Embed(title=user.nick or user.name)
         embed.add_field(name="Level", value=str(u["level"]))
         embed.add_field(name="Rank", value="{} / {}".format(index + 1, len(all_users)))
         embed.add_field(name="XP", value=str(u["xp"]))
 
-        await ctx.bot.say(embed=embed)
+        await ctx.channel.send(embed=embed)
 
     @level.command(pass_context=True, aliases=["top"])
     async def leaderboard(self, ctx: Context, *, num: int = 10):
@@ -155,9 +155,9 @@ class Levelling(Cog):
         # Format the table.
         pages = paginate_table(table, headers)
 
-        await ctx.bot.say(base)
+        await ctx.channel.send(base)
         for page in pages:
-            await ctx.bot.say(page)
+            await ctx.channel.send(page)
 
     @level.command(pass_context=True)
     async def plot(self, ctx: Context):
@@ -199,14 +199,14 @@ class Levelling(Cog):
         """
         user = target or ctx.message.author
         if user.bot:
-            await ctx.bot.say(":no_entry_sign: **Bots cannot have XP.**")
+            await ctx.channel.send(":no_entry_sign: **Bots cannot have XP.**")
             return
 
         xp = await ctx.bot.rethinkdb.get_user_xp(user)
 
         level, exp_required = get_next_exp_required(xp)
 
-        await ctx.bot.say("**{}** needs `{}` XP to advance to level `{}`.".format(user.name, exp_required,
+        await ctx.channel.send("**{}** needs `{}` XP to advance to level `{}`.".format(user.name, exp_required,
                                                                                   level + 1))
 
     @commands.command(pass_context=True, aliases=["exp"])
@@ -218,12 +218,12 @@ class Levelling(Cog):
         """
         user = target or ctx.message.author
         if user.bot:
-            await ctx.bot.say(":no_entry_sign: **Bots cannot have XP.**")
+            await ctx.channel.send(":no_entry_sign: **Bots cannot have XP.**")
             return
 
         exp = await ctx.bot.rethinkdb.get_user_xp(user)
 
-        await ctx.bot.say("User **{}** has `{}` XP.".format(user.name, exp))
+        await ctx.channel.send("User **{}** has `{}` XP.".format(user.name, exp))
 
 
 def setup(bot: Jokusoramame):

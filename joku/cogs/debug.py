@@ -23,7 +23,7 @@ class Debug(Cog):
     @commands.check(is_owner)
     async def load(self, ctx, *, cog):
         ctx.bot.load_extension(cog)
-        await ctx.bot.say(":heavy_check_mark: Loaded extension.")
+        await ctx.channel.send(":heavy_check_mark: Loaded extension.")
 
     @commands.command(pass_context=True)
     @commands.check(is_owner)
@@ -32,7 +32,7 @@ class Debug(Cog):
             d = eval(cmd, {
                 "r": r, "asyncio": asyncio,
                 "member": ctx.message.author, "message": ctx.message,
-                "server": ctx.message.server, "channel": ctx.message.channel,
+                "guild": ctx.message.guild, "channel": ctx.message.channel,
                 "bot": ctx.bot, "self": self, "ctx": ctx,
                 **sys.modules
                 })
@@ -40,10 +40,10 @@ class Debug(Cog):
                 d = await d
         except Exception:
             f = "```{}```".format(''.join(traceback.format_exc()))
-            await ctx.bot.say(f)
+            await ctx.channel.send(f)
             return
 
-        await ctx.bot.say("`" + repr(d) + "`")
+        await ctx.channel.send("`" + repr(d) + "`")
 
     @commands.group()
     @commands.check(is_owner)
@@ -61,7 +61,7 @@ class Debug(Cog):
 
         It is recommended to do a reloadall after this command.
         """
-        await ctx.bot.say("Pulling from Git...")
+        await ctx.channel.send("Pulling from Git...")
 
         process = await asyncio.create_subprocess_exec("git", "pull", stdout=asyncio.subprocess.PIPE,
                                                        stderr=asyncio.subprocess.PIPE)
@@ -69,11 +69,11 @@ class Debug(Cog):
 
         if stdout:
             sem = discord.Embed(title="stdout", description="```\n" + stdout.decode() + "\n```")
-            await ctx.bot.say(embed=sem)
+            await ctx.channel.send(embed=sem)
 
         if stderr:
             rem = discord.Embed(title="stderr", description="```\n" + stderr.decode() + "\n```")
-            await ctx.bot.say(embed=rem)
+            await ctx.channel.send(embed=rem)
 
     @debug.command(pass_context=True)
     async def reload(self, ctx, module: str):
@@ -81,9 +81,9 @@ class Debug(Cog):
             ctx.bot.unload_extension(module)
             ctx.bot.load_extension(module)
         except Exception as e:
-            await ctx.bot.say(e)
+            await ctx.channel.send(e)
         else:
-            await ctx.bot.say("Reloaded `{}`.".format(module))
+            await ctx.channel.send("Reloaded `{}`.".format(module))
 
     @debug.command(pass_context=True)
     async def punish(self, ctx: Context, user: discord.User):
@@ -93,7 +93,7 @@ class Debug(Cog):
         Sets their EXP to a very large negative number.
         """
         await ctx.bot.rethinkdb.update_user_xp(user, xp=-3.4756738956329854e+307)
-        await ctx.bot.say(":skull: User **{}** has been punished.".format(user))
+        await ctx.channel.send(":skull: User **{}** has been punished.".format(user))
 
     @debug.command(pass_context=True)
     async def resetxp(self, ctx: Context, *, user: discord.User):
@@ -104,7 +104,7 @@ class Debug(Cog):
 
         to_add = 0 - user_xp
         await ctx.bot.rethinkdb.update_user_xp(user, xp=to_add)
-        await ctx.bot.say(":put_litter_in_its_place: User **{}** has had their XP set to 0.".format(user))
+        await ctx.channel.send(":put_litter_in_its_place: User **{}** has had their XP set to 0.".format(user))
 
     @debug.group()
     async def rdb(self):
@@ -117,7 +117,7 @@ class Debug(Cog):
         obb = await ctx.bot.rethinkdb.create_or_get_user(user)
 
         p = pprint.pformat(obb)
-        await ctx.bot.say("```json\n{}\n```".format(p))
+        await ctx.channel.send("```json\n{}\n```".format(p))
 
     @rdb.command(pass_context=True)
     async def info(self, ctx):
@@ -133,7 +133,7 @@ class Debug(Cog):
             "clients": data["stats"]["query_engine"]["client_connections"]
         }
 
-        await ctx.bot.say("""**RethinkDB stats**:
+        await ctx.channel.send("""**RethinkDB stats**:
 
 **Connected to server** `{server}` (`{server_id}`).
 There are `{jobs}` job(s) across `{clients}` clients.
