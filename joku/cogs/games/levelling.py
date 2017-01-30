@@ -99,9 +99,20 @@ class Levelling(Cog):
             user["level"] = new_level
             await r.table("users").insert(user, conflict="update").run(self.bot.rethinkdb.connection)
 
-            await message.channel.send(":up: **{}, you are now level {}!**".format(
-                message.author, new_level
-            ))
+            all_users = await self.bot.rethinkdb.get_multiple_users(*message.guild.members, order_by=r.desc("xp"))
+            index, u = next(filter(lambda j: j[1]["user_id"] == str(message.author.id), enumerate(all_users)))
+
+            em = discord.Embed(title="Level up!")
+            em.description = "**{} is now level {}!**".format(message.author.name, new_level)
+
+            xp = user["xp"]
+            em.add_field(name="XP", value="{} / {}".format(xp, get_next_exp_required(xp)[1]))
+            em.add_field(name="Rank", value="{} / {}".format(index + 1, len(all_users)))
+
+            em.colour = discord.Colour.green()
+            em.set_thumbnail(url=message.author.avatar_url)
+
+            await message.channel.send(embed=em)
 
     @commands.group(pass_context=True, invoke_without_command=True)
     async def level(self, ctx: Context, *, target: discord.Member = None):
@@ -133,7 +144,7 @@ class Levelling(Cog):
 
         This uses the global XP counter.
         """
-        users = await ctx.bot.rethinkdb.get_multiple_users(*ctx.message.server.members, order_by=r.desc("xp"))
+        users = await ctx.bot.rethinkdb.get_multiple_users(*ctx.message.guild.members, order_by=r.desc("xp"))
 
         base = "**Top {} users (in this server):**\n\n".format(num)
 
@@ -143,7 +154,7 @@ class Levelling(Cog):
 
         for n, u in enumerate(users[:num]):
             try:
-                member = ctx.message.server.get_member(u["user_id"]).name
+                member = ctx.message.guild.get_member(int(u["user_id"])).name
                 # Unicode and tables suck
                 member = member.encode("ascii", errors="replace").decode()
             except AttributeError:
