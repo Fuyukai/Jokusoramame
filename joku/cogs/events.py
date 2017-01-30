@@ -206,7 +206,7 @@ class Events(Cog):
             "server": member.guild,
             "channel": channel
         })
-        await member.guild.default_channel.send(msg)
+        await channel.send(msg)
 
     async def on_member_unban(self, guild: discord.Guild, member: discord.User):
         obb = {
@@ -229,7 +229,7 @@ class Events(Cog):
             "server": guild,
             "channel": channel
         })
-        await guild.default_channel.send(msg)
+        await channel.send(msg)
 
     async def on_member_join(self, member: discord.Member):
         """
@@ -259,7 +259,7 @@ class Events(Cog):
             "server": member.guild,
             "channel": channel
         })
-        await member.guild.default_channel.send(msg)
+        await channel.send(msg)
 
     async def on_member_remove(self, member: discord.Member):
         # Log it in the database.
@@ -283,7 +283,7 @@ class Events(Cog):
             "server": member.guild,
             "channel": channel
         })
-        await member.guild.default_channel.send(msg)
+        await channel.send(msg)
 
 
 def setup(bot: Jokusoramame):
