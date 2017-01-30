@@ -177,7 +177,7 @@ class Levelling(Cog):
         """
         users = await ctx.bot.rethinkdb.get_multiple_users(*ctx.message.guild.members, order_by=r.desc("xp"))
 
-        await ctx.bot.type()
+        
 
         async with threadpool():
             with plt.style.context("seaborn-pastel"):
