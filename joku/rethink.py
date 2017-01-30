@@ -338,7 +338,7 @@ class RethinkAdapter(object):
         if not events.get(event):
             return
 
-        channel = guild.get_channel(events[event])
+        channel = guild.get_channel(int(events[event]))
         if not channel:
             return
 
