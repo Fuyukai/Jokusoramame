@@ -34,13 +34,13 @@ class Events(Cog):
 
         self.current_commands = collections.deque(maxlen=20)
 
-    async def on_command(self, command: Command, ctx: Context):
+    async def on_command(self, ctx: Context):
         """
         Called when a command is ran.
         """
         d = {
             "ctx": ctx,
-            "command": command,
+            "command": ctx.command  ,
             "timestamp": datetime.datetime.utcnow()
         }
         self.current_commands.append(d)

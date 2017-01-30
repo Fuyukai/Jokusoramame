@@ -155,7 +155,7 @@ class Tags(Cog):
             "message": ctx.message,
             "channel": ctx.message.channel,
             "author": ctx.message.author,
-            "server": ctx.message.server
+            "server": ctx.message.guild
         }
 
         # Render the template, using the args.
@@ -173,7 +173,7 @@ class Tags(Cog):
                 return
 
         try:
-            await ctx.bot.send_message(ctx.message.channel, rendered)
+            await ctx.message.channel.send(rendered)
         except Exception as e:
             # Panic, and dispatch on_command_error.
             new_e = CommandInvokeError(e)
