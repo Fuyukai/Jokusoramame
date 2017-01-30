@@ -102,17 +102,24 @@ class Levelling(Cog):
             all_users = await self.bot.rethinkdb.get_multiple_users(*message.guild.members, order_by=r.desc("xp"))
             index, u = next(filter(lambda j: j[1]["user_id"] == str(message.author.id), enumerate(all_users)))
 
-            em = discord.Embed(title="Level up!")
-            em.description = "**{} is now level {}!**".format(message.author.name, new_level)
+            if message.channel.permissions_for(message.guild.me).embed_links:
+                em = discord.Embed(title="Level up!")
+                em.description = "**{} is now level {}!**".format(message.author.name, new_level)
 
-            xp = user["xp"]
-            em.add_field(name="XP", value="{} / {}".format(xp, get_next_exp_required(xp)[1]))
-            em.add_field(name="Rank", value="{} / {}".format(index + 1, len(all_users)))
+                xp = user["xp"]
+                required = get_next_exp_required(xp)[1]
+                next_xp = xp + required
+                em.add_field(name="Current XP", value="{} XP".format(xp))
+                em.add_field(name="Required for next level", value="{} XP".format(required))
+                em.add_field(name="Next level up", value="{} XP".format(next_xp))
+                em.add_field(name="Rank", value="{} / {}".format(index + 1, len(all_users)))
 
-            em.colour = discord.Colour.green()
-            em.set_thumbnail(url=message.author.avatar_url)
+                em.colour = discord.Colour.green()
+                em.set_thumbnail(url=message.author.avatar_url)
 
-            await message.channel.send(embed=em)
+                await message.channel.send(embed=em)
+            else:
+                await message.channel.send(":up: **{} is now level {}!**".format(message.author, user["level"]))
 
     @commands.group(pass_context=True, invoke_without_command=True)
     async def level(self, ctx: Context, *, target: discord.Member = None):
