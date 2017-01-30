@@ -24,7 +24,7 @@ class Moderation(Cog):
 
     async def on_member_join(self, member: discord.Member):
         # Rolestate
-        setting = await self.bot.rethinkdb.get_setting(member.server, "rolestate", {})
+        setting = await self.bot.rethinkdb.get_setting(member.guild, "rolestate", {})
         if setting.get("status") == 1:
             roles, nick = await self.bot.rethinkdb.get_rolestate_for_member(member)
 
