@@ -201,8 +201,10 @@ class SingleLoopManager(object):
 
     # alias methods
     def get_all_servers(self):
-        for server in self.bots[0].servers:
+        for server in self.bots[0].guilds:
             yield server
+
+    get_all_guilds = get_all_servers
 
     def get_server(self, server_id: str):
         """
