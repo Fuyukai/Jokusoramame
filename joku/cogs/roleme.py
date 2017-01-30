@@ -101,7 +101,6 @@ class Roleme(Cog):
         guild = ctx.guild  # type: discord.Guild
 
         role_id = await ctx.bot.rethinkdb.get_colourme_role(ctx.author)
-        print(role_id)
         role = discord.utils.get(guild.roles, id=role_id)  # type: discord.Role
 
         role_name = "Colour for {}".format(ctx.author.name[:15])
