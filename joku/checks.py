@@ -17,7 +17,7 @@ def has_permissions(**perms):
         msg = ctx.message
         ch = msg.channel
         permissions = ch.permissions_for(msg.author)
-        if all(getattr(permissions, perm, None) == value for perm, value in perms.items()):
+        if any(getattr(permissions, perm, None) == value for perm, value in perms.items()):
             return True
 
         # Raise a custom error message
