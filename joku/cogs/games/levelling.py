@@ -175,7 +175,7 @@ class Levelling(Cog):
         """
         Plots the XP curve for this server.
         """
-        users = await ctx.bot.rethinkdb.get_multiple_users(*ctx.message.server.members, order_by=r.desc("xp"))
+        users = await ctx.bot.rethinkdb.get_multiple_users(*ctx.message.guild.members, order_by=r.desc("xp"))
 
         await ctx.bot.type()
 
