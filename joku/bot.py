@@ -108,7 +108,7 @@ class Jokusoramame(Bot):
             # Use `jd!` prefix.
             return "jd!"
 
-        if message.server.id == "110373943822540800":
+        if message.guild.id == 110373943822540800:
             # Don't conflict in dbots
             return ["j" + s for s in "?^&$}#~:"]
         return ["j" + s for s in "!?^&$}#~:"]
@@ -156,7 +156,7 @@ class Jokusoramame(Bot):
 
         elif isinstance(exception, CommandOnCooldown):
             await context.channel.send("\U0001f6ab Command is on cooldown. Retry after {} "
-                                       "seconds.".format(exception.retry_after))
+                                       "seconds.".format(round(exception.retry_after, 1)))
 
     async def on_ready(self):
         self.logger.info("Loaded Jokusoramame, logged in as {}#{}.".format(self.user.name, self.user.discriminator))
