@@ -37,12 +37,12 @@ class Reminders(Cog):
         self._is_running_reminders = False
 
     async def _run_reminder(self, record: dict):
-        channel = self.bot.get_channel(record["channel_id"])
+        channel = self.bot.get_channel(int(record["channel_id"]))
         if not channel:
             # Probably not on this shard.
             return
         server = channel.server
-        member = server.get_member(record["user_id"])
+        member = server.get_member(int(record["user_id"]))
 
         # Wait until we need to remind them.
         reminder_time = record["expiration"] - time.time()
@@ -148,8 +148,8 @@ class Reminders(Cog):
         timestamp = dt.timestamp()
 
         object = {
-            "user_id": ctx.message.author.id,
-            "channel_id": ctx.message.channel.id,
+            "user_id": str(ctx.message.author.id),
+            "channel_id": str(ctx.message.channel.id),
             "expiration": timestamp,
             "content": reminder_text,
             "reminder_id": (await r.table("reminders").get_all(ctx.message.author.id, index="user_id")
@@ -216,8 +216,8 @@ class Reminders(Cog):
             return
 
         object = {
-            "user_id": ctx.message.author.id,
-            "channel_id": ctx.message.channel.id,
+            "user_id": str(ctx.message.author.id),
+            "channel_id": str(ctx.message.channel.id),
             "expiration": datetime.datetime.utcnow().timestamp() + diff,
             "content": reminder_text,
             "repeating": True,
@@ -239,7 +239,7 @@ class Reminders(Cog):
         Cancels one of your reminders.
         """
         reminder = await r.table("reminders") \
-            .get_all(ctx.message.author.id, index="user_id") \
+            .get_all(str(ctx.message.author.id), index="user_id") \
             .filter({"reminder_id": reminder_id}).run(self.bot.rethinkdb.connection)
 
         reminder = await self.bot.rethinkdb.to_list(reminder)
@@ -249,7 +249,7 @@ class Reminders(Cog):
 
         # Delete the reminder from the DB.
         i = await r.table("reminders") \
-            .get_all(ctx.message.author.id, index="user_id") \
+            .get_all(str(ctx.message.author.id), index="user_id") \
             .filter({"reminder_id": reminder_id}).delete().run(self.bot.rethinkdb.connection)
 
         await ctx.channel.send(":heavy_check_mark: Deleted reminder.")
@@ -263,7 +263,7 @@ class Reminders(Cog):
         items = []
 
         reminders = await r.table("reminders") \
-            .get_all(ctx.message.author.id, index="user_id") \
+            .get_all(str(ctx.message.author.id), index="user_id") \
             .order_by(r.asc("expiration")) \
             .run(ctx.bot.rethinkdb.connection)
 
@@ -305,7 +305,7 @@ class Reminders(Cog):
         Inspects a reminder for more detailed info about it.
         """
         reminder = await r.table("reminders") \
-            .get_all(ctx.message.author.id, index="user_id") \
+            .get_all(str(ctx.message.author.id), index="user_id") \
             .filter({"reminder_id": reminder_id}).run(self.bot.rethinkdb.connection)
 
         reminder = await self.bot.rethinkdb.to_list(reminder)
@@ -315,12 +315,12 @@ class Reminders(Cog):
 
         reminder = reminder[0]
 
-        if reminder.get("user_id") != ctx.message.author.id and \
+        if int(reminder.get("user_id")) != ctx.message.author.id and \
                         ctx.message.author.id == ctx.bot.owner_id:
             await ctx.channel.send(":x: This reminder does not exist.")
             return
 
-        channel = discord.utils.get(ctx.bot.get_all_channels(), id=reminder.get("channel_id"))
+        channel = discord.utils.get(ctx.bot.get_all_channels(), id=int(reminder.get("channel_id")))
         channel = channel.mention if channel else "<unknown>"
 
         em = discord.Embed(title="Reminder {}".format(reminder_id), description="```\n" + reminder.get("content") +
