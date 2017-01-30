@@ -254,7 +254,7 @@ class Jokusoramame(Bot):
     async def connect(self):
         self.ws = await DiscordWebSocket.from_client(self)
 
-        while not self.is_closed:
+        while not self.is_closed():
             try:
                 await self.ws.poll_event()
             except (ReconnectWebSocket, ResumeWebSocket) as e:
