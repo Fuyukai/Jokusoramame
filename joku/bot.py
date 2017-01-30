@@ -16,7 +16,8 @@ import logging
 
 from discord import Message
 from discord.ext import commands
-from discord.ext.commands import Bot, CommandInvokeError, CheckFailure, MissingRequiredArgument, CommandOnCooldown
+from discord.ext.commands import Bot, CommandInvokeError, CheckFailure, MissingRequiredArgument, CommandOnCooldown, \
+    UserInputError
 from discord.gateway import DiscordWebSocket, ReconnectWebSocket, ResumeWebSocket
 from discord.state import ConnectionState
 from logbook.compat import redirect_logging
@@ -157,6 +158,9 @@ class Jokusoramame(Bot):
         elif isinstance(exception, CommandOnCooldown):
             await context.channel.send("\U0001f6ab Command is on cooldown. Retry after {} "
                                        "seconds.".format(round(exception.retry_after, 1)))
+
+        elif isinstance(exception, UserInputError):
+            await context.channel.send("\U0001f6ab Error: {}".format(' '.join(exception.args)))
 
     async def on_ready(self):
         self.logger.info("Loaded Jokusoramame, logged in as {}#{}.".format(self.user.name, self.user.discriminator))
