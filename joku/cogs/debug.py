@@ -86,7 +86,7 @@ class Debug(Cog):
             await ctx.channel.send("Reloaded `{}`.".format(module))
 
     @debug.command(pass_context=True)
-    async def punish(self, ctx: Context, user: discord.User):
+    async def punish(self, ctx: Context, user: discord.Member):
         """
         Punishes a user.
 
@@ -96,7 +96,7 @@ class Debug(Cog):
         await ctx.channel.send(":skull: User **{}** has been punished.".format(user))
 
     @debug.command(pass_context=True)
-    async def resetxp(self, ctx: Context, *, user: discord.User):
+    async def resetxp(self, ctx: Context, *, user: discord.Member):
         """
         Resets a user's EXP to 0.
         """
