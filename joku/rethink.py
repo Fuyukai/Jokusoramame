@@ -12,6 +12,7 @@ import rethinkdb as r
 import pytz
 
 from joku.utils import get_role
+from rethinkdb.asyncio_net.net_asyncio import AsyncioCursor
 
 r.set_loop_type("asyncio")
 
@@ -27,6 +28,8 @@ class RethinkAdapter(object):
         self.bot = bot
         self.logger = bot.logger  # type: logbook.Logger
 
+    # region Helpers
+
     async def _reql_safe(self, awaitable):
         """
         Runs a REQL operation, but ignoring r.RuntimeError.
@@ -34,6 +37,8 @@ class RethinkAdapter(object):
         try:
             res = await awaitable.run(self.connection)
         except (r.ReqlRuntimeError, r.ReqlOpFailedError) as e:
+            if "already exists" in e.message:
+                return
             self.logger.warn("Failed to run REQL operation: {}".format(e))
         else:
             self.logger.info("Ran {}.".format(awaitable))
@@ -55,6 +60,8 @@ class RethinkAdapter(object):
         await self._reql_safe(r.table_create("todos"))
         await self._reql_safe(r.table_create("reminders"))
         await self._reql_safe(r.table_create("rolestate"))
+        await self._reql_safe(r.table_create("roleme_roles"))
+        await self._reql_safe(r.table_create("roleme_colours"))
 
         # Create indexes.
         await self._reql_safe(r.table("settings").index_create("server_id"))
@@ -63,6 +70,8 @@ class RethinkAdapter(object):
         await self._reql_safe(r.table("todos").index_create("user_id"))
         await self._reql_safe(r.table("reminders").index_create("user_id"))
         await self._reql_safe(r.table("rolestate").index_create("server_id"))
+        await self._reql_safe(r.table("roleme_roles").index_create("server_id"))
+        await self._reql_safe(r.table("roleme_colours").index_create("server_id"))
 
     async def connect(self, **connection_settings):
         """
@@ -71,7 +80,6 @@ class RethinkAdapter(object):
         self.connection = await r.connect(**connection_settings)
         await self._setup()
 
-    # Helpers
     async def to_list(self, cursor) -> list:
         """
         Gets all items from an AsyncioCursor.
@@ -82,7 +90,8 @@ class RethinkAdapter(object):
 
         return l
 
-    # Generic actions
+    # endregion
+    # region Generic Actions
     async def create_or_get_user(self, user: discord.User) -> dict:
         iterator = await r.table("users").get_all(str(user.id), index="user_id").run(self.connection)
 
@@ -120,7 +129,8 @@ class RethinkAdapter(object):
 
         return users
 
-    # Tags
+    # endregion
+    # region Tags
     async def get_all_tags_for_server(self, guild: discord.Guild):
         """
         Returns all tags for a server
@@ -201,7 +211,8 @@ class RethinkAdapter(object):
 
         return d
 
-    # XP
+    # endregion
+    # region XP
     async def get_level(self, user: discord.User):
         u = await self.create_or_get_user(user)
         return u["level"]
@@ -236,8 +247,8 @@ class RethinkAdapter(object):
 
         return user_dict["xp"]
 
-    # Currency
-
+    # endregion
+    # region Currency
     async def update_user_currency(self, user: discord.User, currency=None) -> dict:
         """
         Updates the user's current currency.
@@ -270,8 +281,8 @@ class RethinkAdapter(object):
 
         return user_dict.get("currency", 200)
 
-    # Settings
-
+    # endregion
+    # region Settings
     async def set_setting(self, guild: discord.Guild, setting_name: str, **values: dict) -> dict:
         """
         Sets a setting.
@@ -344,7 +355,8 @@ class RethinkAdapter(object):
 
         return channel, message
 
-    # Ignores
+    # endregion
+    # region Ignores
     async def is_channel_ignored(self, channel: discord.TextChannel, type_: str = "levelling"):
         """
         Checks if a channel has an ignore rule on it.
@@ -360,8 +372,8 @@ class RethinkAdapter(object):
         # and a falsey value ([], None) into False
         return not not items
 
-    # TODOs
-
+    # endregion
+    # region TODOs
     async def get_user_todos(self, user: discord.User) -> typing.List[dict]:
         """
         Gets a list of TODO entries for a user.
@@ -425,7 +437,8 @@ class RethinkAdapter(object):
 
         return [i1, i2]
 
-    # Role state
+    # endregion
+    # region Rolestate
     async def save_rolestate(self, member: discord.Member):
         """
         Saves the rolestate for a specified member.
@@ -478,8 +491,111 @@ class RethinkAdapter(object):
 
         return [get_role(member.guild, int(role_id)) for role_id in obb["roles"]], obb["user_nickname"]
 
-    # Internals
+    # endregion
+    # region Roleme
+    async def add_roleme_role(self, guild: discord.Guild, role: discord.Role):
+        """
+        Adds a role that can be given to users.
+        """
+        guild_obb = await r.table("roleme_roles") \
+            .get_all(str(guild.id), index="server_id") \
+            .run(self.connection)  # type: AsyncioCursor
 
+        try:
+            guild_obb = await guild_obb.__anext__()
+        except StopAsyncIteration:
+            guild_obb = {
+                "server_id": str(guild.id),
+                "roles": []
+            }
+
+        if role.id not in guild_obb["roles"]:
+            guild_obb["roles"].append(str(role.id))
+
+        return await r.table("roleme_roles") \
+            .insert(guild_obb, conflict="update", return_changes=True) \
+            .run(self.connection)
+
+    async def get_roleme_roles(self, guild: discord.Guild) -> typing.List[discord.Role]:
+        """
+        Gets a list of roles that can be given to users.
+        """
+        guild_obb = await r.table("roleme_roles") \
+            .get_all(str(guild.id), index="server_id") \
+            .run(self.connection)
+
+        try:
+            guild_obb = await guild_obb.__anext__()
+        except StopAsyncIteration:
+            return []
+
+        return [get_role(guild, int(role_id)) for role_id in guild_obb["roles"]]
+
+    async def remove_roleme_role(self, guild: discord.Guild, role: discord.Role):
+        """
+        Removes a role from the list of roles that can be given to users.
+        """
+        guild_obb = await r.table("roleme_roles") \
+            .get_all(str(guild.id), index="server_id") \
+            .run(self.connection)  # type: AsyncioCursor
+
+        try:
+            guild_obb = await guild_obb.__anext__()
+        except StopAsyncIteration:
+            return
+
+        if str(role.id) in guild_obb["roles"]:
+            guild_obb["roles"].remove(str(role.id))
+
+        return await r.table("roleme_roles") \
+            .insert(guild_obb, conflict="update", return_changes=True) \
+            .run(self.connection)
+
+    async def get_colourme_role(self, member: discord.Member) -> typing.Union[None, int]:
+        """
+        Gets the role that should be used for `colourme`.
+        """
+        role_id = await r.table("roleme_colours") \
+            .get_all(str(member.guild.id), index="server_id") \
+            .filter({"user_id": str(member.id)}) \
+            .get_field("role_id") \
+            .run(self.connection)
+
+        try:
+            return int(await role_id.__anext__())
+        except StopAsyncIteration:
+            return None
+
+    async def set_colourme_role(self, member: discord.Member, role: discord.Role):
+        """
+        Sets the colourme role for a member.
+        """
+        previous = await r.table("roleme_colours") \
+            .get_all(str(member.guild.id), index="server_id") \
+            .filter({"user_id": member.id}) \
+            .get_field("id") \
+            .run(self.connection)
+
+        try:
+            id = await previous.__anext__()
+        except StopAsyncIteration:
+            id = None
+
+        obb = {
+            "user_id": str(member.id),
+            "role_id": str(role.id),
+            "server_id": str(member.guild.id)
+        }
+        if id:
+            obb["id"] = id
+
+        return await r.table("roleme_colours") \
+            .insert(obb, conflict="update", return_changes=True) \
+            .run(self.connection)
+
+    # endregion
+
+    # region Internals
     async def get_info(self) -> dict:
         """
         :return: Stats about the current cluster.
@@ -496,3 +612,5 @@ class RethinkAdapter(object):
             jobs.append(data)
 
         return {"server_info": serv_info, "stats": cluster_stats, "jobs": jobs}
+
+        # endregion
