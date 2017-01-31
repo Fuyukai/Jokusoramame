@@ -17,6 +17,7 @@ import tabulate
 from joku.bot import Jokusoramame, Context
 from joku.checks import is_owner
 from joku.cogs._common import Cog
+from joku.vendor.safefmt import safe_format
 
 unknown_events = {
     11: "HEARTBEAT_ACK",
@@ -201,7 +202,7 @@ class Events(Cog):
 
         channel, event_msg = i
 
-        msg = event_msg.format(**{
+        msg = safe_format(event_msg, **{
             "member": member,
             "server": member.guild,
             "channel": channel
@@ -224,7 +225,7 @@ class Events(Cog):
 
         channel, event_msg = i
 
-        msg = event_msg.format(**{
+        msg = safe_format(event_msg, **{
             "member": member,
             "server": guild,
             "channel": channel
@@ -254,7 +255,7 @@ class Events(Cog):
 
         channel, event_msg = i
 
-        msg = event_msg.format(**{
+        msg = safe_format(event_msg, **{
             "member": member,
             "server": member.guild,
             "channel": channel
@@ -278,7 +279,7 @@ class Events(Cog):
 
         channel, event_msg = i
 
-        msg = event_msg.format(**{
+        msg = safe_format(event_msg, **{
             "member": member,
             "server": member.guild,
             "channel": channel
