@@ -78,55 +78,55 @@ class Pixiv(Cog):
         """
         Gets a random item from the top 100 daily illustrations.
         """
-        await ctx.bot.type()
-        if not self.pixiv.access_token:
-            await self.pixiv.login(**ctx.bot.config.get("pixiv", {}))
+        async with ctx.channel.typing():
+            if not self.pixiv.access_token:
+                await self.pixiv.login(**ctx.bot.config.get("pixiv", {}))
 
-        data = await self.pixiv.get_rankings(per_page=100)
+            data = await self.pixiv.get_rankings(per_page=100)
 
-        illusts = data["response"]
+            illusts = data["response"]
 
-        item = random.SystemRandom().choice(illusts)
+            item = random.SystemRandom().choice(illusts)
 
-        embed = await self.produce_embed(item)
-        if embed:
-            try:
-                await ctx.channel.send(embed=embed)
-            except discord.HTTPException:
-                await ctx.channel.send(":frowning: Discord didn't like our embed.")
+            embed = await self.produce_embed(item)
+            if embed:
+                try:
+                    await ctx.channel.send(embed=embed)
+                except discord.HTTPException:
+                    await ctx.channel.send(":frowning: Discord didn't like our embed.")
 
     @_pixiv.command(pass_context=True)
     async def search(self, ctx: Context, *, tag: str):
         """
         Searches Pixiv using the specified tag.
         """
-        await ctx.bot.type()
-        if not self.pixiv.access_token:
-            await self.pixiv.login(**ctx.bot.config.get("pixiv", {}))
-        data = await self.pixiv.search_works(tag, per_page=100)
+        async with ctx.channel.typing():
+            if not self.pixiv.access_token:
+                await self.pixiv.login(**ctx.bot.config.get("pixiv", {}))
+            data = await self.pixiv.search_works(tag, per_page=100)
 
-        if data.get("status") == "failure":
-            await ctx.channel.send(":x: Failed to download from pixiv.")
-            return
+            if data.get("status") == "failure":
+                await ctx.channel.send(":x: Failed to download from pixiv.")
+                return
 
-        # 'response' is the actual data key
-        illusts = data["response"]
+            # 'response' is the actual data key
+            illusts = data["response"]
 
-        if not illusts:
-            await ctx.channel.send(":x: No results found.")
-            return
+            if not illusts:
+                await ctx.channel.send(":x: No results found.")
+                return
 
-        # Sort the illusts by score.
-        illusts = sorted(illusts, key=lambda x: x["stats"]["score"], reverse=True)[:30]
+            # Sort the illusts by score.
+            illusts = sorted(illusts, key=lambda x: x["stats"]["score"], reverse=True)[:30]
 
-        item = random.SystemRandom().choice(illusts)
+            item = random.SystemRandom().choice(illusts)
 
-        embed = await self.produce_embed(item)
+            embed = await self.produce_embed(item)
 
-        try:
-            await ctx.channel.send(embed=embed)
-        except discord.HTTPException:
-            await ctx.channel.send(":frowning: Discord didn't like our embed.")
+            try:
+                await ctx.channel.send(embed=embed)
+            except discord.HTTPException:
+                await ctx.channel.send(":frowning: Discord didn't like our embed.")
 
 
 def setup(bot):
