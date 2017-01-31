@@ -88,7 +88,7 @@ Canada: <https://www.problemgambling.ca/Pages/Home.aspx>"""
         """
         Shows the top 10 richest users in this server.
         """
-        users = await ctx.bot.rethinkdb.get_multiple_users(*ctx.message.server.members, order_by=r.desc("currency"))
+        users = await ctx.bot.rethinkdb.get_multiple_users(*ctx.message.guild.members, order_by=r.desc("currency"))
 
         base = "**Top 10 users (in this server):**\n\n```{}```"
 
@@ -98,7 +98,7 @@ Canada: <https://www.problemgambling.ca/Pages/Home.aspx>"""
 
         for n, u in enumerate(users[:10]):
             try:
-                member = ctx.message.server.get_member(u["user_id"]).name
+                member = ctx.message.guild.get_member(int(u["user_id"])).name
                 # Unicode and tables suck
                 member = member.encode("ascii", errors="replace").decode()
             except AttributeError:
