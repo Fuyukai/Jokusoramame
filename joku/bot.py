@@ -109,10 +109,7 @@ class Jokusoramame(Bot):
             # Use `jd!` prefix.
             return "jd!"
 
-        if message.guild.id == 110373943822540800:
-            # Don't conflict in dbots
-            return ["j" + s for s in "?^&$}#~:"]
-        return ["j" + s for s in "!?^&$}#~:"]
+        return ["j" + s for s in "!?^&$}#~:"] + ["J" + s for s in "!?^&$}#~:"]
 
     async def rotate_game_text(self):
         for i in itertools.cycle(self.config.get("game_rotation", [])):
