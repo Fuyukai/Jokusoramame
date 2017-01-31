@@ -76,16 +76,16 @@ class Tags(Cog):
 
         if existing_tag:
             # Check for the admin perm.
-            if not ctx.message.author.server_permissions.administrator:
+            if not ctx.message.author.guild_permissions.administrator:
                 # Check if the owner_id matches the author id.
-                if ctx.message.author.id != existing_tag["owner_id"]:
+                if str(ctx.message.author.id) != existing_tag["owner_id"]:
                     await ctx.channel.send(":x: You cannot edit somebody else's tag.")
                     return
 
             # Don't overwrite the owner_id.
             owner_id = existing_tag["owner_id"]
         else:
-            owner_id = ctx.message.author.id
+            owner_id = str(ctx.message.author.id)
 
         # Replace stuff in content.
         content = content.replace("@everyone", "@\u200beveryone").replace("@here", "@\u200bhere")
