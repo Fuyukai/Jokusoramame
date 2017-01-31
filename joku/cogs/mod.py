@@ -32,6 +32,84 @@ class Moderation(Cog):
             if nick:
                 await member.edit(nick=nick)
 
+    async def on_message(self, message: discord.Message):
+        # Anti mention spam
+
+        # Use a set here as we only want to ban unique mentions
+        mentions = len(set(message.mentions))
+        if mentions < 3:
+            # dont bother loading from DB
+            return
+
+        if message.guild is None:
+            return
+
+        if message.author.top_role >= message.guild.me.top_role or message.author == message.guild.owner:
+            # can't ban anyway
+            return
+
+        c = await self.bot.rethinkdb.get_setting(message.guild, "mention_spam", {
+            "value": False,
+            "threshold": 5
+        })
+        if c["value"] is True:
+            if mentions == c["threshold"]:
+                guild = message.guild  # type: discord.Guild
+                await guild.ban(message.author)
+                await message.channel.send("Member **{}** was automatically banned for going over the mention spam "
+                                           "limit.".format(message.author))
+
+    # anti mention spam
+    @commands.group(pass_context=True, invoke_without_command=True)
+    @checks.has_permissions(ban_members=True)
+    async def antimention(self, ctx: Context, *, status: str = None):
+        """
+        Toggles the antimention status in this server.
+        """
+        previous = await ctx.bot.rethinkdb.get_setting(ctx.guild, "mention_spam", {
+            "value": False,
+            "threshold": 5
+        })
+        if status is None or status not in ["on", "off"]:
+            current_status = previous.get("value", False)
+            if current_status:
+                await ctx.send("Anti-mention spam is currently **on**.")
+            else:
+                await ctx.send("Anti-mention spam is currently **off**.")
+
+            return
+
+        if status == "on":
+            await ctx.bot.rethinkdb.set_setting(ctx.guild, "mention_spam",
+                                                **{
+                                                    "value": True,
+                                                    "threshold": previous["threshold"]
+                                                })
+            await ctx.send(":heavy_check_mark: Enabled anti-mention spam.")
+        elif status == "off":
+            await ctx.bot.rethinkdb.set_setting(ctx.guild, "mention_spam",
+                                                **{
+                                                    "value": False,
+                                                    "threshold": previous["threshold"]
+                                                })
+            await ctx.send(":heavy_check_mark: Disabled anti-mention spam.")
+
+    @antimention.command()
+    async def threshold(self, ctx: Context, threshold: int):
+        """
+        Changes the threshold for anti-mention spam to ban at.
+        """
+        if threshold < 3:
+            await ctx.send(":x: Cannot set a threshold lower than 3.")
+            return
+
+        previous = await ctx.bot.rethinkdb.get_setting(ctx.guild, "mention_spam", {
+            "value": False,
+            "threshold": 5
+        })
+        await ctx.bot.rethinkdb.set_setting(ctx.guild, "mention_spam", value=previous["value"], threshold=threshold)
+        await ctx.send(":heavy_check_mark: Set anti-mention spam threshold to {}.".format(threshold))
+
     @commands.command(pass_context=True)
     @checks.has_permissions(ban_members=True)
     @commands.bot_has_permissions(ban_members=True)
