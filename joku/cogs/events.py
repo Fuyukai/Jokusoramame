@@ -202,11 +202,16 @@ class Events(Cog):
 
         channel, event_msg = i
 
-        msg = safe_format(event_msg, **{
-            "member": member,
-            "server": member.guild,
-            "channel": channel
-        })
+        try:
+            msg = safe_format(event_msg, **{
+                "member": member,
+                "server": member.guild,
+                "channel": channel
+            })
+        except AttributeError as e:
+            await channel.send(":x: Event message has error: `{}`".format(repr(e)))
+            return
+
         await channel.send(msg)
 
     async def on_member_unban(self, guild: discord.Guild, member: discord.User):
@@ -225,11 +230,16 @@ class Events(Cog):
 
         channel, event_msg = i
 
-        msg = safe_format(event_msg, **{
-            "member": member,
-            "server": guild,
-            "channel": channel
-        })
+        try:
+            msg = safe_format(event_msg, **{
+                "member": member,
+                "server": guild,
+                "channel": channel
+            })
+        except AttributeError as e:
+            await channel.send(":x: Event message has error: `{}`".format(repr(e)))
+            return
+
         await channel.send(msg)
 
     async def on_member_join(self, member: discord.Member):
@@ -255,11 +265,16 @@ class Events(Cog):
 
         channel, event_msg = i
 
-        msg = safe_format(event_msg, **{
-            "member": member,
-            "server": member.guild,
-            "channel": channel
-        })
+        try:
+            msg = safe_format(event_msg, **{
+                "member": member,
+                "server": member.guild,
+                "channel": channel
+            })
+        except AttributeError as e:
+            await channel.send(":x: Event message has error: `{}`".format(repr(e)))
+            return
+
         await channel.send(msg)
 
     async def on_member_remove(self, member: discord.Member):
@@ -279,11 +294,16 @@ class Events(Cog):
 
         channel, event_msg = i
 
-        msg = safe_format(event_msg, **{
-            "member": member,
-            "server": member.guild,
-            "channel": channel
-        })
+        try:
+            msg = safe_format(event_msg, **{
+                "member": member,
+                "server": member.guild,
+                "channel": channel
+            })
+        except AttributeError as e:
+            await channel.send(":x: Event message has error: `{}`".format(repr(e)))
+            return
+
         await channel.send(msg)
 
 
