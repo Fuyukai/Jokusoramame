@@ -265,7 +265,7 @@ class Moderation(Cog):
         count = sum(1 for i in fut.result() if not isinstance(i, Exception))
         forbidden = sum(1 for i in fut.result() if isinstance(i, discord.Forbidden))
         httperror = sum(1 for i in fut.result() if isinstance(i, discord.HTTPException)) - forbidden
-        failed = ctx.message.server.member_count - count
+        failed = ctx.message.guild.member_count - count
 
         await ctx.channel.send(
             ":heavy_check_mark: Updated `{}` nicknames - failed to change `{}` nicknames. "
