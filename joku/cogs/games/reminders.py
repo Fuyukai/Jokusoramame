@@ -41,7 +41,7 @@ class Reminders(Cog):
         if not channel:
             # Probably not on this shard.
             return
-        server = channel.server
+        server = channel.guild
         member = server.get_member(int(record["user_id"]))
 
         # Wait until we need to remind them.
