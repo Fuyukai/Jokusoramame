@@ -69,7 +69,7 @@ Canada: <https://www.problemgambling.ca/Pages/Home.aspx>"""
         await ctx.channel.send("TODO")
 
     @commands.group(pass_context=True, invoke_without_command=True)
-    async def currency(self, ctx, *, target: discord.User = None):
+    async def currency(self, ctx, *, target: discord.Member = None):
         """
         Gets the current amount of § a user has.
 
