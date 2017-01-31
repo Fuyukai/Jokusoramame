@@ -38,6 +38,8 @@ class Currency(Cog):
     async def raffle(self, ctx: Context):
         """
         Will you win big or will you lose out?
+
+        This can be ran once per hour.
         """
         currency = await ctx.bot.rethinkdb.get_user_currency(ctx.message.author)
         if currency <= 0:
