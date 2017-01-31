@@ -113,17 +113,17 @@ class Moderation(Cog):
     @commands.command(pass_context=True)
     @checks.has_permissions(ban_members=True)
     @commands.bot_has_permissions(ban_members=True)
-    async def xban(self, ctx: Context, user_id: str):
+    async def xban(self, ctx: Context, user_id: int):
         """
         Cross-bans a user.
         """
-        if user_id in [m.id for m in ctx.message.server.members]:
+        if user_id in [m.id for m in ctx.message.guild.members]:
             await ctx.channel.send(":x: This command is used for banning members not in the server.")
             return
 
         try:
             user = await ctx.bot.get_user_info(user_id)
-            await ctx.bot.http.ban(user_id, ctx.message.server.id, 0)
+            await ctx.bot.http.ban(user_id, ctx.message.guild.id, 0)
         except discord.Forbidden:
             await ctx.channel.send(":x: 403 FORBIDDEN")
         except discord.NotFound:
