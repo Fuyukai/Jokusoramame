@@ -59,7 +59,7 @@ Canada: <https://www.problemgambling.ca/Pages/Home.aspx>"""
         else:
             choice = self.rng.choice(GOOD_RESPONSES)
 
-        await ctx.send(choice.format(amount))
+        await ctx.send(choice.format(abs(amount)))
 
     @commands.group(pass_context=True, invoke_without_command=True)
     async def store(self, ctx: Context):
