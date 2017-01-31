@@ -137,7 +137,7 @@ class Levelling(Cog):
         index, u = next(filter(lambda j: j[1]["user_id"] == str(user.id), enumerate(all_users)))
 
         embed = discord.Embed(title=user.nick or user.name)
-        embed.set_thumbnail(url=ctx.message.author.avatar_url)
+        embed.set_thumbnail(url=user.avatar_url)
 
         embed.add_field(name="Level", value=str(u["level"]))
         embed.add_field(name="Rank", value="{} / {}".format(index + 1, len(all_users)))
