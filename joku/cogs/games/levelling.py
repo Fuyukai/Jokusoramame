@@ -66,7 +66,8 @@ def get_next_exp_required(xp: int, a: int = INCREASING_FACTOR):
     current_level = get_level_from_exp(xp, a)
 
     # Substitute in (n+1) to a* (n*(n+1)  / 2), where n == current_level
-    exp_required = int(a * ((current_level + 1) * (current_level + 2) / 2))
+    # or not idk
+    exp_required = int(a * (current_level * (current_level + 1) / 2))
 
     return current_level, exp_required - xp
 
