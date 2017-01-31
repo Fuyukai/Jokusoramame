@@ -46,7 +46,7 @@ class Core(Cog):
         if not perms.send_messages and perms.read_messages:
             return
 
-        await channel.send(channel, "first")
+        await channel.send("first")
 
     async def ready(self):
         if self.bot.shard_id != 0:
