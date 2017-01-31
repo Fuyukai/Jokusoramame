@@ -120,7 +120,7 @@ def with_redis_cooldown(bucket: str, type_="DAILY"):
             if on_cooldown:
                 ttl = await ctx.bot.redis.get_cooldown_expiration(user, bucket)
                 t = time.strftime('%-H hour(s) %-M minutes', time.gmtime(ttl))
-                await ctx.bot.say(":x: You can run this command again in `{}`.".format(t))
+                await ctx.send(":x: You can run this command again in `{}`.".format(t))
                 return
 
             # Await the inner function.
