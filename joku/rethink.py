@@ -7,6 +7,7 @@ import typing
 
 import discord
 import logbook
+import time
 
 import rethinkdb as r
 import pytz
@@ -103,7 +104,11 @@ class RethinkAdapter(object):
                 "xp": 0,
                 "rep": 0,
                 "currency": 200,
-                "level": 1
+                "level": 1,
+                "booster": {
+                    "expires": None,
+                    "boost": 1.00
+                }
             }
 
         else:
@@ -217,6 +222,22 @@ class RethinkAdapter(object):
         u = await self.create_or_get_user(user)
         return u["level"]
 
+    async def update_user_booster(self, user: discord.User, expires: float, multiplier: int):
+        """
+        Updates the XP booster for a user.
+        """
+        user = await self.create_or_get_user(user)
+
+        user["booster"] = {
+            "expires": expires,
+            "boost": multiplier
+        }
+        d = await r.table("users") \
+            .insert(user, conflict="update", return_changes=True) \
+            .run(self.connection)
+
+        return d
+
     async def update_user_xp(self, user: discord.User, xp=None) -> dict:
         """
         Updates the user's current experience.
@@ -228,7 +249,29 @@ class RethinkAdapter(object):
         if xp:
             added = xp
         else:
-            added = random.randint(1, 3)
+            added = random.uniform(0, 4)
+
+        if "booster" not in user_dict:
+            user_dict["booster"] = {
+                "expires": None,
+                "boost": 1.00
+            }
+
+        # Check the XP booster.
+        expires = user_dict["booster"]["expires"]
+        if expires is not None:
+            # make sure it hasn't expired
+            if expires < time.time():
+                user_dict["booster"] = {
+                    "expires": None,
+                    "boost": 1.00
+                }
+            else:
+                # add more xp
+                # #bourgosie
+                added = added * user_dict["booster"]["boost"]
+
+        added = int(round(added, 0))
 
         user_dict["xp"] += added
         user_dict["last_modified"] = datetime.datetime.now(tz=pytz.timezone("UTC"))
