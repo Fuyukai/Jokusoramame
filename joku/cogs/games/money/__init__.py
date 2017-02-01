@@ -43,6 +43,12 @@ class Currency(Cog):
         """
         currency = await ctx.bot.rethinkdb.get_user_currency(ctx.message.author)
         if currency <= 0:
+            choice = self.rng.randint(0, 10)
+            if choice < 5:
+                await ctx.send(":dragon: A debt collector came and broke your knees. You are now debt free.")
+                await ctx.bot.rethinkdb.update_user_currency(ctx.message.author, abs(currency) + 2)
+                return True
+
             addiction = """Need help with a gambling addiction? We're here to help.
 
 UK: <http://www.gamcare.org.uk/>
