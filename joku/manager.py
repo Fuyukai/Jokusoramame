@@ -100,6 +100,8 @@ class SingleLoopManager(object):
         """
         Gets the number of shards that the bot should use.
         """
+        return 1
+
         async with aiohttp.ClientSession() as sess:
             endpoint = HTTPClient.GATEWAY + "/bot"
 
