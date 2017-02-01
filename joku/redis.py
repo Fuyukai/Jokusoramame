@@ -125,6 +125,8 @@ def with_redis_cooldown(bucket: str, type_="DAILY"):
 
             # Await the inner function.
             f = await func(self, ctx, *args, **kwargs)
+            if f is False:
+                return
 
             # It's not on cooldown, so set cooldown.
             if type_ == "DAILY":
