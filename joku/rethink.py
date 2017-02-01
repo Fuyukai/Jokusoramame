@@ -105,7 +105,9 @@ class RethinkAdapter(object):
                 "rep": 0,
                 "currency": 200,
                 "level": 1,
-                "inventory": {}
+                "inventory": [
+                    {"id": 1, "count": 1}  # oppressed worker is ID 1
+                ]
             }
 
         else:
