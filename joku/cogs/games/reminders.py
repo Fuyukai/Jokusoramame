@@ -36,7 +36,14 @@ class Reminders(Cog):
 
         self._is_running_reminders = False
 
+        # Tracks when a task is running a reminder for the specified record UUID.
+        self._running_reminders = {}
+
     async def _run_reminder(self, record: dict):
+        if record["id"] in self._running_reminders:
+            # Don't re-run.
+            return
+
         channel = self.bot.get_channel(int(record["channel_id"]))
         if not channel:
             # Probably not on this shard.
@@ -50,7 +57,11 @@ class Reminders(Cog):
             # Don't bother.
             return
 
-        await asyncio.sleep(reminder_time)
+        try:
+            self._running_reminders[record["id"]] = True
+            await asyncio.sleep(reminder_time)
+        finally:
+            self._running_reminders.pop(record["id"])
 
         # Send the message, and remove it from the database.
         try:
@@ -121,8 +132,6 @@ class Reminders(Cog):
                     time_left = record.get("expiration") - time.time()
                     if time_left < 300:
                         self.bot.loop.create_task(self._run_reminder(record))
-
-                        # Otherwise, don't bother with the reminder.
 
             except Exception:
                 self.bot.logger.exception()
