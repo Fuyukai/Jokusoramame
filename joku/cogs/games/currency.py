@@ -49,7 +49,7 @@ UK: <http://www.gamcare.org.uk/>
 US: <http://www.ncpgambling.org/>
 Canada: <https://www.problemgambling.ca/Pages/Home.aspx>"""
             await ctx.send(addiction)
-            return
+            return False
 
         amount = self.rng.randint(-600, 300)
 
