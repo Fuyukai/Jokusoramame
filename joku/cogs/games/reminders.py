@@ -164,7 +164,7 @@ class Reminders(Cog):
             "channel_id": str(ctx.message.channel.id),
             "expiration": timestamp,
             "content": reminder_text,
-            "reminder_id": (await r.table("reminders").get_all(ctx.message.author.id, index="user_id")
+            "reminder_id": (await r.table("reminders").get_all(str(ctx.message.author.id), index="user_id")
                             .count().run(ctx.bot.rethinkdb.connection)) + 1,
         }
 
@@ -238,7 +238,7 @@ class Reminders(Cog):
             "content": reminder_text,
             "repeating": True,
             "repeat_time": diff,
-            "reminder_id": (await r.table("reminders").get_all(ctx.message.author.id, index="user_id")
+            "reminder_id": (await r.table("reminders").get_all(str(ctx.message.author.id), index="user_id")
                             .count().run(ctx.bot.rethinkdb.connection)) + 1,
             "usages": 0,
         }
