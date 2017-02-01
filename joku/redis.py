@@ -32,6 +32,24 @@ class RedisAdapter(object):
         """
         return self.pool.get()
 
+    async def clean_stuck_antispam(self):
+        """
+        Cleans stuck antispam keys.
+        """
+        async with self.get_redis() as redis:
+            assert isinstance(redis, aioredis.Redis)
+            to_delete = []
+
+            async for key in redis.iscan(match="exp:*"):
+                ttl = await self.ttl(key)
+                if ttl == -2:
+                    to_delete.append(key)
+
+            removed = await redis.delete("placeholderkey", *to_delete)
+
+        return removed
+
+
     async def prevent_spam(self, user: discord.User):
         """
         Prevents spam by only counting 15 messages per second.
@@ -62,7 +80,7 @@ class RedisAdapter(object):
             await redis.lpush(b, b"A")
             return True
 
-    async def ttl(self, key: str):
+    async def ttl(self, key: bytes):
         async with self.get_redis() as redis:
             return await redis.ttl(key)
 

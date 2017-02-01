@@ -55,6 +55,14 @@ class Debug(Cog):
         """
 
     @debug.command(pass_context=True)
+    async def stuck(self, ctx: Context):
+        """
+        Cleans stuck antispam keys.
+        """
+        stuck = await ctx.bot.redis.clean_stuck_antispam()
+        await ctx.send(":heavy_check_mark: Cleaned `{}` stuck anti-spam keys.".format(stuck))
+
+    @debug.command(pass_context=True)
     async def update(self, ctx: Context):
         """
         Update the bot from git.
