@@ -8,7 +8,6 @@ from joku.bot import Jokusoramame, Context
 from joku.cogs._common import Cog
 from joku.redis import with_redis_cooldown
 
-
 BAD_RESPONSES = [
     ":fire: Your bank account went up in flames and you lost `§{}`.",
     ":grapes: You spend too much in the supermarket and you lost `§{}`.",
@@ -20,6 +19,7 @@ GOOD_RESPONSES = [
     ":medal: You win first place in the Money Making Race and gain `§{}`.",
     ":slot_machine: You have a gambling addiction and win `§{}`.",
 ]
+
 
 class Currency(Cog):
     @commands.command(pass_context=True)
@@ -66,7 +66,13 @@ Canada: <https://www.problemgambling.ca/Pages/Home.aspx>"""
         """
         Store command
         """
-        await ctx.channel.send("TODO")
+        await ctx.channel.send("**Use `store buy` to buy things, or `store sell` to sell things.**")
+
+    @store.command()
+    async def buy(self, ctx: Context, item: str, *, args: str = None):
+        """
+        Buys an item.
+        """
 
     @commands.group(pass_context=True, invoke_without_command=True, aliases=["money"])
     async def currency(self, ctx, *, target: discord.Member = None):
@@ -118,5 +124,4 @@ Canada: <https://www.problemgambling.ca/Pages/Home.aspx>"""
         await ctx.channel.send(fmtted)
 
 
-def setup(bot):
-    bot.add_cog(Currency(bot))
+setup = Currency.setup
