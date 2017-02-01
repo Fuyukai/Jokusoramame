@@ -34,6 +34,7 @@ class RdbLogAdapter(object):
         """
         Creates tables, indexes, etc.
         """
+        return
         await self._reql_safe(r.db_create("joku_logs"))
 
         # Create table(s).
