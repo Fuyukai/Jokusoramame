@@ -128,7 +128,7 @@ class Debug(Cog):
 
         await ctx.channel.send("`{}`".format(d))
 
-    @debug.group()
+    @debug.group(pass_context=False)
     async def rdb(self):
         """
         Command group to inspect the RethinkDB status.
@@ -149,16 +149,19 @@ class Debug(Cog):
         data = await ctx.bot.rethinkdb.get_info()
 
         tmp = {
-            "server": data["server_info"]["name"],
-            "server_id": data["server_info"]["id"],
+            "server_count": len(data["server_info"]),
             "jobs": len(data["jobs"]),
-            "clients": data["stats"]["query_engine"]["client_connections"]
+            "clients": data["stats"]["query_engine"]["client_connections"],
+            "qps": data["stats"]["query_engine"]["queries_per_sec"],
+            "rps": data["stats"]["query_engine"]["read_docs_per_sec"],
+            "wps": data["stats"]["query_engine"]["written_docs_per_sec"],
         }
 
         await ctx.channel.send("""**RethinkDB stats**:
 
-**Connected to server** `{server}` (`{server_id}`).
-There are `{jobs}` job(s) across `{clients}` clients.
+Connected to {server_count} server(s) in this cluster.
+There are {jobs} job(s) across {clients} client(s).
+{qps} queries per second | {rps} read docs per second | {wps} written docs per second
         """.format(**tmp))
 
 
