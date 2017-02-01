@@ -132,7 +132,7 @@ class Tags(Cog):
 
         # Create the arguments for the template.
         args = {
-            "args": shlex.split(ctx.message.content[len(ctx.prefix):]),
+            "args": shlex.split(ctx.message.content[len(ctx.prefix):])[1:],
             "message": copy.copy(ctx.message),
             "channel": copy.copy(ctx.message.channel),
             "author": copy.copy(ctx.message.author),
@@ -149,8 +149,7 @@ class Tags(Cog):
             traceback.print_exception(type(e), e, e.__traceback__)
             rendered = "**Error when compiling template:**\n`{}`".format(e)
         else:
-            if rendered is None:
-                # Tag doesn't exist, return.
+            if not rendered:
                 return
 
         try:
