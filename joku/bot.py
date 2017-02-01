@@ -159,6 +159,9 @@ class Jokusoramame(Bot):
         elif isinstance(exception, UserInputError):
             await context.channel.send("\U0001f6ab Error: {}".format(' '.join(exception.args)))
 
+    async def on_connect(self):
+        await self.change_presence(game=discord.Game(name="Type j!help for help!"))
+
     async def on_ready(self):
         self.logger.info("Loaded Jokusoramame, logged in as {}#{}.".format(self.user.name, self.user.discriminator))
         self.logger.info("Guilds: {}".format(len(self.guilds)))
@@ -206,15 +209,6 @@ class Jokusoramame(Bot):
         for name, cog in self.cogs.items():
             if hasattr(cog, "ready"):
                 self.loop.create_task(cog.ready())
-
-        if self._rotator_task is not None:
-            self._rotator_task.cancel()
-            try:
-                self._rotator_task.result()
-            except Exception:
-                self.logger.exception()
-
-        self._rotator_task = self.loop.create_task(self.rotate_game_text())
 
         new_time = time.time() - self.startup_time
 
