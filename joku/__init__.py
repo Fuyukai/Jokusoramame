@@ -4,9 +4,9 @@ Jokusoramame - a terrible discord bot.
 import aiohttp
 import re
 
-__author__ = "Isaac Dickinson"
+__author__ = "Laura Dickinson"
 
-VERSION = "0.5.0"
+VERSION = "0.6.0"
 VERSIONT = tuple(map(int, VERSION.split(".")))
 
 version_matcher = re.compile(r'VERSION = "(.*)"')
