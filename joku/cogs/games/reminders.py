@@ -40,7 +40,9 @@ class Reminders(Cog):
         self._running_reminders = {}
 
     async def _run_reminder(self, record: dict):
-        if record["id"] in self._running_reminders:
+        r_id = record.get("id", None)
+
+        if r_id in self._running_reminders:
             # Don't re-run.
             return
 
@@ -58,10 +60,12 @@ class Reminders(Cog):
             return
 
         try:
-            self._running_reminders[record["id"]] = True
+            if r_id is not None:
+                self._running_reminders[r_id] = True
             await asyncio.sleep(reminder_time)
         finally:
-            self._running_reminders.pop(record["id"])
+            if r_id is not None:
+                self._running_reminders.pop(r_id)
 
         # Send the message, and remove it from the database.
         try:
@@ -75,7 +79,6 @@ class Reminders(Cog):
             record["repeating"] = False
 
         # Delete from the database.
-        r_id = record.get("id")
         if not r_id:
             # Non database-backed reminder.
             return
@@ -174,7 +177,11 @@ class Reminders(Cog):
             # Add it to the database.
             i = await r.table("reminders").insert(object).run(ctx.bot.rethinkdb.connection)
 
-        await ctx.channel.send(":heavy_check_mark: Will remind you at `{}`.".format(dt))
+        em = discord.Embed(description="Will remind you about `{}`.".format(reminder_text))
+        em.set_footer(text="Reminding at: ")
+        em.timestamp = dt
+
+        await ctx.channel.send(embed=em)
 
     @remind.command(pass_context=True)
     @commands.check(checks.is_owner)
