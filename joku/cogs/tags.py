@@ -7,6 +7,7 @@ import shlex
 import traceback
 from concurrent.futures import ProcessPoolExecutor
 
+import copy
 import discord
 from discord.ext import commands
 from discord.ext.commands import CommandError, CommandNotFound, CommandInvokeError
@@ -38,12 +39,12 @@ class Tags(Cog):
         They are made with `tag create`, and deleted with `tag delete`.
         To be accessed, they are simply called like commands are.
         """
-        tag_obb = await ctx.bot.rethinkdb.get_tag(ctx.message.server, name)
+        tag_obb = await ctx.bot.rethinkdb.get_tag(ctx.message.guild, name)
         if not tag_obb:
             await ctx.channel.send("Tag not found.")
             return
 
-        owner = ctx.bot.get_member(tag_obb["owner_id"])
+        owner = ctx.bot.get_member(int(tag_obb["owner_id"]))
 
         em = discord.Embed(title=tag_obb["name"], description=tag_obb["content"])
         em.add_field(name="Owner", value=owner.mention if owner else "<Unknown>")
@@ -58,9 +59,9 @@ class Tags(Cog):
         Shows all the tags for the current server
         """
         # looks kinda bleak but i try my best *shrug*
-        server_tags = await ctx.bot.rethinkdb.get_all_tags_for_server(ctx.message.server)
+        server_tags = await ctx.bot.rethinkdb.get_all_tags_for_server(ctx.message.guild)
         if not server_tags:
-            await ctx.channel.send("This server has no tags.")
+            await ctx.channel.send(":x: This server has no tags.")
             return
 
         await ctx.channel.send(", ".join([x['name'] for x in server_tags]))
@@ -72,7 +73,7 @@ class Tags(Cog):
 
         This will overwrite other tags with the same name, if you are the owner or an administrator.
         """
-        existing_tag = await ctx.bot.rethinkdb.get_tag(ctx.message.server, name)
+        existing_tag = await ctx.bot.rethinkdb.get_tag(ctx.message.guild, name)
 
         if existing_tag:
             # Check for the admin perm.
@@ -91,7 +92,7 @@ class Tags(Cog):
         content = content.replace("@everyone", "@\u200beveryone").replace("@here", "@\u200bhere")
 
         # Set the tag.
-        await ctx.bot.rethinkdb.save_tag(ctx.message.server, name, content, {}, owner=owner_id)
+        await ctx.bot.rethinkdb.save_tag(ctx.message.guild, name, content, {}, owner=owner_id)
         await ctx.channel.send(":heavy_check_mark: Tag **{}** saved.".format(name))
 
     @tag.command(pass_context=True, aliases=["remove"])
@@ -101,41 +102,21 @@ class Tags(Cog):
 
         You must be the owner of the tag, or an administrator.
         """
-        existing_tag = await ctx.bot.rethinkdb.get_tag(ctx.message.server, name)
+        existing_tag = await ctx.bot.rethinkdb.get_tag(ctx.message.guild, name)
 
         if not existing_tag:
             await ctx.channel.send(":x: This tag does not exist.")
             return
 
         # Check the owner_id
-        if not ctx.message.author.server_permissions.administrator:
+        if not ctx.message.author.guild_permissions.administrator:
             if existing_tag["owner_id"] != ctx.message.author.id:
                 await ctx.channel.send(":x: You do not have permission to edit this tag.")
                 return
 
         # Now, delete the tag.
-        await ctx.bot.rethinkdb.delete_tag(ctx.message.server, name)
+        await ctx.bot.rethinkdb.delete_tag(ctx.message.guild, name)
         await ctx.channel.send(":skull_and_crossbones: Tag deleted.")
-
-    @staticmethod
-    def _render_template(content: str, params: dict):
-        """
-        Renders a template inside a the ProcessPoolExecutor.
-
-        :param content: The content of the template to render.
-        """
-        template_env = SandboxedEnvironment()
-        template_env.globals.update({
-            "random": random,
-            "string": string,
-            "base64": base64,
-            "list": list,
-            "tuple": tuple,
-            "dict": dict
-        })
-
-        tmpl = template_env.from_string(content)
-        return tmpl.render(**params)
 
     # Unlike other bots, tags are registered like full commands.
     # So, they're entirely handled inside on_command_error.
@@ -152,10 +133,10 @@ class Tags(Cog):
         # Create the arguments for the template.
         args = {
             "args": shlex.split(ctx.message.content[len(ctx.prefix):]),
-            "message": ctx.message,
-            "channel": ctx.message.channel,
-            "author": ctx.message.author,
-            "server": ctx.message.guild
+            "message": copy.copy(ctx.message),
+            "channel": copy.copy(ctx.message.channel),
+            "author": copy.copy(ctx.message.author),
+            "server": copy.copy(ctx.message.guild)
         }
 
         # Render the template, using the args.

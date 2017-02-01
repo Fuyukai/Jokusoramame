@@ -1,11 +1,11 @@
 """
 A Jinja2-based tag engine for tags.
 """
+from concurrent.futures import ThreadPoolExecutor
+
 import dill
 import random
 import string
-
-from joku.mp2 import ProcessPoolExecutor
 
 import asyncio
 import discord
@@ -14,8 +14,6 @@ from jinja2.sandbox import SandboxedEnvironment
 
 from joku.bot import Jokusoramame, Context
 
-# Template imports.
-
 
 class TagEngine(object):
     def __init__(self, bot: Jokusoramame):
@@ -23,8 +21,9 @@ class TagEngine(object):
         # This is a SandboxedEnvironment for security purposes.
         self.tmpl_env = SandboxedEnvironment()
 
-        # The ProcessPoolExecutor used.
-        self.executor = ProcessPoolExecutor()
+        # The Thread thing used.
+        # TODO: Hack this to allow cancelling the threads.
+        self.executor = ThreadPoolExecutor()
 
         # The bot instance.
         # We use this for getting the tag instance.
