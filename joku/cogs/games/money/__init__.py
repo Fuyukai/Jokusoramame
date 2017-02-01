@@ -1,6 +1,7 @@
 """"""
 import discord
 import tabulate
+import time
 from discord.ext import commands
 import rethinkdb as r
 
@@ -34,13 +35,20 @@ class Currency(Cog):
         await ctx.channel.send(":money_with_wings: **You have earned `§{}` today.**".format(amount))
 
     @commands.command(pass_context=True)
-    @with_redis_cooldown(bucket="hourly_raffle", type_="HOURLY")
     async def raffle(self, ctx: Context):
         """
         Will you win big or will you lose out?
 
         This can be ran once per hour.
         """
+        ttl = await ctx.bot.redis.get_cooldown_expiration(ctx.message.author, "raffles")
+        if ttl is not None:
+            tm = time.gmtime(ttl)
+            s = time.strftime("%-M", tm)
+            await ctx.send(":x: You've already brought this hour's raffle ticket. "
+                           "Try again in `{}` minutes.".format(s))
+            return
+
         currency = await ctx.bot.rethinkdb.get_user_currency(ctx.message.author)
         if currency <= 0:
             choice = self.rng.randint(0, 10)
@@ -66,6 +74,7 @@ Canada: <https://www.problemgambling.ca/Pages/Home.aspx>"""
             choice = self.rng.choice(GOOD_RESPONSES)
 
         await ctx.send(choice.format(abs(amount)))
+        await ctx.bot.redis.set_bucket_with_expiration(ctx.message.author, "raffles", expiration=3600)
 
     @commands.group(pass_context=True, invoke_without_command=True)
     async def store(self, ctx: Context):
