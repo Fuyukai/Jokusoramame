@@ -42,7 +42,7 @@ class RedisAdapter(object):
 
             async for key in redis.iscan(match="antispam:*"):
                 ttl = await self.ttl(key)
-                if ttl == -2:
+                if ttl == -1:
                     to_delete.append(key)
 
             removed = await redis.delete("placeholderkey", *to_delete)
