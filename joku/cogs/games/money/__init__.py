@@ -109,7 +109,11 @@ Canada: <https://www.problemgambling.ca/Pages/Home.aspx>"""
         Shows your inventory.
         """
         user = await ctx.bot.rethinkdb.create_or_get_user(ctx.author)
-        inv = user["inventory"]
+        try:
+            inv = user["inventory"]
+        except KeyError:
+            await ctx.send(":x: You have no inventory yet.")
+            return
 
         inventory_items = []
         for item in inv:
