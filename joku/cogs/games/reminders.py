@@ -30,14 +30,15 @@ def clean(content: str) -> str:
 
 
 class Reminders(Cog):
+    # Tracks when a task is running a reminder for the specified record UUID.
+    _running_reminders = {}
+
     # Create the empty datetime to be used for the relative datetime.
     def __init__(self, bot: Jokusoramame):
         super().__init__(bot)
 
         self._is_running_reminders = False
 
-        # Tracks when a task is running a reminder for the specified record UUID.
-        self._running_reminders = {}
 
     async def _run_reminder(self, record: dict):
         r_id = record.get("id", None)
