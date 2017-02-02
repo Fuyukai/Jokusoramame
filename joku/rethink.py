@@ -12,7 +12,7 @@ import time
 import rethinkdb as r
 import pytz
 
-from joku.utils import get_role
+from joku.utils import get_role, get_index
 from rethinkdb.asyncio_net.net_asyncio import AsyncioCursor
 
 r.set_loop_type("asyncio")
@@ -286,6 +286,83 @@ class RethinkAdapter(object):
         user_dict = await self.create_or_get_user(user)
 
         return user_dict.get("currency", 200)
+
+    async def add_item_to_inventory(self, member: discord.Member, item_id: int):
+        """
+        Adds an item to a member's inventory.
+        """
+        user = await self.create_or_get_user(member)
+
+        if "inventory" not in user:
+            user["inventory"] = [
+                {"id": 1, "count": 1}
+            ]
+
+        # Horrible.
+        inventory = user["inventory"]
+        index = get_index(lambda x: x["id"] == item_id, inventory)
+        if index is not None:
+            inventory[index] = {
+                "id": item_id,
+                "count": inventory[index]["count"] + 1
+            }
+        else:
+            inventory[index] = {
+                "id": item_id,
+                "count": 1
+            }
+
+        user["inventory"] = inventory
+
+        d = await r.table("users") \
+            .insert(user, conflict="update", return_changes=True) \
+            .run(self.connection)
+
+        return d
+
+    async def remove_item_from_inventory(self, member: discord.Member, item_id: int):
+        """
+        Removes an item from a member's inventory.
+        """
+        user = await self.create_or_get_user(member)
+
+        if "inventory" not in user:
+            user["inventory"] = [
+                {"id": 1, "count": 1}
+            ]
+        inventory = user["inventory"]
+        index = get_index(lambda x: x["id"] == item_id, inventory)
+        if index is not None:
+            inventory[index] = {
+                "id": item_id,
+                "count": inventory[index]["count"] - 1
+            }
+        # no need for the else check
+        user["inventory"] = inventory
+
+        d = await r.table("users") \
+            .insert(user, conflict="update", return_changes=True) \
+            .run(self.connection)
+
+        return d
+
+    async def get_user_item_count(self, member: discord.Member, item_id: int):
+        """
+        Gets the item count of an item in a member's inventory.
+        """
+        user = await self.create_or_get_user(member)
+
+        if "inventory" not in user:
+            user["inventory"] = [
+                {"id": 1, "count": 1}
+            ]
+
+        inventory = user["inventory"]
+        index = get_index(lambda x: x["id"] == item_id, inventory)
+        if index is None:
+            return 0
+
+        return inventory[index]["count"]
 
     # endregion
     # region Settings
@@ -606,7 +683,7 @@ class RethinkAdapter(object):
         """
         :return: Stats about the current cluster.
         """
-        serv_info = await (await r.db("rethinkdb").table("server_config").run(self.connection)).next()
+        serv_info = await self.to_list((await r.db("rethinkdb").table("server_config").run(self.connection)))
         cluster_stats = await r.db("rethinkdb").table("stats").get(["cluster"]).run(self.connection)
 
         jobs = []

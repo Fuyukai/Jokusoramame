@@ -39,7 +39,6 @@ class Reminders(Cog):
 
         self._is_running_reminders = False
 
-
     async def _run_reminder(self, record: dict):
         r_id = record.get("id", None)
 
@@ -248,7 +247,7 @@ class Reminders(Cog):
         i = await r.table("reminders").insert(object).run(ctx.bot.rethinkdb.connection)
 
         await ctx.channel.send(":heavy_check_mark: Will start reminding you at `{}`, then every `{}` seconds after.."
-                          .format(dt, diff))
+                               .format(dt, diff))
 
     @remind.command(pass_context=True)
     async def cancel(self, ctx: Context, *, reminder_id: int):

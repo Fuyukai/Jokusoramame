@@ -12,6 +12,12 @@ def get_role(guild: discord.Guild, role_id: int) -> discord.Role:
     return discord.utils.get(guild.roles, id=role_id)
 
 
+def get_index(cbl, item: typing.Iterable):
+    for num, _ in enumerate(item):
+        if cbl(_):
+            return num
+
+
 def calculate_server_shard(guild: discord.Guild, shard_count: int) -> int:
     """
     Calculates the shard that this server will run on with ``shard_count`` shards.

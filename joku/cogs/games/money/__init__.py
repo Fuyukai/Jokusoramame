@@ -7,6 +7,7 @@ import rethinkdb as r
 
 from joku.bot import Jokusoramame, Context
 from joku.cogs._common import Cog
+from joku.cogs.games.money.inventory import get_item_by_name, BaseItem, get_item_by_id
 from joku.redis import with_redis_cooldown
 
 BAD_RESPONSES = [
@@ -84,10 +85,65 @@ Canada: <https://www.problemgambling.ca/Pages/Home.aspx>"""
         await ctx.channel.send("**Use `store buy` to buy things, or `store sell` to sell things.**")
 
     @store.command()
-    async def buy(self, ctx: Context, item: str, *, args: str = None):
+    async def buy(self, ctx: Context, *, item: str):
         """
         Buys an item.
         """
+        item = get_item_by_name(item)
+        if item is None:
+            await ctx.send(":x: Item does not exist.")
+            return
+
+        cls = item(ctx)  # type: BaseItem
+        price = await cls.buy()
+
+        if price is None:
+            await ctx.send(":x: You do not have enough money to buy this.")
+            return
+
+        await ctx.send(":heavy_check_mark: Brought `{}` for `§{}`.".format(cls.name, price))
+
+    @commands.command(aliases=["inv"])
+    async def inventory(self, ctx: Context):
+        """
+        Shows your inventory.
+        """
+        user = await ctx.bot.rethinkdb.create_or_get_user(ctx.author)
+        inv = user["inventory"]
+
+        inventory_items = []
+        for item in inv:
+            id, count = item["id"], item["count"]
+            item = get_item_by_id(id)
+
+            if not item:
+                # ok
+                continue
+
+            inventory_items.append((item.name, count))
+
+        fmt = "**Inventory for {}:**\n\n".format(ctx.author.name)
+        fmt += ", ".join("`{} ({})`".format(item, count) for (item, count) in inventory_items)
+        await ctx.send(fmt)
+
+    @commands.command()
+    async def use(self, ctx: Context, *, item: str):
+        """
+        Uses an item.
+        """
+        item = get_item_by_name(item)
+        if not item:
+            await ctx.send(":x: This item does not exist.")
+            return
+
+        count = await ctx.bot.rethinkdb.get_user_item_count(ctx.author, item.id)
+        if count <= 0:
+            await ctx.send(":x: You do not have any of these.")
+            return
+
+        # make a new instance and call `.use()`
+        item = item(ctx)  # type: BaseItem
+        await item.use()
 
     @commands.group(pass_context=True, invoke_without_command=True, aliases=["money"])
     async def currency(self, ctx, *, target: discord.Member = None):
