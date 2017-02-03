@@ -1,5 +1,6 @@
 """"""
 import discord
+import numpy as np
 import tabulate
 import time
 from discord.ext import commands
@@ -66,9 +67,9 @@ Canada: <https://www.problemgambling.ca/Pages/Home.aspx>"""
             await ctx.send(addiction)
             return False
 
-        amount = self.rng.randint(-600, 300)
+        amount = int((300 * np.random.randn()) + 100)  # weight slightly towards positive
 
-        await ctx.bot.rethinkdb.update_user_currency(ctx.message.author, amount)
+        await ctx.bot.rethinkdb.update_user_currency(ctx.message.author, int(amount))
         if amount < 0:
             choice = self.rng.choice(BAD_RESPONSES)
         else:
