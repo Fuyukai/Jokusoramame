@@ -273,8 +273,13 @@ class RethinkAdapter(object):
         user_dict["currency"] += added
         user_dict["last_modified"] = datetime.datetime.now(tz=pytz.timezone("UTC"))
 
+        if 'id' in user_dict:
+            id = user_dict["id"]
+            # delete and re-insert it
+            await r.table("users").get(id).delete().run(self.connection)
+
         d = await r.table("users") \
-            .insert(user_dict, conflict="replace", return_changes=True) \
+            .insert(user_dict, return_changes=True) \
             .run(self.connection)
 
         return d
