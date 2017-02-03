@@ -4,6 +4,8 @@ import numpy as np
 import tabulate
 import time
 from discord.ext import commands
+from discord.ext.commands import BucketType
+
 import rethinkdb as r
 
 from joku.bot import Jokusoramame, Context
@@ -86,6 +88,7 @@ Canada: <https://www.problemgambling.ca/Pages/Home.aspx>"""
         await ctx.channel.send("**Use `store buy` to buy things, or `store sell` to sell things.**")
 
     @store.command()
+    @commands.cooldown(1, 5, BucketType.user)
     async def buy(self, ctx: Context, *, item: str):
         """
         Buys an item.
@@ -132,6 +135,7 @@ Canada: <https://www.problemgambling.ca/Pages/Home.aspx>"""
         await ctx.send(fmt)
 
     @commands.command()
+    @commands.cooldown(1, 5, BucketType.user)
     async def use(self, ctx: Context, *, item: str):
         """
         Uses an item.
