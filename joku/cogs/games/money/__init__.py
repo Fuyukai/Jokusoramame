@@ -47,7 +47,7 @@ class Currency(Cog):
             tm = time.gmtime(ttl)
             s = time.strftime("%-M", tm)
             await ctx.send(":x: You've already bought this hour's raffle ticket. "
-                           "Try again in `{}` minutes.".format(s))
+                           "Try again in `{}` minute(s).".format(s))
             return
 
         currency = await ctx.bot.rethinkdb.get_user_currency(ctx.message.author)
