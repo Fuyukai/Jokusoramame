@@ -2,6 +2,7 @@
 A RethinkDB database interface.
 """
 import datetime
+import os
 import random
 import typing
 
@@ -45,6 +46,28 @@ class RethinkAdapter(object):
             self.logger.info("Ran {}.".format(awaitable))
             return res
 
+    async def _atomic_migrate(self):
+        self.logger.info("Atomically migrating users...")
+        self.logger.info("Creating backup table and copying data...")
+        await r.table_create("users_backup").run(self.connection)
+        copied = (await r.table("users_backup").insert(r.table("users")).run(self.connection))["inserted"]
+        self.logger.info("Backed up {} entries.".format(copied))
+        await r.table_drop("users").run(self.connection)
+        self.logger.info("Destroyed users table.")
+        await r.table_create("users", primary_key="user_id").run(self.connection)
+        self.logger.info("Created new users table.")
+        inserted = (await r.table("users").insert(r.table("users_backup")).run(self.connection))["inserted"]
+        if inserted != copied:
+            self.logger.critical("Failed to copy all records to the new table! The data is preserved in the table "
+                                 "`users_backup`. Rows copied: {} | Rows inserted: {}".format(copied, inserted))
+        self.logger.info("Copied data into the new users table. Copying `currency` to `money`.")
+        # evil
+        x = await r.table("users")\
+            .replace(lambda row: row.without("currency").merge({"money": row["currency"]}))\
+            .run(self.connection)
+        self.logger.info("Updated {} rows.".format(x["replaced"]))
+        self.logger.info("Successfully migrated all data. Delete `users_backup` to destroy old table.")
+
     async def _setup(self):
         """
         Ugh.
@@ -55,24 +78,29 @@ class RethinkAdapter(object):
         # Make the DB.
         await self._reql_safe(r.db_create("jokusoramame"))
         # Make the tables.
+
+        # Settings: Primary key is [server_id, name]
         await self._reql_safe(r.table_create("settings"))
-        await self._reql_safe(r.table_create("users"))
+        await self._reql_safe(r.table_create("users", primary_key="user_id"))
+        # Tags: Primary key is [server_id, name]
         await self._reql_safe(r.table_create("tags"))
         await self._reql_safe(r.table_create("todos"))
         await self._reql_safe(r.table_create("reminders"))
+        # Rolestate: Primary key is [server_id, user_id]
         await self._reql_safe(r.table_create("rolestate"))
-        await self._reql_safe(r.table_create("roleme_roles"))
+        await self._reql_safe(r.table_create("roleme_roles")),  # primary_key="server_id"))
+        # Roleme_colours: Primary key is [server_id, user_id]
         await self._reql_safe(r.table_create("roleme_colours"))
 
         # Create indexes.
         await self._reql_safe(r.table("settings").index_create("server_id"))
-        await self._reql_safe(r.table("users").index_create("user_id"))
+        # await self._reql_safe(r.table("users").index_create("user_id"))
         await self._reql_safe(r.table("tags").index_create("server_id"))
         await self._reql_safe(r.table("todos").index_create("user_id"))
         await self._reql_safe(r.table("reminders").index_create("user_id"))
-        await self._reql_safe(r.table("rolestate").index_create("server_id"))
-        await self._reql_safe(r.table("roleme_roles").index_create("server_id"))
-        await self._reql_safe(r.table("roleme_colours").index_create("server_id"))
+        # await self._reql_safe(r.table("rolestate").index_create("server_id"))
+        # await self._reql_safe(r.table("roleme_roles").index_create("server_id"))
+        # await self._reql_safe(r.table("roleme_colours").index_create("server_id"))
 
     async def connect(self, **connection_settings):
         """
@@ -94,10 +122,8 @@ class RethinkAdapter(object):
     # endregion
     # region Generic Actions
     async def create_or_get_user(self, user: discord.User) -> dict:
-        iterator = await r.table("users").get_all(str(user.id), index="user_id").run(self.connection)
-
-        exists = await iterator.fetch_next()
-        if not exists:
+        u_obb = await r.table("users").get(str(user.id)).run(self.connection)
+        if not u_obb:
             # Create a new user.
             return {
                 "user_id": str(user.id),
@@ -111,10 +137,7 @@ class RethinkAdapter(object):
             }
 
         else:
-            # Get the next item from the iterator.
-            # Hopefully, this is the right one.
-            d = await iterator.next()
-            return d
+            return u_obb
 
     async def get_multiple_users(self, *users: typing.List[discord.User], order_by=None):
         """
@@ -123,7 +146,7 @@ class RethinkAdapter(object):
         ids = [str(u.id) for u in users]
 
         # Do a get_all using the ids as the items.
-        _q = r.table("users").get_all(*ids, index="user_id")
+        _q = r.table("users").get_all(*ids)
         if order_by is None:
             iterator = await _q.run(self.connection)
             users = await self.to_list(iterator)
@@ -272,11 +295,6 @@ class RethinkAdapter(object):
 
         user_dict["currency"] += added
         user_dict["last_modified"] = datetime.datetime.now(tz=pytz.timezone("UTC"))
-
-        if 'id' in user_dict:
-            id = user_dict["id"]
-            # delete and re-insert it
-            await r.table("users").get(id).delete().run(self.connection)
 
         d = await r.table("users") \
             .insert(user_dict, return_changes=True) \
