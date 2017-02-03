@@ -274,7 +274,7 @@ class RethinkAdapter(object):
         user_dict["last_modified"] = datetime.datetime.now(tz=pytz.timezone("UTC"))
 
         d = await r.table("users") \
-            .insert(user_dict, conflict="update", return_changes=True) \
+            .insert(user_dict, conflict="replace", return_changes=True) \
             .run(self.connection)
 
         return d
