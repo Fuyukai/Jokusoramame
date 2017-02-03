@@ -129,7 +129,7 @@ class RethinkAdapter(object):
                 "user_id": str(user.id),
                 "xp": 0,
                 "rep": 0,
-                "currency": 200,
+                "money": 200,
                 "level": 1,
                 "inventory": [
                     {"id": 1, "count": 1}  # oppressed worker is ID 1
@@ -290,10 +290,10 @@ class RethinkAdapter(object):
             added = 50
 
         # Failsafe
-        if 'currency' not in user_dict:
-            user_dict['currency'] = 200
+        if 'money' not in user_dict:
+            user_dict['money'] = 200
 
-        user_dict["currency"] += added
+        user_dict["money"] += added
         user_dict["last_modified"] = datetime.datetime.now(tz=pytz.timezone("UTC"))
 
         d = await r.table("users") \
@@ -308,7 +308,7 @@ class RethinkAdapter(object):
         """
         user_dict = await self.create_or_get_user(user)
 
-        return user_dict.get("currency", 200)
+        return user_dict.get("money", 200)
 
     async def add_item_to_inventory(self, member: discord.Member, item_id: int):
         """
