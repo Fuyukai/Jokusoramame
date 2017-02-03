@@ -17,6 +17,7 @@ mpl.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy.polynomial import Polynomial as P
+import seaborn as sns
 
 from joku.bot import Jokusoramame, Context
 from joku.cogs._common import Cog
@@ -189,25 +190,28 @@ class Levelling(Cog):
         """
         users = await ctx.bot.rethinkdb.get_multiple_users(*ctx.message.guild.members, order_by=r.desc("xp"))
 
-        async with threadpool():
-            with plt.style.context("seaborn-pastel"):
-                lvls = np.array([user["level"] for user in users if user["level"] >= 0])
-                lvls = reject_outliers(lvls)
-                plt.hist(lvls, bins=np.arange(lvls.min(), lvls.max() + 1))
+        async with ctx.channel.typing():
+            async with threadpool():
+                with plt.style.context("seaborn-pastel"):
+                    lvls = np.array([user["level"] for user in users if user["level"] >= 0])
+                    lvls = reject_outliers(lvls)
+                    ax = sns.distplot(lvls)
 
-                plt.xlabel("Level")
-                plt.ylabel("Frequency")
-                plt.title("Level frequency for {}".format(ctx.message.guild.name))
+                    # seaborn uses pyplot internally
+                    # so we can still set these
 
-                buf = BytesIO()
-                plt.savefig(buf, format="png")
+                    plt.xlabel("Level")
+                    plt.title("Level distribution curve for {}".format(ctx.message.guild.name))
 
-                # Don't send 0-byte files
-                buf.seek(0)
+                    buf = BytesIO()
+                    plt.savefig(buf, format="png")
 
-                # Cleanup.
-                plt.clf()
-                plt.cla()
+                    # Don't send 0-byte files
+                    buf.seek(0)
+
+                    # Cleanup.
+                    plt.clf()
+                    plt.cla()
 
         await ctx.channel.send(file=buf, filename="plot.png")
 
