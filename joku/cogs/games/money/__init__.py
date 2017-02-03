@@ -69,7 +69,8 @@ Canada: <https://www.problemgambling.ca/Pages/Home.aspx>"""
 
         amount = int((300 * np.random.randn()) + 100)  # weight slightly towards positive
 
-        await ctx.bot.rethinkdb.update_user_currency(ctx.message.author, int(amount))
+        r = await ctx.bot.rethinkdb.update_user_currency(ctx.message.author, int(amount))
+        await ctx.send("```{}```".format(r))
         if amount < 0:
             choice = self.rng.choice(BAD_RESPONSES)
         else:
