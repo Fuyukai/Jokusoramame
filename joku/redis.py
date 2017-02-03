@@ -65,6 +65,9 @@ class RedisAdapter(object):
                 await redis.expire(b, 60)
                 return True
 
+            if await redis.ttl(b) == -1:
+                await redis.expire(b, 60)
+
             # Since it does exist, check the length.
             l_len = await redis.llen(b)
 
