@@ -89,19 +89,19 @@ class Levelling(Cog):
             return
 
         # Check if this channel should be ignored for levelling.
-        if await self.bot.rethinkdb.is_channel_ignored(message.channel, type_="levels"):
+        if await self.bot.database.is_channel_ignored(message.channel, type_="levels"):
             return
 
-        user = await self.bot.rethinkdb.update_user_xp(message.author)
+        user = await self.bot.database.update_user_xp(message.author)
         # Get the level.
         new_level = get_level_from_exp(user["xp"])
 
         if user.get("level", 0) < new_level:
             # todo: make this better
             user["level"] = new_level
-            await r.table("users").insert(user, conflict="update").run(self.bot.rethinkdb.connection)
+            await r.table("users").insert(user, conflict="update").run(self.bot.database.connection)
 
-            all_users = await self.bot.rethinkdb.get_multiple_users(*message.guild.members, order_by=r.desc("xp"))
+            all_users = await self.bot.database.get_multiple_users(*message.guild.members, order_by=r.desc("xp"))
             index, u = next(filter(lambda j: j[1]["user_id"] == str(message.author.id), enumerate(all_users)))
 
             if message.channel.permissions_for(message.guild.me).embed_links:
@@ -134,7 +134,7 @@ class Levelling(Cog):
             await ctx.channel.send(":no_entry_sign: **Bots cannot have XP.**")
             return
 
-        all_users = await ctx.bot.rethinkdb.get_multiple_users(*ctx.message.guild.members, order_by=r.desc("xp"))
+        all_users = await ctx.bot.database.get_multiple_users(*ctx.message.guild.members, order_by=r.desc("xp"))
 
         index, u = next(filter(lambda j: j[1]["user_id"] == str(user.id), enumerate(all_users)))
 
@@ -157,7 +157,7 @@ class Levelling(Cog):
 
         This uses the global XP counter.
         """
-        users = await ctx.bot.rethinkdb.get_multiple_users(*ctx.message.guild.members, order_by=r.desc("xp"))
+        users = await ctx.bot.database.get_multiple_users(*ctx.message.guild.members, order_by=r.desc("xp"))
 
         base = "**Top {} users (in this server):**\n\n".format(num)
 
@@ -188,7 +188,7 @@ class Levelling(Cog):
         """
         Plots the XP curve for this server.
         """
-        users = await ctx.bot.rethinkdb.get_multiple_users(*ctx.message.guild.members, order_by=r.desc("xp"))
+        users = await ctx.bot.database.get_multiple_users(*ctx.message.guild.members, order_by=r.desc("xp"))
 
         async with ctx.channel.typing():
             async with threadpool():

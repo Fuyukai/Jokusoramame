@@ -53,12 +53,12 @@ class Currency(Cog):
                            "Try again in `{}` minute(s).".format(s))
             return
 
-        currency = await ctx.bot.rethinkdb.get_user_currency(ctx.message.author)
+        currency = await ctx.bot.database.get_user_currency(ctx.message.author)
         if currency <= 0:
             choice = self.rng.randint(0, 10)
             if choice < 5:
                 await ctx.send(":dragon: A debt collector came and broke your knees. You are now debt free.")
-                await ctx.bot.rethinkdb.update_user_currency(ctx.message.author, abs(currency) + 2)
+                await ctx.bot.database.update_user_currency(ctx.message.author, abs(currency) + 2)
                 return True
 
             addiction = """Need help with a gambling addiction? We're here to help.
@@ -71,7 +71,7 @@ Canada: <https://www.problemgambling.ca/Pages/Home.aspx>"""
 
         amount = int((300 * np.random.randn()) + 100)  # weight slightly towards positive
 
-        await ctx.bot.rethinkdb.update_user_currency(ctx.message.author, int(amount))
+        await ctx.bot.database.update_user_currency(ctx.message.author, int(amount))
         if amount < 0:
             choice = self.rng.choice(BAD_RESPONSES)
         else:
@@ -112,7 +112,7 @@ Canada: <https://www.problemgambling.ca/Pages/Home.aspx>"""
         """
         Shows your inventory.
         """
-        user = await ctx.bot.rethinkdb.create_or_get_user(ctx.author)
+        user = await ctx.bot.database.create_or_get_user(ctx.author)
         try:
             inv = user["inventory"]
         except KeyError:
@@ -145,7 +145,7 @@ Canada: <https://www.problemgambling.ca/Pages/Home.aspx>"""
             await ctx.send(":x: This item does not exist.")
             return
 
-        count = await ctx.bot.rethinkdb.get_user_item_count(ctx.author, item.id)
+        count = await ctx.bot.database.get_user_item_count(ctx.author, item.id)
         if count <= 0:
             await ctx.send(":x: You do not have any of these.")
             return

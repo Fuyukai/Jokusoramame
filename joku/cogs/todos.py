@@ -19,7 +19,7 @@ class Todos(Cog):
         """
         if target is None:
             target = ctx.message.author
-        todos = await ctx.bot.rethinkdb.get_user_todos(target)
+        todos = await ctx.bot.database.get_user_todos(target)
 
         # M O R E T A B L E S
         headers = ["Priority", "Content"]
@@ -41,7 +41,7 @@ class Todos(Cog):
         """
         Adds something to your TODO list.
         """
-        i = await ctx.bot.rethinkdb.add_user_todo(ctx.message.author, content)
+        i = await ctx.bot.database.add_user_todo(ctx.message.author, content)
         # Get the new priority from the changes.
         priority = i["changes"][0]["new_val"]["priority"]
         await ctx.channel.send(":heavy_check_mark: Added TODO item `{}`.".format(priority))
@@ -54,7 +54,7 @@ class Todos(Cog):
         if index < 1:
             await ctx.channel.send(":x: Indexes must be above zero.")
             return
-        i = await ctx.bot.rethinkdb.delete_user_todo(ctx.message.author, index)
+        i = await ctx.bot.database.delete_user_todo(ctx.message.author, index)
 
         removed = i[0]
         if removed["deleted"] == 0:

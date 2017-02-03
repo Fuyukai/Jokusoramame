@@ -195,7 +195,7 @@ class Events(Cog):
         }
         await self.bot.rdblog.log(obb)
 
-        i = await self.bot.rethinkdb.get_event_message(member.guild, "bans", "`{member.name}` got **bent**")
+        i = await self.bot.database.get_event_message(member.guild, "bans", "`{member.name}` got **bent**")
 
         if not i:
             return
@@ -223,7 +223,7 @@ class Events(Cog):
         }
         await self.bot.rdblog.log(obb)
 
-        i = await self.bot.rethinkdb.get_event_message(guild, "unbans", "`{member.name}` got **unbent**")
+        i = await self.bot.database.get_event_message(guild, "unbans", "`{member.name}` got **unbent**")
 
         if not i:
             return
@@ -258,7 +258,7 @@ class Events(Cog):
         }
         await self.bot.rdblog.log(obb)
 
-        i = await self.bot.rethinkdb.get_event_message(member.guild, "joins", "Welcome {member.name}!")
+        i = await self.bot.database.get_event_message(member.guild, "joins", "Welcome {member.name}!")
 
         if not i:
             return
@@ -287,7 +287,7 @@ class Events(Cog):
         }
         await self.bot.rdblog.log(obb)
 
-        i = await self.bot.rethinkdb.get_event_message(member.guild, "leaves", "Bye {member.name}!")
+        i = await self.bot.database.get_event_message(member.guild, "leaves", "Bye {member.name}!")
 
         if not i:
             return

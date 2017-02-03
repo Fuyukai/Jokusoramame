@@ -35,8 +35,8 @@ class Config(Cog):
         """
         Allows you to edit which events you are subscribed to on this bot.
         """
-        assert isinstance(ctx.bot.rethinkdb, RethinkAdapter)
-        welcome_setting = await ctx.bot.rethinkdb.get_setting(ctx.message.guild, "events")
+        assert isinstance(ctx.bot.database, RethinkAdapter)
+        welcome_setting = await ctx.bot.database.get_setting(ctx.message.guild, "events")
 
         if welcome_setting is None:
             await ctx.channel.send("Your server's notification settings is **off**.")
@@ -70,7 +70,7 @@ class Config(Cog):
             return
 
         # Add it to the events dict.
-        d = await self.bot.rethinkdb.get_setting(ctx.message.guild, "events")
+        d = await self.bot.database.get_setting(ctx.message.guild, "events")
         # Below, we use the channel ID as it is truthy.
         # It also signifies what channel to spam for the events.
         if not d:
@@ -81,7 +81,7 @@ class Config(Cog):
             d = {"events": d["events"]}
             d["events"][event] = str(ctx.message.channel.id)
 
-        await ctx.bot.rethinkdb.set_setting(ctx.message.guild, setting_name="events", **d)
+        await ctx.bot.database.set_setting(ctx.message.guild, setting_name="events", **d)
         await ctx.channel.send(":heavy_check_mark: Subscribed to event.")
 
     @notifications.command(pass_context=True, aliases=["unsub"])
@@ -101,7 +101,7 @@ class Config(Cog):
             await ctx.channel.send(":x: That event is not a valid event.")
             return
 
-        d = await ctx.bot.rethinkdb.get_setting(ctx.message.guild, "events")
+        d = await ctx.bot.database.get_setting(ctx.message.guild, "events")
         if not d:
             # No need to unsub.
             await ctx.channel.send(":heavy_check_mark: Unsubscribed from event.")
@@ -112,7 +112,7 @@ class Config(Cog):
             d['events'] = {}
 
         d['events'][event] = False
-        await ctx.bot.rethinkdb.set_setting(ctx.message.guild, setting_name="events", **d)
+        await ctx.bot.database.set_setting(ctx.message.guild, setting_name="events", **d)
         await ctx.channel.send(":heavy_check_mark: Unsubscribed from event.")
 
     @notifications.command(pass_context=True)
@@ -133,11 +133,11 @@ class Config(Cog):
                 "event": event,
                 "msg": msg
             }
-            await ctx.bot.rethinkdb.set_setting(ctx.message.guild, **d)
+            await ctx.bot.database.set_setting(ctx.message.guild, **d)
             await ctx.channel.send(":heavy_check_mark: Updated message for event `{}` to `{}`.".format(event, msg))
 
         else:
-            _, msg = await ctx.bot.rethinkdb.get_event_message(ctx.message.guild, event)
+            _, msg = await ctx.bot.database.get_event_message(ctx.message.guild, event)
             if msg is None:
                 await ctx.channel.send("**There is no custom message set for this event.**")
             else:
@@ -153,18 +153,18 @@ class Config(Cog):
         """
         if status is None:
             # Check the status.
-            setting = await ctx.bot.rethinkdb.get_setting(ctx.message.guild, "dndcop", {})
+            setting = await ctx.bot.database.get_setting(ctx.message.guild, "dndcop", {})
             if setting.get("status") == 1:
                 await ctx.channel.send("Invis Cop is currently **on.**")
             else:
                 await ctx.channel.send("Invis Cop is currently **off.**")
         else:
             if status.lower() == "on":
-                await ctx.bot.rethinkdb.set_setting(ctx.message.guild, "dndcop", status=1)
+                await ctx.bot.database.set_setting(ctx.message.guild, "dndcop", status=1)
                 await ctx.channel.send(":heavy_check_mark: Turned Invis Cop on.")
                 return
             elif status.lower() == "off":
-                await ctx.bot.rethinkdb.set_setting(ctx.message.guild, "dndcop", status=0)
+                await ctx.bot.database.set_setting(ctx.message.guild, "dndcop", status=0)
                 await ctx.channel.send(":heavy_check_mark: Turned Invis Cop off.")
                 return
             else:
@@ -180,18 +180,18 @@ class Config(Cog):
         """
         if status is None:
             # Check the status.
-            setting = await ctx.bot.rethinkdb.get_setting(ctx.message.guild, "rolestate", {})
+            setting = await ctx.bot.database.get_setting(ctx.message.guild, "rolestate", {})
             if setting.get("status") == 1:
                 await ctx.channel.send("Rolestate is currently **on.**")
             else:
                 await ctx.channel.send("Rolestate is currently **off.**")
         else:
             if status.lower() == "on":
-                await ctx.bot.rethinkdb.set_setting(ctx.message.guild, "rolestate", status=1)
+                await ctx.bot.database.set_setting(ctx.message.guild, "rolestate", status=1)
                 await ctx.channel.send(":heavy_check_mark: Turned Rolestate on.")
                 return
             elif status.lower() == "off":
-                await ctx.bot.rethinkdb.set_setting(ctx.message.guild, "rolestate", status=0)
+                await ctx.bot.database.set_setting(ctx.message.guild, "rolestate", status=0)
                 await ctx.channel.send(":heavy_check_mark: Turned Rolestate off.")
                 return
             else:
@@ -256,15 +256,15 @@ class Config(Cog):
                             "name": "ignore", "target": converted.id,
                             "type": args.type
                             }) \
-                .run(ctx.bot.rethinkdb.connection)
+                .run(ctx.bot.database.connection)
 
-            got = await ctx.bot.rethinkdb.to_list(query)
+            got = await ctx.bot.database.to_list(query)
             if not got:
                 await ctx.channel.send(":x: This item does not have an ignore rule on it of that type.")
                 return
 
             # Remove the rule.
-            await r.table("settings").get(got[0]["id"]).delete().run(ctx.bot.rethinkdb.connection)
+            await r.table("settings").get(got[0]["id"]).delete().run(ctx.bot.database.connection)
             await ctx.channel.send(":heavy_check_mark: Removed ignore rule.")
             return
         elif args.add:
@@ -275,9 +275,9 @@ class Config(Cog):
                             "name": "ignore", "target": converted.id,
                             "type": args.type
                             }) \
-                .run(ctx.bot.rethinkdb.connection)
+                .run(ctx.bot.database.connection)
 
-            got = await self.bot.rethinkdb.to_list(query)
+            got = await self.bot.database.to_list(query)
             if got:
                 await ctx.channel.send(":x: This item already has a rule with that target.")
                 return
@@ -288,7 +288,7 @@ class Config(Cog):
                 "target": converted.id, "type": args.type
                 }
 
-            result = await r.table("settings").insert(built_dict).run(self.bot.rethinkdb.connection)
+            result = await r.table("settings").insert(built_dict).run(self.bot.database.connection)
             await ctx.channel.send(":heavy_check_mark: Added ignore rule.")
 
 

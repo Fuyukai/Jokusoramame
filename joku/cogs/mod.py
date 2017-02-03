@@ -20,13 +20,13 @@ class Moderation(Cog):
 
     async def on_member_remove(self, member: discord.Member):
         # Rolestate
-        await self.bot.rethinkdb.save_rolestate(member)
+        await self.bot.database.save_rolestate(member)
 
     async def on_member_join(self, member: discord.Member):
         # Rolestate
-        setting = await self.bot.rethinkdb.get_setting(member.guild, "rolestate", {})
+        setting = await self.bot.database.get_setting(member.guild, "rolestate", {})
         if setting.get("status") == 1:
-            roles, nick = await self.bot.rethinkdb.get_rolestate_for_member(member)
+            roles, nick = await self.bot.database.get_rolestate_for_member(member)
 
             await member.edit(roles=roles)
             if nick:
@@ -48,7 +48,7 @@ class Moderation(Cog):
             # can't ban anyway
             return
 
-        c = await self.bot.rethinkdb.get_setting(message.guild, "mention_spam", {
+        c = await self.bot.database.get_setting(message.guild, "mention_spam", {
             "value": False,
             "threshold": 5
         })
@@ -66,7 +66,7 @@ class Moderation(Cog):
         """
         Toggles the antimention status in this server.
         """
-        previous = await ctx.bot.rethinkdb.get_setting(ctx.guild, "mention_spam", {
+        previous = await ctx.bot.database.get_setting(ctx.guild, "mention_spam", {
             "value": False,
             "threshold": 5
         })
@@ -80,15 +80,15 @@ class Moderation(Cog):
             return
 
         if status == "on":
-            await ctx.bot.rethinkdb.set_setting(ctx.guild, "mention_spam",
-                                                **{
+            await ctx.bot.database.set_setting(ctx.guild, "mention_spam",
+                                               **{
                                                     "value": True,
                                                     "threshold": previous["threshold"]
                                                 })
             await ctx.send(":heavy_check_mark: Enabled anti-mention spam.")
         elif status == "off":
-            await ctx.bot.rethinkdb.set_setting(ctx.guild, "mention_spam",
-                                                **{
+            await ctx.bot.database.set_setting(ctx.guild, "mention_spam",
+                                               **{
                                                     "value": False,
                                                     "threshold": previous["threshold"]
                                                 })
@@ -103,11 +103,11 @@ class Moderation(Cog):
             await ctx.send(":x: Cannot set a threshold lower than 3.")
             return
 
-        previous = await ctx.bot.rethinkdb.get_setting(ctx.guild, "mention_spam", {
+        previous = await ctx.bot.database.get_setting(ctx.guild, "mention_spam", {
             "value": False,
             "threshold": 5
         })
-        await ctx.bot.rethinkdb.set_setting(ctx.guild, "mention_spam", value=previous["value"], threshold=threshold)
+        await ctx.bot.database.set_setting(ctx.guild, "mention_spam", value=previous["value"], threshold=threshold)
         await ctx.send(":heavy_check_mark: Set anti-mention spam threshold to {}.".format(threshold))
 
     @commands.command(pass_context=True)

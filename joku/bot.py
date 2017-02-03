@@ -79,7 +79,7 @@ class Jokusoramame(Bot):
 
         self.startup_time = time.time()
 
-        self.rethinkdb = RethinkAdapter(self)
+        self.database = RethinkAdapter(self)
         self.rdblog = RdbLogAdapter(self)
 
         self.redis = RedisAdapter(self)
@@ -176,7 +176,7 @@ class Jokusoramame(Bot):
         self.logger.info("Invite link: {}".format(discord.utils.oauth_url(self.app_id)))
 
         try:
-            await self.rethinkdb.connect(**self.config.get("rethinkdb", {}))
+            await self.database.connect(**self.config.get("rethinkdb", {}))
             data = self.config.get("rethinkdb", {}).copy()
             data["db"] = "joku_logs"
             await self.rdblog.connect(**data)
@@ -224,10 +224,10 @@ class Jokusoramame(Bot):
             self.logger.info(" On server: {} ({})".format(message.guild.name, message.guild.id))
 
         # Check if an ignore rule exists for that channel.
-        if self.rethinkdb.connection is None:
+        if self.database.connection is None:
             return
 
-        if await self.rethinkdb.is_channel_ignored(message.channel, type_="commands"):
+        if await self.database.is_channel_ignored(message.channel, type_="commands"):
             return
 
         await super().on_message(message)
@@ -253,7 +253,7 @@ class Jokusoramame(Bot):
             except discord.ConnectionClosed as e:
                 await self.close()
                 try:
-                    await self.rethinkdb.connection.close()
+                    await self.database.connection.close()
                 except Exception:
                     pass
 

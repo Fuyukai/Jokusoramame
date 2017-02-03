@@ -75,18 +75,18 @@ class BaseItem(abc.ABC):
         """
         :return: The current user's ID.
         """
-        return self.ctx.bot.rethinkdb.create_or_get_user(self.ctx.author)
+        return self.ctx.bot.database.create_or_get_user(self.ctx.author)
 
     async def buy_for_price(self, price: int):
         """
         Buys this item.
         """
-        await self.ctx.bot.rethinkdb.update_user_currency(self.ctx.author, -price)
-        await self.ctx.bot.rethinkdb.add_item_to_inventory(self.ctx.author, self.id)
+        await self.ctx.bot.database.update_user_currency(self.ctx.author, -price)
+        await self.ctx.bot.database.add_item_to_inventory(self.ctx.author, self.id)
 
     async def sell_for_price(self, price: int):
-        await self.ctx.bot.rethinkdb.update_user_currency(self.ctx.author, price)
-        await self.ctx.bot.rethinkdb.remove_item_from_inventory(self.ctx.author, self.id)
+        await self.ctx.bot.database.update_user_currency(self.ctx.author, price)
+        await self.ctx.bot.database.remove_item_from_inventory(self.ctx.author, self.id)
 
     async def buy(self):
         price = self.default_buy_price
@@ -137,9 +137,9 @@ class Worker(BaseItem):
             await self.sell_for_price(-50)
             await self.ctx.send("\u262d A worker rebelled and took off with `§50`.")
         elif 1.0 <= action <= 8.0:
-            count = await self.ctx.bot.rethinkdb.get_user_item_count(self.ctx.author, self.id)
+            count = await self.ctx.bot.database.get_user_item_count(self.ctx.author, self.id)
             amount = self.rng.randint(count, count * 3)
-            await self.ctx.bot.rethinkdb.update_user_currency(self.ctx.author, amount)
+            await self.ctx.bot.database.update_user_currency(self.ctx.author, amount)
             await self.ctx.send(":pick: Your workers make you `§{}`.".format(amount))
         else:
             # ded

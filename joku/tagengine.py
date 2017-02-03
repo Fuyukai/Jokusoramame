@@ -85,13 +85,13 @@ class TagEngine(object):
         """
         guild = guild or ctx.message.guild
 
-        tag = await self.bot.rethinkdb.get_tag(guild, tag_id)
+        tag = await self.bot.database.get_tag(guild, tag_id)
         if not tag:
             return None
 
         final_template, new_variables = await self._render_template(tag, **kwargs)
 
-        await self.bot.rethinkdb.save_tag(guild, tag_id, content=tag.get("content"),
-                                          variables=new_variables)
+        await self.bot.database.save_tag(guild, tag_id, content=tag.get("content"),
+                                         variables=new_variables)
 
         return final_template

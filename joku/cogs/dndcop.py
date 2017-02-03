@@ -18,7 +18,7 @@ class InvisCop(Cog):
         if message.author.bot:
             return
 
-        enabled = (await self.bot.rethinkdb.get_setting(message.guild, "dndcop", {})).get("status") == 1
+        enabled = (await self.bot.database.get_setting(message.guild, "dndcop", {})).get("status") == 1
 
         if enabled:
             # Check the author's status for being not ONLINE or AWAY.

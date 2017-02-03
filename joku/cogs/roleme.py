@@ -14,14 +14,14 @@ class Roleme(Cog):
         guild = role.guild  # type: discord.Guild
 
         # automatically remove it from the roleme roles if applicable
-        await self.bot.rethinkdb.remove_roleme_role(role.guild, role)
+        await self.bot.database.remove_roleme_role(role.guild, role)
 
     @commands.group(invoke_without_command=True)
     async def roleme(self, ctx: Context, *, role: discord.Role = None):
         """
         Assigns a role to you from a list of available roles.
         """
-        roles = await ctx.bot.rethinkdb.get_roleme_roles(ctx.guild)
+        roles = await ctx.bot.database.get_roleme_roles(ctx.guild)
         if role is None:
             msg = "**Roles you can give yourself**:\n\n"
             for role in roles:
@@ -46,7 +46,7 @@ class Roleme(Cog):
         """
         guild = ctx.guild  # type: discord.Guild
         role = await guild.create_role(name=name, permissions=discord.Permissions.none())
-        await ctx.bot.rethinkdb.add_roleme_role(ctx.guild, role)
+        await ctx.bot.database.add_roleme_role(ctx.guild, role)
         await ctx.send(":heavy_check_mark: Created new roleme role `{}`.".format(name))
 
     @roleme.command()
@@ -59,7 +59,7 @@ class Roleme(Cog):
             await ctx.send(":x: I cannot assign this role to members.")
             return
 
-        await ctx.bot.rethinkdb.add_roleme_role(ctx.guild, role)
+        await ctx.bot.database.add_roleme_role(ctx.guild, role)
         await ctx.send(":heavy_check_mark: Added `{}` as a roleme role.".format(role.name))
 
     @roleme.command()
@@ -68,7 +68,7 @@ class Roleme(Cog):
         """
         Removes a role from the list of roles that can be given.
         """
-        await ctx.bot.rethinkdb.remove_roleme_role(ctx.guild, role)
+        await ctx.bot.database.remove_roleme_role(ctx.guild, role)
         await ctx.send(":heavy_check_mark: Removed `{}` as a roleme role.".format(role.name))
 
     @commands.command()
@@ -76,7 +76,7 @@ class Roleme(Cog):
         """
         Removes a previously assigned role.
         """
-        roles = await ctx.bot.rethinkdb.get_roleme_roles(ctx.guild)
+        roles = await ctx.bot.database.get_roleme_roles(ctx.guild)
         if role not in roles:
             await ctx.send(":x: Cannot remove this role.")
             return
@@ -93,14 +93,14 @@ class Roleme(Cog):
         """
         Sets your custom colour.
         """
-        enabled = await ctx.bot.rethinkdb.get_setting(ctx.guild, "colourme_enabled", {"value": False})
+        enabled = await ctx.bot.database.get_setting(ctx.guild, "colourme_enabled", {"value": False})
         if not enabled["value"] is True:
             await ctx.send(":x: Colourme is not enabled on this server.")
             return
 
         guild = ctx.guild  # type: discord.Guild
 
-        role_id = await ctx.bot.rethinkdb.get_colourme_role(ctx.author)
+        role_id = await ctx.bot.database.get_colourme_role(ctx.author)
         role = discord.utils.get(guild.roles, id=role_id)  # type: discord.Role
 
         role_name = "Colour for {}".format(ctx.author.name[:15])
@@ -113,7 +113,7 @@ class Roleme(Cog):
         else:
             await role.edit(colour=colour)
 
-        await ctx.bot.rethinkdb.set_colourme_role(ctx.author, role)
+        await ctx.bot.database.set_colourme_role(ctx.author, role)
 
         # Add the role anyway.
         await ctx.send(":heavy_check_mark: Updated your colour role to `{}`.".format(str(colour)))
@@ -124,7 +124,7 @@ class Roleme(Cog):
         """
         Enables colourme for this server.
         """
-        await ctx.bot.rethinkdb.set_setting(ctx.guild, "colourme_enabled", value=True)
+        await ctx.bot.database.set_setting(ctx.guild, "colourme_enabled", value=True)
         await ctx.send(":heavy_check_mark: Enabled colourme.")
 
     @colourme.command()
@@ -133,7 +133,7 @@ class Roleme(Cog):
         """
         Disables colourme for this server.
         """
-        await ctx.bot.rethinkdb.set_setting(ctx.guild, "colourme_enabled", value=False)
+        await ctx.bot.database.set_setting(ctx.guild, "colourme_enabled", value=False)
         await ctx.send(":heavy_check_mark: Disabled colourme.")
 
 

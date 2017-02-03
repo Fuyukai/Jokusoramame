@@ -43,7 +43,7 @@ class Reminders(Cog):
         # Scan the reminders table periodically,
         while True:
             try:
-                records = await r.table("reminders").run(self.bot.rethinkdb.connection)
+                records = await r.table("reminders").run(self.bot.database.connection)
 
                 # Pray!
                 async for record in records:
@@ -106,11 +106,11 @@ class Reminders(Cog):
         if record.get("repeating", False) is True:
             # Check if it still exists in the database.
 
-            r_ = await self.bot.rethinkdb.to_list(
+            r_ = await self.bot.database.to_list(
                 await r.table("reminders")
                     .get_all(record["user_id"], index="user_id")
                     .filter({"reminder_id": record.get("reminder_id")})
-                    .run(self.bot.rethinkdb.connection)
+                    .run(self.bot.database.connection)
             )
             if not r_:
                 # No need to add it to the database again - it was cancelled.
@@ -121,10 +121,10 @@ class Reminders(Cog):
             if 'usages' not in record:
                 record['usages'] = 0
             record["usages"] += 1
-            i = await r.table("reminders").insert(record, conflict="update").run(self.bot.rethinkdb.connection)
+            i = await r.table("reminders").insert(record, conflict="update").run(self.bot.database.connection)
         else:
             # Remove it from the database.
-            i = await r.table("reminders").get(r_id).delete().run(self.bot.rethinkdb.connection)
+            i = await r.table("reminders").get(r_id).delete().run(self.bot.database.connection)
         return i
 
     async def ready(self):
@@ -168,7 +168,7 @@ class Reminders(Cog):
             "expiration": timestamp,
             "content": reminder_text,
             "reminder_id": (await r.table("reminders").get_all(str(ctx.message.author.id), index="user_id")
-                            .count().run(ctx.bot.rethinkdb.connection)) + 1,
+                            .count().run(ctx.bot.database.connection)) + 1,
         }
 
         # Should we add it to the database, or just make a reminder?
@@ -178,7 +178,7 @@ class Reminders(Cog):
             ctx.bot.loop.create_task(self._run_reminder(object))
         else:
             # Add it to the database.
-            i = await r.table("reminders").insert(object).run(ctx.bot.rethinkdb.connection)
+            i = await r.table("reminders").insert(object).run(ctx.bot.database.connection)
 
         em = discord.Embed(description="Will remind you about `{}`.".format(reminder_text))
         em.set_footer(text="Reminding at: ")
@@ -192,7 +192,7 @@ class Reminders(Cog):
         """
         Prunes dead reminders.
         """
-        reminds = await r.table("reminders").run(ctx.bot.rethinkdb.connection)
+        reminds = await r.table("reminders").run(ctx.bot.database.connection)
 
         delete_ids = []
         async for rem in reminds:
@@ -208,7 +208,7 @@ class Reminders(Cog):
                 delete_ids.append(rem["id"])
                 continue
 
-        d = await r.table("reminders").get_all(*delete_ids).delete().run(self.bot.rethinkdb.connection)
+        d = await r.table("reminders").get_all(*delete_ids).delete().run(self.bot.database.connection)
         d = d["deleted"]
 
         await ctx.channel.send(":heavy_check_mark: Pruned `{}` reminders.".format(d))
@@ -242,12 +242,12 @@ class Reminders(Cog):
             "repeating": True,
             "repeat_time": diff,
             "reminder_id": (await r.table("reminders").get_all(str(ctx.message.author.id), index="user_id")
-                            .count().run(ctx.bot.rethinkdb.connection)) + 1,
+                            .count().run(ctx.bot.database.connection)) + 1,
             "usages": 0,
         }
 
         # Add it to the database.
-        i = await r.table("reminders").insert(object).run(ctx.bot.rethinkdb.connection)
+        i = await r.table("reminders").insert(object).run(ctx.bot.database.connection)
 
         await ctx.channel.send(":heavy_check_mark: Will start reminding you at `{}`, then every `{}` seconds after.."
                                .format(dt, diff))
@@ -259,9 +259,9 @@ class Reminders(Cog):
         """
         reminder = await r.table("reminders") \
             .get_all(str(ctx.message.author.id), index="user_id") \
-            .filter({"reminder_id": reminder_id}).run(self.bot.rethinkdb.connection)
+            .filter({"reminder_id": reminder_id}).run(self.bot.database.connection)
 
-        reminder = await self.bot.rethinkdb.to_list(reminder)
+        reminder = await self.bot.database.to_list(reminder)
         if not reminder:
             await ctx.channel.send(":x: That reminder ID does not exist.")
             return
@@ -269,7 +269,7 @@ class Reminders(Cog):
         # Delete the reminder from the DB.
         i = await r.table("reminders") \
             .get_all(str(ctx.message.author.id), index="user_id") \
-            .filter({"reminder_id": reminder_id}).delete().run(self.bot.rethinkdb.connection)
+            .filter({"reminder_id": reminder_id}).delete().run(self.bot.database.connection)
 
         await ctx.channel.send(":heavy_check_mark: Deleted reminder.")
 
@@ -284,7 +284,7 @@ class Reminders(Cog):
         reminders = await r.table("reminders") \
             .get_all(str(ctx.message.author.id), index="user_id") \
             .order_by(r.asc("expiration")) \
-            .run(ctx.bot.rethinkdb.connection)
+            .run(ctx.bot.database.connection)
 
         for record in reminders:
             # Parse the record's timestamp into a datetime.
@@ -325,9 +325,9 @@ class Reminders(Cog):
         """
         reminder = await r.table("reminders") \
             .get_all(str(ctx.message.author.id), index="user_id") \
-            .filter({"reminder_id": reminder_id}).run(self.bot.rethinkdb.connection)
+            .filter({"reminder_id": reminder_id}).run(self.bot.database.connection)
 
-        reminder = await self.bot.rethinkdb.to_list(reminder)
+        reminder = await self.bot.database.to_list(reminder)
         if not reminder:
             await ctx.channel.send(":x: This reminder does not exist.")
             return
