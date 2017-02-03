@@ -195,7 +195,7 @@ class Levelling(Cog):
                 with plt.style.context("seaborn-pastel"):
                     lvls = np.array([user["level"] for user in users if user["level"] >= 0])
                     lvls = reject_outliers(lvls)
-                    ax = sns.distplot(lvls)
+                    ax = sns.distplot(lvls, hist=False)
 
                     # seaborn uses pyplot internally
                     # so we can still set these
