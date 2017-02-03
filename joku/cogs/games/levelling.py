@@ -193,15 +193,15 @@ class Levelling(Cog):
         async with ctx.channel.typing():
             async with threadpool():
                 with plt.style.context("seaborn-pastel"):
-                    lvls = np.array([user["level"] for user in users if user["level"] >= 0])
+                    lvls = np.array([user["xp"] for user in users if user["level"] >= 0])
                     lvls = reject_outliers(lvls)
                     ax = sns.distplot(lvls, hist=False)
 
                     # seaborn uses pyplot internally
                     # so we can still set these
 
-                    plt.xlabel("Level")
-                    plt.title("Level distribution curve for {}".format(ctx.message.guild.name))
+                    plt.xlabel("XP")
+                    plt.title("XP distribution curve for {}".format(ctx.message.guild.name))
 
                     buf = BytesIO()
                     plt.savefig(buf, format="png")
