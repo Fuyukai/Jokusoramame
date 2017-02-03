@@ -26,7 +26,6 @@ numpy==1.12.0
 objgraph==3.0.1
 parsedatetime==2.1
 PixivPy==3.2.0
-pkg-resources==0.0.0
 psutil==4.4.2
 pycparser==2.17
 PyNaCl==1.0.1
@@ -37,7 +36,7 @@ regex==2016.10.22
 requests==2.11.1
 rethinkdb==2.3.0.post6
 ruamel.yaml==0.12.15
-seaborn==07.1
+seaborn==0.7.1
 six==1.10.0
 smmap2==2.0.1
 tabulate==0.7.5
