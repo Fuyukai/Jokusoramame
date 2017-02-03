@@ -33,11 +33,30 @@ class Reminders(Cog):
     # Tracks when a task is running a reminder for the specified record UUID.
     _running_reminders = {}
 
-    # Create the empty datetime to be used for the relative datetime.
+    # Tracks the reminder task.
+    _reminder_task = None  # type: asyncio.Task
+
     def __init__(self, bot: Jokusoramame):
         super().__init__(bot)
 
-        self._is_running_reminders = False
+    async def _loop_reminders(self, bot: Jokusoramame):
+        # Scan the reminders table periodically,
+        while True:
+            try:
+                records = await r.table("reminders").run(self.bot.rethinkdb.connection)
+
+                # Pray!
+                async for record in records:
+                    # Check the reminder time.
+                    # If it's less than 5 minutes, create a reminder coroutine.
+                    time_left = record.get("expiration") - time.time()
+                    if time_left < 300:
+                        self.bot.loop.create_task(self._run_reminder(record))
+
+            except Exception:
+                self.bot.logger.exception()
+            finally:
+                await asyncio.sleep(300)
 
     async def _run_reminder(self, record: dict):
         r_id = record.get("id", None)
@@ -117,29 +136,13 @@ class Reminders(Cog):
             if not self.bot.shard_id == 0:
                 return
 
-        # Don't do anything if the DB task already exists.
-        if self._is_running_reminders:
-            return
+        if self._reminder_task:
+            if self._reminder_task.done():
+                del self._reminder_task
+            else:
+                return
 
-        self._is_running_reminders = True
-
-        # Scan the reminders table periodically,
-        while True:
-            try:
-                records = await r.table("reminders").run(self.bot.rethinkdb.connection)
-
-                # Pray!
-                async for record in records:
-                    # Check the reminder time.
-                    # If it's less than 5 minutes, create a reminder coroutine.
-                    time_left = record.get("expiration") - time.time()
-                    if time_left < 300:
-                        self.bot.loop.create_task(self._run_reminder(record))
-
-            except Exception:
-                self.bot.logger.exception()
-            finally:
-                await asyncio.sleep(300)
+        self._reminder_task = self.bot.loop.create_task(self._loop_reminders(self.bot))
 
     @commands.group(pass_context=True, invoke_without_command=True, aliases=["reminder"])
     async def remind(self, ctx: Context, duration: str, *, reminder_text: str):
@@ -297,7 +300,7 @@ class Reminders(Cog):
             usages = record.get("usages", 0)
 
             # Resolve the channel and server.
-            channel = ctx.bot.manager.get_channel(record["channel_id"])
+            channel = ctx.bot.manager.get_channel(int(record["channel_id"]))
 
             if channel is None:
                 name = "Unknown"
