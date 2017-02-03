@@ -46,7 +46,7 @@ class Currency(Cog):
         if ttl is not None:
             tm = time.gmtime(ttl)
             s = time.strftime("%-M", tm)
-            await ctx.send(":x: You've already brought this hour's raffle ticket. "
+            await ctx.send(":x: You've already bought this hour's raffle ticket. "
                            "Try again in `{}` minutes.".format(s))
             return
 
@@ -101,7 +101,7 @@ Canada: <https://www.problemgambling.ca/Pages/Home.aspx>"""
             await ctx.send(":x: You do not have enough money to buy this.")
             return
 
-        await ctx.send(":heavy_check_mark: Brought `{}` for `§{}`.".format(cls.name, price))
+        await ctx.send(":heavy_check_mark: Bought `{}` for `§{}`.".format(cls.name, price))
 
     @commands.command(aliases=["inv"])
     async def inventory(self, ctx: Context):
