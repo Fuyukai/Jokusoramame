@@ -232,12 +232,6 @@ class Jokusoramame(Bot):
 
         await super().on_message(message)
 
-    async def on_message_edit(self, before: discord.Message, message: discord.Message):
-        if before.content == message.content:
-            pass
-
-        await self.on_message(message)
-
     def run(self):
         token = self.config["bot_token"]
         super().run(token)
