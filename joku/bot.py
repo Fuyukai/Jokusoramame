@@ -80,7 +80,6 @@ class Jokusoramame(Bot):
         self.startup_time = time.time()
 
         self.database = RethinkAdapter(self)
-        self.rdblog = RdbLogAdapter(self)
 
         self.redis = RedisAdapter(self)
 

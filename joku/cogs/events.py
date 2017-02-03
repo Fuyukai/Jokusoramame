@@ -71,48 +71,6 @@ class Events(Cog):
         await ctx.channel.send("```{}```".format(table))
 
     @events.command(pass_context=True)
-    @commands.check(is_owner)
-    async def all(self, ctx: Context):
-        """
-        Shows all events the bot has received since it started logging.
-        """
-        message = await ctx.channel.send(":hourglass: Loading events... (this may take some time!)")
-        time_before = time.time()
-        # This abuses RethinkDB to count the events.
-        q = await r.table("events") \
-            .group("t") \
-            .count() \
-            .run(ctx.bot.rdblog.connection)
-
-        # Get a list of events.
-        l = list(q.items())
-        # Sort them by the second key, and tabulate them.
-        l = reversed(sorted(l, key=lambda x: x[1]))
-
-        headers = ("Event", "Frequency")
-        table = tabulate.tabulate(l, headers=headers, tablefmt="orgtbl")
-        time_after = time.time()
-
-        await message.edit("```{}```\n**Took {} seconds.**".format(table, floor(time_after - time_before)))
-
-    @events.command(pass_context=True)
-    @commands.check(is_owner)
-    async def clean(self, ctx: Context):
-        """
-        Removes all PRESCENCE_UPDATE events from the log.
-
-        This can take multiple hours to clean.
-        """
-        await ctx.channel.send(":hourglass: Cleaning...")
-        coro = r.table("events") \
-            .filter({"t": "PRESENCE_UPDATE"}) \
-            .delete() \
-            .run(ctx.bot.rdblog.connection)
-
-        await coro
-        await ctx.channel.send(":ok: Cleaned up.")
-
-    @events.command(pass_context=True)
     async def seq(self, ctx: Context):
         """
         Shows the current sequence number.
@@ -130,32 +88,15 @@ class Events(Cog):
             if not event:
                 self.bot.logger.warn("Caught None-event: `{}` ({})".format(event, data))
 
-        # self.gw_logger.info("[{}] {}".format(event, data.get("d", {})))
-
-        if event == "PRESENCE_UPDATE":
-            # Manually format this event here.
-            e_data = {
-                "t": "PRESENCE_UPDATE",
-                "server_id": data["d"].get("guild_id", None),
-                "member_id": data["d"].get("user", None).get("id", None),
-                "game": data["d"].get("game")
-            }
-            await self.bot.rdblog.log(e_data)
-
-        elif event == "HEATBEAT_ACK":
-            e_data = {
-                "t": "HEARTBEAT_ACK",
-                "seq": self.bot.connection.sequence
-            }
-            await self.bot.rdblog.log(e_data)
-
         self.bot.manager.events[event] += 1
 
     async def on_message(self, message: discord.Message):
         # Simply log the message.
+        return
         await self.bot.rdblog.log_message(message)
 
     async def on_typing(self, channel: discord.TextChannel, user: discord.User, when: datetime.datetime):
+        return
         obb = {
             "t": "TYPING_START",
             "member_id": user.id,
@@ -164,6 +105,7 @@ class Events(Cog):
         await self.bot.rdblog.log(obb)
 
     async def on_message_delete(self, message: discord.Message):
+        return
         obb = {
             "t": "MESSAGE_DELETE",
             "member_id": str(message.author.id),
@@ -175,6 +117,7 @@ class Events(Cog):
         await self.bot.rdblog.log(obb)
 
     async def on_message_edit(self, old: discord.Message, message: discord.Message):
+        return
         obb = {
             "t": "MESSAGE_UPDATE",
             "member_id": str(message.author.id),
@@ -193,7 +136,7 @@ class Events(Cog):
             "member_name": member.name,
             "server_id": str(member.guild.id)
         }
-        await self.bot.rdblog.log(obb)
+        #await self.bot.rdblog.log(obb)
 
         i = await self.bot.database.get_event_message(member.guild, "bans", "`{member.name}` got **bent**")
 
@@ -221,7 +164,7 @@ class Events(Cog):
             "member_name": member.name,
             "server_id": str(guild.id)
         }
-        await self.bot.rdblog.log(obb)
+        #await self.bot.rdblog.log(obb)
 
         i = await self.bot.database.get_event_message(guild, "unbans", "`{member.name}` got **unbent**")
 
@@ -256,7 +199,7 @@ class Events(Cog):
             "member_name": member.name,
             "server_id": str(member.guild.id)
         }
-        await self.bot.rdblog.log(obb)
+        #await self.bot.rdblog.log(obb)
 
         i = await self.bot.database.get_event_message(member.guild, "joins", "Welcome {member.name}!")
 
@@ -285,7 +228,7 @@ class Events(Cog):
             "member_name": member.name,
             "server_id": str(member.guild.id)
         }
-        await self.bot.rdblog.log(obb)
+        #await self.bot.rdblog.log(obb)
 
         i = await self.bot.database.get_event_message(member.guild, "leaves", "Bye {member.name}!")
 
