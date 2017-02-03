@@ -98,9 +98,9 @@ class RethinkAdapter(object):
         await self._reql_safe(r.table("tags").index_create("server_id"))
         await self._reql_safe(r.table("todos").index_create("user_id"))
         await self._reql_safe(r.table("reminders").index_create("user_id"))
-        # await self._reql_safe(r.table("rolestate").index_create("server_id"))
-        # await self._reql_safe(r.table("roleme_roles").index_create("server_id"))
-        # await self._reql_safe(r.table("roleme_colours").index_create("server_id"))
+        await self._reql_safe(r.table("rolestate").index_create("server_id"))
+        await self._reql_safe(r.table("roleme_roles").index_create("server_id"))
+        await self._reql_safe(r.table("roleme_colours").index_create("server_id"))
 
     async def connect(self, **connection_settings):
         """
