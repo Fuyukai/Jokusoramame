@@ -223,9 +223,6 @@ class Jokusoramame(Bot):
         if message.guild is not None:
             self.logger.info(" On server: {} ({})".format(message.guild.name, message.guild.id))
 
-        # Check if an ignore rule exists for that channel.
-        if self.database.session is None:
-            return
 
         #if await self.database.is_channel_ignored(message.channel, type_="commands"):
         #    return

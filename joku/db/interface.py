@@ -1,5 +1,6 @@
 import logging
 import random
+from contextlib import contextmanager
 
 import discord
 import typing
@@ -25,39 +26,47 @@ class DatabaseInterface(object):
         self.engine = None  # type: Engine
         self._sessionmaker = None  # type: sessionmaker
 
-        self.session = None  # type: Session
-
     async def connect(self, dsn: str):
         """
         Connects the bot to the database.
         """
         logger.info("Connecting to {}...".format(dsn))
         async with threadpool():
-            if self.engine is not None:
-                # Close the session.
-                self.session.close()
-
             self.engine = create_engine(dsn)
-            self._sessionmaker = sessionmaker(bind=self.engine)
+            self._sessionmaker = sessionmaker(bind=self.engine, expire_on_commit=False)
 
-            # Create our session object.
-            self.session = self._sessionmaker()
+    @contextmanager
+    def get_session(self) -> Session:
+        session = self._sessionmaker()  # type: Session
 
-    async def get_or_create_user(self, member: discord.Member) -> User:
+        try:
+            yield session
+            session.commit()
+        except:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+    async def get_or_create_user(self, member: discord.Member, *, detatch: bool = False) -> User:
         """
         Gets or creates a user object.
         """
         async with threadpool():
-            obb = self.session.query(User).filter(User.id == member.id).first()
+            with self.get_session() as session:
+                obb = session.query(User).filter(User.id == member.id).first()
 
-            if obb is None:
-                obb = User(id=member.id)
-                self.session.add(obb)
-                self.session.commit()
+                if obb is None:
+                    obb = User(id=member.id)
+
+                # Detach the object from the session, if needed.
+                if detatch:
+                    session.expunge(obb)
 
         return obb
 
-    async def get_multiple_users(self, *members: discord.Member, order_by: Column=None):
+    async def get_multiple_users(self, *members: discord.Member, order_by: Column = None,
+                                 detatch: bool = False):
         """
         Gets multiple user objects.
 
@@ -66,11 +75,16 @@ class DatabaseInterface(object):
         ids = [u.id for u in members]
 
         async with threadpool():
-            _q = self.session.query(User).filter(User.id.in_(ids))
-            if order_by is not None:
-                _q = _q.order_by(order_by)
+            with self.get_session() as session:
+                _q = session.query(User).filter(User.id.in_(ids))
+                if order_by is not None:
+                    _q = _q.order_by(order_by)
 
-            obbs = list(_q.all())
+                obbs = list(_q.all())
+
+                # Detach all from their sessions.
+                if detatch:
+                    [session.expunge(obb) for obb in obbs]
 
             return obbs
 
@@ -78,15 +92,15 @@ class DatabaseInterface(object):
         """
         Updates the XP of a user.
         """
-        user = await self.get_or_create_user(member)
+        user = await self.get_or_create_user(member, detatch=True)
         async with threadpool():
-            if xp_to_add is None:
-                xp_to_add = random.randint(0, 4)
+            with self.get_session() as session:
+                if xp_to_add is None:
+                    xp_to_add = random.randint(0, 4)
 
-            user.xp += xp_to_add
+                user.xp += xp_to_add
 
-            self.session.add(user)
-            self.session.commit()
+                session.add(user)
 
         return user
 
@@ -94,11 +108,11 @@ class DatabaseInterface(object):
         """
         Sets a user's level.
         """
-        user = await self.get_or_create_user(member)
+        user = await self.get_or_create_user(member, detatch=True)
         async with threadpool():
-            user.level = level
-            self.session.add(user)
-            self.session.commit()
+            with self.get_session() as session:
+                user.level = level
+                session.add(user)
 
         return user
 
@@ -109,30 +123,31 @@ class DatabaseInterface(object):
         Gets a setting.
         """
         async with threadpool():
-            setting = self.session.query(Setting)\
-                .filter(Setting.guild_id == guild.id and Setting.name == setting_name)\
-                .first()
+            with self.get_session() as session:
+                setting = session.query(Setting) \
+                    .filter(Setting.guild_id == guild.id and Setting.name == setting_name) \
+                    .first()
 
-            if setting:
-                return setting.value
-            else:
-                return default
+                if setting:
+                    return setting.value
+                else:
+                    return default
 
     async def set_setting(self, guild: discord.Guild, setting_name: str, value: dict) -> Setting:
         """
         Sets a setting value.
         """
         async with threadpool():
-            setting = self.session.query(Setting)\
-                .filter(Setting.guild_id == guild.id and Setting.name == setting_name)\
-                .first()
+            with self.get_session() as session:
+                setting = session.query(Setting) \
+                    .filter(Setting.guild_id == guild.id and Setting.name == setting_name) \
+                    .first()
 
-            if setting is not None:
-                setting = Setting(name=setting_name, guild_id=guild.id)
+                if setting is not None:
+                    setting = Setting(name=setting_name, guild_id=guild.id)
 
-            setting.value = value
-            self.session.add(setting)
-            self.session.commit()
+                setting.value = value
+                session.add(setting)
 
         return setting
 
@@ -143,12 +158,12 @@ class DatabaseInterface(object):
         """
         Updates the user's current currency.
         """
-        user = await self.get_or_create_user(member)
+        user = await self.get_or_create_user(member, detatch=True)
         async with threadpool():
-            user.money += currency_to_add
+            with self.get_session() as session:
+                user.money += currency_to_add
 
-            self.session.add(user)
-            self.session.commit()
+                session.add(user)
 
         return user
 
@@ -160,4 +175,4 @@ class DatabaseInterface(object):
 
         return user.money
 
-    # endregion
+        # endregion
