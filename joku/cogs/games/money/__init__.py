@@ -33,7 +33,10 @@ class Currency(Cog):
         """
         Gives you your daily credits.
         """
-        amount = self.rng.randint(40, 60)
+        # multiply by 40 to get a good number
+        amount = np.random.exponential() * 40
+        # minimum of 20
+        amount = max(20, int(amount))
 
         await ctx.bot.database.update_user_currency(ctx.message.author, amount)
         await ctx.channel.send(":money_with_wings: **You have earned `§{}` today.**".format(amount))
@@ -112,16 +115,11 @@ Canada: <https://www.problemgambling.ca/Pages/Home.aspx>"""
         """
         Shows your inventory.
         """
-        user = await ctx.bot.database.create_or_get_user(ctx.author)
-        try:
-            inv = user["inventory"]
-        except KeyError:
-            await ctx.send(":x: You have no inventory yet.")
-            return
+        user = await ctx.bot.database.get_or_create_user(ctx.author)
 
         inventory_items = []
-        for item in inv:
-            id, count = item["id"], item["count"]
+        for item in user.inventory:
+            id, count = item.item_id, item.count
             item = get_item_by_id(id)
 
             if not item:
@@ -129,6 +127,10 @@ Canada: <https://www.problemgambling.ca/Pages/Home.aspx>"""
                 continue
 
             inventory_items.append((item.name, count))
+
+        if not inventory_items:
+            await ctx.send(":x: You have no items.")
+            return
 
         fmt = "**Inventory for {}:**\n\n".format(ctx.author.name)
         fmt += ", ".join("`{} ({})`".format(item, count) for (item, count) in inventory_items)
