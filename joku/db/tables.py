@@ -1,5 +1,5 @@
 from sqlalchemy import Column, BigInteger, Integer, DateTime, func, String, ForeignKey
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSONB, ARRAY
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
@@ -37,6 +37,28 @@ class User(Base):
         return "<User id={} xp={} money={}>".format(self.id, self.xp, self.money)
 
     __str__ = __repr__
+
+
+class RoleState(Base):
+    """
+    Represents the role state of a user.
+    """
+    __tablename__ = "rolestate"
+
+    id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
+
+    #: The user this rolestate is for.
+    user_id = Column(BigInteger, ForeignKey('user.id'))
+    user = relationship('User')
+
+    #: The guild ID this rolestate is for.
+    guild_id = Column(BigInteger, nullable=False)
+
+    #: The array of role IDs this rolestate contains.
+    roles = Column(ARRAY(Integer), nullable=True)
+
+    #: The nickname for this rolestate.
+    nick = Column(String, nullable=True)
 
 
 class UserInventoryItem(Base):
