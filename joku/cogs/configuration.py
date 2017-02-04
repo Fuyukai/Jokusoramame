@@ -35,7 +35,6 @@ class Config(Cog):
         """
         Allows you to edit which events you are subscribed to on this bot.
         """
-        assert isinstance(ctx.bot.database, RethinkAdapter)
         welcome_setting = await ctx.bot.database.get_setting(ctx.message.guild, "events")
 
         if welcome_setting is None:
@@ -81,7 +80,7 @@ class Config(Cog):
             d = {"events": d["events"]}
             d["events"][event] = str(ctx.message.channel.id)
 
-        await ctx.bot.database.set_setting(ctx.message.guild, setting_name="events", **d)
+        await ctx.bot.database.set_setting(ctx.message.guild, setting_name="events", value=d)
         await ctx.channel.send(":heavy_check_mark: Subscribed to event.")
 
     @notifications.command(pass_context=True, aliases=["unsub"])
@@ -112,7 +111,7 @@ class Config(Cog):
             d['events'] = {}
 
         d['events'][event] = False
-        await ctx.bot.database.set_setting(ctx.message.guild, setting_name="events", **d)
+        await ctx.bot.database.set_setting(ctx.message.guild, setting_name="events", value=d)
         await ctx.channel.send(":heavy_check_mark: Unsubscribed from event.")
 
     @notifications.command(pass_context=True)
@@ -129,11 +128,10 @@ class Config(Cog):
 
         if msg:
             d = {
-                "setting_name": "event_msg",
                 "event": event,
                 "msg": msg
             }
-            await ctx.bot.database.set_setting(ctx.message.guild, **d)
+            await ctx.bot.database.set_setting(ctx.message.guild, setting_name="event_message", value=d)
             await ctx.channel.send(":heavy_check_mark: Updated message for event `{}` to `{}`.".format(event, msg))
 
         else:

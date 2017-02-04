@@ -132,7 +132,7 @@ class DatabaseInterface(object):
                 else:
                     return default
 
-    async def set_setting(self, guild: discord.Guild, setting_name: str, value: dict) -> Setting:
+    async def set_setting(self, guild: discord.Guild, setting_name: str, value: dict=None, **kwargs) -> Setting:
         """
         Sets a setting value.
         """
@@ -142,8 +142,13 @@ class DatabaseInterface(object):
                     .filter(Setting.guild_id == guild.id and Setting.name == setting_name) \
                     .first()
 
-                if setting is not None:
+                if setting is None:
                     setting = Setting(name=setting_name, guild_id=guild.id)
+
+                if value is None:
+                    value = {}
+
+                value = {**value, **kwargs}
 
                 setting.value = value
                 session.add(setting)
