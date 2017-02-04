@@ -1,4 +1,4 @@
-from sqlalchemy import Column, BigInteger, Integer, DateTime, func, String, ForeignKey
+from sqlalchemy import Column, BigInteger, Integer, DateTime, func, String, ForeignKey, Boolean
 from sqlalchemy.dialects.postgresql import JSONB, ARRAY
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
@@ -39,34 +39,6 @@ class User(Base):
     __str__ = __repr__
 
 
-class RoleState(Base):
-    """
-    Represents the role state of a user.
-    """
-    __tablename__ = "rolestate"
-
-    id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
-
-    #: The user this rolestate is for.
-    user_id = Column(BigInteger, ForeignKey('user.id'))
-    user = relationship('User')
-
-    #: The guild ID this rolestate is for.
-    guild_id = Column(BigInteger, nullable=False)
-
-    #: The array of role IDs this rolestate contains.
-    roles = Column(ARRAY(BigInteger), nullable=True)
-
-    #: The nickname for this rolestate.
-    nick = Column(String, nullable=True)
-
-    def __repr__(self):
-        return "<RoleState user_id={} guild_id={} nick='{}' roles={}>".format(self.user_id, self.guild_id,
-                                                                              self.nick, self.roles)
-
-    __str__ = __repr__
-
-
 class UserInventoryItem(Base):
     """
     Represents an item in a user's inventory.
@@ -87,6 +59,57 @@ class UserInventoryItem(Base):
     count = Column(Integer, autoincrement=False, nullable=False)
 
 
+class Guild(Base):
+    """
+    A guild object in the database.
+    """
+    __tablename__ = "guild"
+
+    #: The ID of the guild.
+    id = Column(BigInteger, primary_key=True, nullable=False, autoincrement=False,
+                unique=True)
+
+    #: A relationship to the rolestates.
+    rolestates = relationship("RoleState", backref="guild")
+
+    #: A relationship to the settings.
+    settings = relationship("Setting", backref="guild")
+
+    #: A relationship to the event settings.
+    event_settings = relationship("EventSetting", backref="guild")
+
+    #: An array of roleme role IDs this guild can have.
+    roleme_roles = Column(ARRAY(BigInteger), nullable=True, default=[])
+
+
+class RoleState(Base):
+    """
+    Represents the role state of a user.
+    """
+    __tablename__ = "rolestate"
+
+    id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
+
+    #: The user this rolestate is for.
+    user_id = Column(BigInteger, ForeignKey('user.id'))
+    user = relationship('User')
+
+    #: The guild ID this rolestate is for.
+    guild_id = Column(BigInteger, ForeignKey("guild.id"), nullable=False)
+
+    #: The array of role IDs this rolestate contains.
+    roles = Column(ARRAY(BigInteger), nullable=True)
+
+    #: The nickname for this rolestate.
+    nick = Column(String, nullable=True)
+
+    def __repr__(self):
+        return "<RoleState user_id={} guild_id={} nick='{}' roles={}>".format(self.user_id, self.guild_id,
+                                                                              self.nick, self.roles)
+
+    __str__ = __repr__
+
+
 class Setting(Base):
     """
     A setting object in the database.
@@ -103,4 +126,23 @@ class Setting(Base):
     value = Column(JSONB, nullable=False)
 
     #: The guild ID this setting is in.
-    guild_id = Column(BigInteger, unique=False, nullable=False)
+    guild_id = Column(BigInteger, ForeignKey("guild.id"), unique=False, nullable=False)
+
+
+class EventSetting(Base):
+    """
+    Represents a special setting for event listeners.
+    """
+    __tablename__ = "event_setting"
+
+    #: The ID of this event setting.
+    id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
+
+    #: Is this setting enabled?
+    enabled = Column(Boolean, nullable=False, default=False)
+
+    #: The event this setting is for.
+    event = Column(String)
+
+    #: The message that this setting contains.
+    message = Column(String, unique=False, nullable=True)
