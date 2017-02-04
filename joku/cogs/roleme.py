@@ -11,10 +11,8 @@ from joku.cogs._common import Cog
 
 class Roleme(Cog):
     async def on_guild_role_delete(self, role: discord.Role):
-        guild = role.guild  # type: discord.Guild
-
         # automatically remove it from the roleme roles if applicable
-        await self.bot.database.remove_roleme_role(role.guild, role)
+        await self.bot.database.remove_roleme_role(role)
 
     @commands.group(invoke_without_command=True)
     async def roleme(self, ctx: Context, *, role: discord.Role = None):
@@ -46,7 +44,7 @@ class Roleme(Cog):
         """
         guild = ctx.guild  # type: discord.Guild
         role = await guild.create_role(name=name, permissions=discord.Permissions.none())
-        await ctx.bot.database.add_roleme_role(ctx.guild, role)
+        await ctx.bot.database.add_roleme_role(role)
         await ctx.send(":heavy_check_mark: Created new roleme role `{}`.".format(name))
 
     @roleme.command()
@@ -59,7 +57,7 @@ class Roleme(Cog):
             await ctx.send(":x: I cannot assign this role to members.")
             return
 
-        await ctx.bot.database.add_roleme_role(ctx.guild, role)
+        await ctx.bot.database.add_roleme_role(role)
         await ctx.send(":heavy_check_mark: Added `{}` as a roleme role.".format(role.name))
 
     @roleme.command()
@@ -68,7 +66,7 @@ class Roleme(Cog):
         """
         Removes a role from the list of roles that can be given.
         """
-        await ctx.bot.database.remove_roleme_role(ctx.guild, role)
+        await ctx.bot.database.remove_roleme_role(role)
         await ctx.send(":heavy_check_mark: Removed `{}` as a roleme role.".format(role.name))
 
     @commands.command()

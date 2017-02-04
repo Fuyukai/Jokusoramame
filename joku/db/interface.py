@@ -249,3 +249,59 @@ class DatabaseInterface(object):
         Gets the rolestate for a member.
         """
         return self.get_rolestate_for_id(member.guild.id, member.id)
+
+    # endregion
+
+    # region Roleme
+    async def get_roleme_roles(self, guild: discord.Guild) -> typing.List[discord.Role]:
+        """
+        Gets a list of roles that can be given to users by themselves.
+        """
+        g = await self.get_or_create_guild(guild)
+
+        # load the role objects
+        roles = [discord.utils.get(guild.roles, id=r_id) for r_id in g.roleme_roles]
+        roles = [_ for _ in roles if _ is not None]
+
+        return roles
+
+    async def add_roleme_role(self, role: discord.Role) -> Guild:
+        """
+        Adds a role to the list of roleme roles.
+        """
+        g = await self.get_or_create_guild(role.guild)
+
+        async with threadpool():
+            with self.get_session() as session:
+                if role.id not in g.roleme_roles:
+                    # sqlalchemy won't track our append (w/o some arcane magic)
+                    # so we copy the list
+                    # then replace it
+                    roles = g.roleme_roles.copy()
+                    roles.append(role.id)
+                    g.roleme_roles = roles
+
+                session.add(g)
+
+        return g
+
+    async def remove_roleme_role(self, role: discord.Role) -> Guild:
+        """
+        Removes a role from the list of roleme roles.
+        """
+        g = await self.get_or_create_guild(role.guild)
+
+        async with threadpool():
+            with self.get_session() as session:
+                if role.id not in g.roleme_roles:
+                    # no-op
+                    return g
+
+                # copy it because sqlalchemy is f i c k l e
+                roles = g.roleme_roles.copy()  # type: list
+                roles.remove(role.id)
+                g.roleme_roles = roles
+
+                session.add(g)
+
+        return g
