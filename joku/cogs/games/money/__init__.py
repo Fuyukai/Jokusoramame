@@ -11,6 +11,7 @@ import rethinkdb as r
 from joku.bot import Jokusoramame, Context
 from joku.cogs._common import Cog
 from joku.cogs.games.money.inventory import get_item_by_name, BaseItem, get_item_by_id
+from joku.db.tables import User
 from joku.redis import with_redis_cooldown
 
 BAD_RESPONSES = [
@@ -176,7 +177,7 @@ Canada: <https://www.problemgambling.ca/Pages/Home.aspx>"""
         """
         Shows the top 10 richest users in this server.
         """
-        users = await ctx.bot.database.get_multiple_users(*ctx.message.guild.members, order_by=r.desc("currency"))
+        users = await ctx.bot.database.get_multiple_users(*ctx.message.guild.members, order_by=User.money.desc())
 
         base = "**Top 10 users (in this server):**\n\n```{}```"
 
