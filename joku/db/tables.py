@@ -138,6 +138,9 @@ class EventSetting(Base):
     #: The ID of this event setting.
     id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
 
+    #: The guild ID of this event setting.
+    guild_id = Column(BigInteger, ForeignKey("guild.id"))
+
     #: Is this setting enabled?
     enabled = Column(Boolean, nullable=False, default=False)
 

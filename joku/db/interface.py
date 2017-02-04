@@ -9,7 +9,7 @@ from sqlalchemy import Column
 from sqlalchemy.engine import Engine, create_engine
 from sqlalchemy.orm import sessionmaker, Session
 
-from joku.db.tables import User, Setting, RoleState
+from joku.db.tables import User, Setting, RoleState, Guild
 
 logger = logging.getLogger("Jokusoramame.DB")
 logging.getLogger("sqlalchemy").setLevel(logging.INFO)
@@ -47,6 +47,21 @@ class DatabaseInterface(object):
             raise
         finally:
             session.close()
+
+    # region Guild
+    async def get_or_create_guild(self, guild: discord.Guild):
+        """
+        Creates or gets a guild object from the database.
+        """
+        async with threadpool():
+            with self.get_session() as sess:
+                g = sess.query(Guild).filter(Guild.id == guild.id).first()
+
+                if g is None:
+                    g = Guild(id=guild.id)
+                    sess.add(g)
+
+        return g
 
     # region User
 
@@ -140,6 +155,8 @@ class DatabaseInterface(object):
         """
         Sets a setting value.
         """
+        g = await self.get_or_create_guild(guild)
+
         async with threadpool():
             with self.get_session() as session:
                 setting = session.query(Setting) \
@@ -147,7 +164,8 @@ class DatabaseInterface(object):
                     .first()
 
                 if setting is None:
-                    setting = Setting(name=setting_name, guild_id=guild.id)
+                    setting = Setting(name=setting_name)
+                    setting.guild = g
 
                 if value is None:
                     value = {}
@@ -191,6 +209,8 @@ class DatabaseInterface(object):
         """
         Saves the rolestate for a member.
         """
+        guild = await self.get_or_create_guild(member.guild)
+
         async with threadpool():
             with self.get_session() as session:
                 assert isinstance(session, Session)
@@ -200,7 +220,8 @@ class DatabaseInterface(object):
                     .first()
 
                 if current_rolestate is None:
-                    current_rolestate = RoleState(user_id=member.id, guild_id=member.guild.id)
+                    current_rolestate = RoleState(user_id=member.id)
+                    current_rolestate.guild = guild
 
                 # Add role IDs directly as an array.
                 current_rolestate.nick = member.nick
