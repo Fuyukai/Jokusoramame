@@ -150,6 +150,7 @@ class Levelling(Cog):
         required = get_next_exp_required(u.xp)[1]
 
         embed.add_field(name="XP required for next level", value=required)
+        embed.colour = user.colour
 
         await ctx.channel.send(embed=embed)
 
