@@ -9,7 +9,7 @@ from sqlalchemy import Column
 from sqlalchemy.engine import Engine, create_engine
 from sqlalchemy.orm import sessionmaker, Session
 
-from joku.db.tables import User, Setting
+from joku.db.tables import User, Setting, RoleState
 
 logger = logging.getLogger("Jokusoramame.DB")
 logging.getLogger("sqlalchemy").setLevel(logging.INFO)
@@ -47,6 +47,8 @@ class DatabaseInterface(object):
             raise
         finally:
             session.close()
+
+    # region User
 
     async def get_or_create_user(self, member: discord.Member, *, detatch: bool = False) -> User:
         """
@@ -115,6 +117,8 @@ class DatabaseInterface(object):
 
         return user
 
+    # endregion
+
     # region Settings
 
     async def get_setting(self, guild: discord.Guild, setting_name: str, default: typing.Any = None) -> dict:
@@ -179,4 +183,48 @@ class DatabaseInterface(object):
 
         return user.money
 
-        # endregion
+    # endregion
+
+    # region Rolestate
+
+    async def save_rolestate(self, member: discord.Member) -> RoleState:
+        """
+        Saves the rolestate for a member.
+        """
+        async with threadpool():
+            with self.get_session() as session:
+                assert isinstance(session, Session)
+
+                current_rolestate = session.query(RoleState)\
+                    .filter((RoleState.user_id == member.id) | (RoleState.guild_id == member.guild.id))\
+                    .first()
+
+                if current_rolestate is None:
+                    current_rolestate = RoleState(user_id=member.id, guild_id=member.guild.id)
+
+                # Add role IDs directly as an array.
+                current_rolestate.nick = member.nick
+                current_rolestate.roles = [r.id for r in member.roles]
+                session.add(current_rolestate)
+
+        return current_rolestate
+
+    async def get_rolestate_for_id(self, guild_id: int, member_id: int) -> typing.Union[RoleState, None]:
+        """
+        Gets the rolestate for a user by ID.
+        """
+        async with threadpool():
+            with self.get_session() as session:
+                assert isinstance(session, Session)
+
+                rolestate = session.query(RoleState)\
+                    .filter((RoleState.user_id == member_id) | (RoleState.guild_id == guild_id))\
+                    .first()
+
+        return rolestate
+
+    def get_rolestate_for_member(self, member: discord.Member) -> typing.Awaitable[typing.Union[RoleState, None]]:
+        """
+        Gets the rolestate for a member.
+        """
+        return self.get_rolestate_for_id(member.guild.id, member.id)

@@ -26,11 +26,14 @@ class Moderation(Cog):
         # Rolestate
         setting = await self.bot.database.get_setting(member.guild, "rolestate", {})
         if setting.get("status") == 1:
-            roles, nick = await self.bot.database.get_rolestate_for_member(member)
+            rolestate = await self.bot.database.get_rolestate_for_member(member)
+
+            roles = [member.guild.get_role(r_id) for r_id in rolestate.roles]
+            roles = [r for r in roles if r is not None]
 
             await member.edit(roles=roles)
-            if nick:
-                await member.edit(nick=nick)
+            if rolestate.nick:
+                await member.edit(nick=rolestate.nick)
 
     async def on_message(self, message: discord.Message):
         # Anti mention spam

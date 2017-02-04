@@ -55,10 +55,16 @@ class RoleState(Base):
     guild_id = Column(BigInteger, nullable=False)
 
     #: The array of role IDs this rolestate contains.
-    roles = Column(ARRAY(Integer), nullable=True)
+    roles = Column(ARRAY(BigInteger), nullable=True)
 
     #: The nickname for this rolestate.
     nick = Column(String, nullable=True)
+
+    def __repr__(self):
+        return "<RoleState user_id={} guild_id={} nick='{}' roles={}>".format(self.user_id, self.guild_id,
+                                                                              self.nick, self.roles)
+
+    __str__ = __repr__
 
 
 class UserInventoryItem(Base):
