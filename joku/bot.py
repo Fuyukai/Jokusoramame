@@ -23,12 +23,10 @@ from discord.state import ConnectionState
 from logbook.compat import redirect_logging
 from logbook import StreamHandler
 
-from joku.rdblog import RdbLogAdapter
+from joku.db.interface import DatabaseInterface
 from joku.utils import paginate_large_message
-from rethinkdb import ReqlDriverError
 
 from joku.redis import RedisAdapter
-from joku.rethink import RethinkAdapter
 
 from joku import manager
 
@@ -79,7 +77,7 @@ class Jokusoramame(Bot):
 
         self.startup_time = time.time()
 
-        self.database = RethinkAdapter(self)
+        self.database = DatabaseInterface(self)
 
         self.redis = RedisAdapter(self)
 
@@ -123,14 +121,20 @@ class Jokusoramame(Bot):
         """
         if isinstance(exception, CommandInvokeError):
             # Regular error.
-            await context.channel.send("\U0001f6ab This kills the bot (An error has happened "
-                                       "and has been logged.)")
+
             lines = traceback.format_exception(type(exception),
                                                exception.__cause__, exception.__cause__.__traceback__)
             self.logger.error(''.join(lines))
 
+            if self.config.get("is_dev", False):
+                await context.channel.send("\U0001f6ab This kills the bot (An error has happened "
+                                           "and has been logged.)")
+            else:
+                await context.channel.send("```py\n{}```".format(''.join(lines)))
+                return
+
             # Log to the error channel.
-            error_channel_id = str(self.config.get("log_channels", {}).get("error_channel", ""))
+            error_channel_id = self.config.get("log_channels", {}).get("error_channel", "")
             error_channel = self.manager.get_channel(error_channel_id)
 
             if not error_channel:
@@ -175,12 +179,9 @@ class Jokusoramame(Bot):
         self.logger.info("Invite link: {}".format(discord.utils.oauth_url(self.app_id)))
 
         try:
-            await self.database.connect(**self.config.get("rethinkdb", {}))
-            data = self.config.get("rethinkdb", {}).copy()
-            data["db"] = "joku_logs"
-            await self.rdblog.connect(**data)
-        except ReqlDriverError:
-            self.logger.error("Unable to connect to RethinkDB!")
+            await self.database.connect(self.config.get("dsn", None))
+        except Exception:
+            self.logger.error("Unable to connect to PostgreSQL!")
             traceback.print_exc()
             await self.logout()
             return
@@ -223,11 +224,11 @@ class Jokusoramame(Bot):
             self.logger.info(" On server: {} ({})".format(message.guild.name, message.guild.id))
 
         # Check if an ignore rule exists for that channel.
-        if self.database.connection is None:
+        if self.database.session is None:
             return
 
-        if await self.database.is_channel_ignored(message.channel, type_="commands"):
-            return
+        #if await self.database.is_channel_ignored(message.channel, type_="commands"):
+        #    return
 
         await super().on_message(message)
 

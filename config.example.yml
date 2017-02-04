@@ -10,12 +10,6 @@ dbots_token: dniewudbyuewbdfuewvfueqwh89defbewyfbuewhf
 autoload:
   - joku.cogs.debug
 
-# The RethinkDB data.
-rethinkdb:
-  host: localhost
-  port: 28015
-  db: jokusoramame
-
 # The redis configuration.
 redis:
   address: !!python/tuple ["127.0.0.1", 6432]

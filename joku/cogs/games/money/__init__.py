@@ -29,13 +29,13 @@ GOOD_RESPONSES = [
 class Currency(Cog):
     @commands.command(pass_context=True)
     @with_redis_cooldown(bucket="daily_currency")
-    async def daily(self, ctx):
+    async def daily(self, ctx: Context):
         """
         Gives you your daily credits.
         """
         amount = self.rng.randint(40, 60)
 
-        await ctx.bot.rethinkdb.update_user_currency(ctx.message.author, amount)
+        await ctx.bot.database.update_user_currency(ctx.message.author, amount)
         await ctx.channel.send(":money_with_wings: **You have earned `§{}` today.**".format(amount))
 
     @commands.command(pass_context=True)
@@ -155,7 +155,7 @@ Canada: <https://www.problemgambling.ca/Pages/Home.aspx>"""
         await item.use()
 
     @commands.group(pass_context=True, invoke_without_command=True, aliases=["money"])
-    async def currency(self, ctx, *, target: discord.Member = None):
+    async def currency(self, ctx: Context, *, target: discord.Member = None):
         """
         Gets the current amount of § a user has.
 
@@ -166,15 +166,15 @@ Canada: <https://www.problemgambling.ca/Pages/Home.aspx>"""
             await ctx.channel.send(":x: Bots cannot earn money.")
             return
 
-        currency = await ctx.bot.rethinkdb.get_user_currency(user)
+        currency = await ctx.bot.database.get_user_currency(user)
         await ctx.channel.send("User **{}** has `§{}`.".format(user, currency))
 
     @currency.command(pass_context=True)
-    async def richest(self, ctx):
+    async def richest(self, ctx: Context):
         """
         Shows the top 10 richest users in this server.
         """
-        users = await ctx.bot.rethinkdb.get_multiple_users(*ctx.message.guild.members, order_by=r.desc("currency"))
+        users = await ctx.bot.database.get_multiple_users(*ctx.message.guild.members, order_by=r.desc("currency"))
 
         base = "**Top 10 users (in this server):**\n\n```{}```"
 
@@ -184,7 +184,7 @@ Canada: <https://www.problemgambling.ca/Pages/Home.aspx>"""
 
         for n, u in enumerate(users[:10]):
             try:
-                member = ctx.message.guild.get_member(int(u["user_id"])).name
+                member = ctx.message.guild.get_member(u.id).name
                 # Unicode and tables suck
                 member = member.encode("ascii", errors="replace").decode()
             except AttributeError:
@@ -192,7 +192,7 @@ Canada: <https://www.problemgambling.ca/Pages/Home.aspx>"""
                 continue
             # position, name, xp, level
             try:
-                table.append([n + 1, member, u["currency"]])
+                table.append([n + 1, member, u.money])
             except KeyError:
                 table.append([n + 1, member, 0])
 

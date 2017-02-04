@@ -12,6 +12,8 @@ from discord.ext import commands
 
 import matplotlib as mpl
 
+from joku.db.tables import User
+
 mpl.use('Agg')
 
 import matplotlib.pyplot as plt
@@ -89,29 +91,26 @@ class Levelling(Cog):
             return
 
         # Check if this channel should be ignored for levelling.
-        if await self.bot.database.is_channel_ignored(message.channel, type_="levels"):
-            return
+        #if await self.bot.database.is_channel_ignored(message.channel, type_="levels"):
+        #    return
 
         user = await self.bot.database.update_user_xp(message.author)
         # Get the level.
-        new_level = get_level_from_exp(user["xp"])
+        new_level = get_level_from_exp(user.xp)
 
-        if user.get("level", 0) < new_level:
-            # todo: make this better
-            user["level"] = new_level
-            await r.table("users").insert(user, conflict="update").run(self.bot.database.connection)
+        if user.level < new_level:
+            user = await self.bot.database.set_user_level(message.author, new_level)
 
-            all_users = await self.bot.database.get_multiple_users(*message.guild.members, order_by=r.desc("xp"))
-            index, u = next(filter(lambda j: j[1]["user_id"] == str(message.author.id), enumerate(all_users)))
+            all_users = await self.bot.database.get_multiple_users(*message.guild.members, order_by=User.xp.desc())
+            index, u = next(filter(lambda j: j[1].id == message.author.id, enumerate(all_users)))
 
             if message.channel.permissions_for(message.guild.me).embed_links:
                 em = discord.Embed(title="Level up!")
                 em.description = "**{} is now level {}!** " \
-                                 "Current XP: {}".format(message.author.name, new_level, user["xp"])
+                                 "Current XP: {}".format(message.author.name, new_level, user.xp)
 
-                xp = user["xp"]
+                xp = user.xp
                 required = get_next_exp_required(xp)[1]
-                next_xp = xp + required
                 em.add_field(name="Required for next level", value="{} XP".format(required))
                 em.add_field(name="Rank", value="{} / {}".format(index + 1, len(all_users)))
 
@@ -130,21 +129,25 @@ class Levelling(Cog):
         If no user is passed, this will show your level.
         """
         user = target or ctx.message.author
+        if user == ctx.guild.me:
+            await ctx.send(":100: I am level infinity.")
+            return
+
         if user.bot:
             await ctx.channel.send(":no_entry_sign: **Bots cannot have XP.**")
             return
 
-        all_users = await ctx.bot.database.get_multiple_users(*ctx.message.guild.members, order_by=r.desc("xp"))
+        all_users = await ctx.bot.database.get_multiple_users(*ctx.message.guild.members, order_by=User.xp.desc())
 
-        index, u = next(filter(lambda j: j[1]["user_id"] == str(user.id), enumerate(all_users)))
+        index, u = next(filter(lambda j: j[1].id == user.id, enumerate(all_users)))
 
         embed = discord.Embed(title=user.nick or user.name)
         embed.set_thumbnail(url=user.avatar_url)
 
-        embed.add_field(name="Level", value=str(u["level"]))
+        embed.add_field(name="Level", value=str(u.level))
         embed.add_field(name="Rank", value="{} / {}".format(index + 1, len(all_users)))
-        embed.add_field(name="XP", value=str(u["xp"]))
-        required = get_next_exp_required(u["xp"])[1]
+        embed.add_field(name="XP", value=str(u.xp))
+        required = get_next_exp_required(u.xp)[1]
 
         embed.add_field(name="XP required for next level", value=required)
 
@@ -157,7 +160,7 @@ class Levelling(Cog):
 
         This uses the global XP counter.
         """
-        users = await ctx.bot.database.get_multiple_users(*ctx.message.guild.members, order_by=r.desc("xp"))
+        users = await ctx.bot.database.get_multiple_users(*ctx.message.guild.members, order_by=User.xp.desc())
 
         base = "**Top {} users (in this server):**\n\n".format(num)
 
@@ -167,14 +170,14 @@ class Levelling(Cog):
 
         for n, u in enumerate(users[:num]):
             try:
-                member = ctx.message.guild.get_member(int(u["user_id"])).name
+                member = ctx.message.guild.get_member(u.id).name
                 # Unicode and tables suck
                 member = member.encode("ascii", errors="replace").decode()
             except AttributeError:
                 # Prevent race condition - member leaving between command invocation and here
                 continue
             # position, name, xp, level
-            table.append([n + 1, member, u["xp"], u["level"]])
+            table.append([n + 1, member, u.xp, u.level])
 
         # Format the table.
         pages = paginate_table(table, headers)
@@ -188,20 +191,20 @@ class Levelling(Cog):
         """
         Plots the XP curve for this server.
         """
-        users = await ctx.bot.database.get_multiple_users(*ctx.message.guild.members, order_by=r.desc("xp"))
+        users = await ctx.bot.database.get_multiple_users(*ctx.message.guild.members, order_by=User.xp.desc())
 
         async with ctx.channel.typing():
             async with threadpool():
                 with plt.style.context("seaborn-pastel"):
-                    lvls = np.array([user["xp"] for user in users if user["level"] >= 0])
+                    lvls = np.array([user.level for user in users if user.level >= 0])
                     lvls = reject_outliers(lvls)
                     ax = sns.distplot(lvls, hist=False)
 
                     # seaborn uses pyplot internally
                     # so we can still set these
 
-                    plt.xlabel("XP")
-                    plt.title("XP distribution curve for {}".format(ctx.message.guild.name))
+                    plt.xlabel("Level")
+                    plt.title("Level distribution curve for {}".format(ctx.message.guild.name))
 
                     buf = BytesIO()
                     plt.savefig(buf, format="png")
@@ -227,7 +230,7 @@ class Levelling(Cog):
             await ctx.channel.send(":no_entry_sign: **Bots cannot have XP.**")
             return
 
-        xp = await ctx.bot.rethinkdb.get_user_xp(user)
+        xp = (await ctx.bot.database.get_or_create_user(user)).xp
 
         level, exp_required = get_next_exp_required(xp)
 
@@ -246,7 +249,7 @@ class Levelling(Cog):
             await ctx.channel.send(":no_entry_sign: **Bots cannot have XP.**")
             return
 
-        exp = await ctx.bot.rethinkdb.get_user_xp(user)
+        exp = (await ctx.bot.database.get_or_create_user(user)).xp
 
         await ctx.channel.send("User **{}** has `{}` XP.".format(user.name, exp))
 
