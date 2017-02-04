@@ -59,10 +59,6 @@ class DatabaseInterface(object):
                 if obb is None:
                     obb = User(id=member.id)
 
-                # Detach the object from the session, if needed.
-                if detatch:
-                    session.expunge(obb)
-
         return obb
 
     async def get_multiple_users(self, *members: discord.Member, order_by: Column = None,
@@ -98,6 +94,9 @@ class DatabaseInterface(object):
                 if xp_to_add is None:
                     xp_to_add = random.randint(0, 4)
 
+                if user.xp is None:
+                    user.xp = 0
+
                 user.xp += xp_to_add
 
                 session.add(user)
@@ -125,7 +124,7 @@ class DatabaseInterface(object):
         async with threadpool():
             with self.get_session() as session:
                 setting = session.query(Setting) \
-                    .filter(Setting.guild_id == guild.id and Setting.name == setting_name) \
+                    .filter((Setting.guild_id == guild.id) | (Setting.name == setting_name)) \
                     .first()
 
                 if setting:
