@@ -1,16 +1,17 @@
 import logging
 import random
 from contextlib import contextmanager
-
 import datetime
-import discord
+import time
 import typing
+
+import discord
 from asyncio_extras import threadpool
 from sqlalchemy import Column
 from sqlalchemy.engine import Engine, create_engine
 from sqlalchemy.orm import sessionmaker, Session
 
-from joku.db.tables import User, Setting, RoleState, Guild, UserColour, EventSetting, Tag
+from joku.db.tables import User, Setting, RoleState, Guild, UserColour, EventSetting, Tag, Reminder
 
 logger = logging.getLogger("Jokusoramame.DB")
 logging.getLogger("sqlalchemy").setLevel(logging.INFO)
@@ -423,8 +424,8 @@ class DatabaseInterface(object):
         """
         async with threadpool():
             with self.get_session() as sess:
-                tag = sess.query(Tag)\
-                    .filter((Tag.name == name) & (Tag.guild_id == guild.id))\
+                tag = sess.query(Tag) \
+                    .filter((Tag.name == name) & (Tag.guild_id == guild.id)) \
                     .first()
 
                 return tag
@@ -438,7 +439,7 @@ class DatabaseInterface(object):
                 return list(sess.query(Tag).filter(Tag.guild_id == guild.id).all())
 
     async def save_tag(self, guild: discord.Guild, name: str, content: str, *,
-                       owner: discord.Member=None) -> Tag:
+                       owner: discord.Member = None) -> Tag:
         """
         Saves a tag to the database.
         """
@@ -476,3 +477,76 @@ class DatabaseInterface(object):
                 sess.delete(tag)
 
         return tag
+
+    # endregion
+    # region Reminders
+    async def scan_reminders(self, within: int = 300) -> typing.List[Reminder]:
+        """
+        Scans reminders, and checks which reminders are due to run within the next <within> seconds.
+        """
+        async with threadpool():
+            with self.get_session() as sess:
+                assert isinstance(sess, Session)
+
+                dt = datetime.datetime.utcfromtimestamp(time.time() + within)
+
+                # query all enabled reminders that are less than the remaining time
+                reminders = sess.query(Reminder) \
+                    .filter((Reminder.enabled == True) & (Reminder.reminding_at < dt)) \
+                    .all()
+
+                return list(reminders)
+
+    async def create_reminder(self, channel: discord.TextChannel, member: discord.Member,
+                              content: str, remind_at: datetime.datetime):
+        """
+        Creates a reminder for the specified member in the channel.
+        """
+        user = await self.get_or_create_user(member)
+
+        async with threadpool():
+            with self.get_session() as sess:
+                # sqlalchemy woes
+                sess.add(user)
+
+                reminder = Reminder()
+                reminder.channel_id = channel.id
+                reminder.user = user
+                reminder.text = content
+                reminder.reminding_at = remind_at
+                reminder.enabled = True
+                sess.add(reminder)
+
+        return reminder
+
+    async def get_reminders_for(self, member: discord.Member) -> typing.Sequence[Reminder]:
+        """
+        Gets a list of reminders for a member.
+        """
+        async with threadpool():
+            with self.get_session() as sess:
+                reminders = sess.query(Reminder)\
+                    .filter((Reminder.enabled == True) & (Reminder.user_id == member.id))\
+                    .first()
+
+                return list(reminders)
+
+    async def get_reminder(self, id: int) -> Reminder:
+        """
+        Gets a reminder by ID.
+        """
+        async with threadpool():
+            with self.get_session() as sess:
+                return sess.query(Reminder).filter(Reminder.id == id).first()
+
+    async def cancel_reminder(self, id: int) -> Reminder:
+        """
+        Cancels a reminder by marking it as non active.
+        """
+        reminder = await self.get_reminder(id)
+        async with threadpool():
+            with self.get_session() as sess:
+                sess.add(reminder)
+                reminder.enabled = False
+
+        return reminder

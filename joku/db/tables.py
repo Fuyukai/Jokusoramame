@@ -31,7 +31,7 @@ class User(Base):
     last_modified = Column(DateTime(), server_default=func.now())
 
     #: The inventory for this user.
-    inventory = relationship("UserInventoryItem")
+    inventory = relationship("UserInventoryItem", lazy="joined")
 
     def __repr__(self):
         return "<User id={} xp={} money={}>".format(self.id, self.xp, self.money)
@@ -134,6 +134,32 @@ class UserColour(Base):
 
     #: The role ID that this usercolour uses.
     role_id = Column(BigInteger, nullable=False, unique=True)
+
+
+class Reminder(Base):
+    """
+    Stores a reminder.
+    """
+    __tablename__ = "reminder"
+
+    #: The ID of this reminder.
+    id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
+
+    #: The user that owns this reminder.
+    user_id = Column(BigInteger, ForeignKey("user.id"), nullable=False)
+    user = relationship("User", backref="reminders")
+
+    #: The channel that this reminder is in.
+    channel_id = Column(BigInteger, nullable=False)
+
+    #: Is this reminder enabled?
+    enabled = Column(Boolean, default=False)
+
+    #: The text of the reminder.
+    text = Column(String)
+
+    #: When this reminder is set at.
+    reminding_at = Column(DateTime, default=func.now())
 
 
 class RoleState(Base):
