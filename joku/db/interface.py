@@ -9,7 +9,7 @@ from sqlalchemy import Column
 from sqlalchemy.engine import Engine, create_engine
 from sqlalchemy.orm import sessionmaker, Session
 
-from joku.db.tables import User, Setting, RoleState, Guild
+from joku.db.tables import User, Setting, RoleState, Guild, UserColour
 
 logger = logging.getLogger("Jokusoramame.DB")
 logging.getLogger("sqlalchemy").setLevel(logging.INFO)
@@ -62,6 +62,8 @@ class DatabaseInterface(object):
                     sess.add(g)
 
         return g
+
+    # endregion
 
     # region User
 
@@ -305,3 +307,47 @@ class DatabaseInterface(object):
                 session.add(g)
 
         return g
+
+    # endregion
+
+    # region Colourme
+    async def get_colourme_role(self, member: discord.Member) -> typing.Union[discord.Role, None]:
+        """
+        Gets the colourme role for a member.
+        """
+        async with threadpool():
+            with self.get_session() as sess:
+                uc = sess.query(UserColour)\
+                    .filter((UserColour.user_id == member.id) | (UserColour.guild_id == member.guild.id))\
+                    .first()  # type: UserColour
+
+                if uc is None:
+                    return None
+
+                role = discord.utils.get(member.guild.roles, id=uc.role_id)
+                return role
+
+    async def set_colourme_role(self, member: discord.Member, role: discord.Role) -> UserColour:
+        """
+        Sets the colourme role for a member.
+        """
+        guild = await self.get_or_create_guild(member.guild)
+        user = await self.get_or_create_user(member)
+
+        async with threadpool():
+            with self.get_session() as sess:
+                uc = sess.query(UserColour)\
+                    .filter((UserColour.user_id == member.id) | (UserColour.guild_id == member.guild.id))\
+                    .first()  # type: UserColour
+
+                if uc is None:
+                    uc = UserColour()
+
+                # update these, to be sure
+                uc.role_id = role.id
+                uc.guild = guild
+                uc.user = user
+
+                sess.add(uc)
+
+        return uc
