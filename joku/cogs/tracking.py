@@ -18,6 +18,8 @@ class Tracking(Cog):
 
         # update their last message in redis
         await self.bot.redis.update_last_message(author)
+        # and their last seen
+        await self.bot.redis.update_last_seen(author)
 
     async def on_member_update(self, before: discord.Member, after: discord.Member):
         # check to see if their after status is online and their before was not online
