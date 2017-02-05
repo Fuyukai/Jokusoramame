@@ -94,7 +94,7 @@ class Jokusoramame(Bot):
         self.own_task = None  # type: asyncio.Task
 
     # Utility functions.
-    def get_member(self, id: str):
+    def get_member(self, id: int):
         """
         Gets a member from all members.
         """

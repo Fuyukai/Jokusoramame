@@ -10,7 +10,7 @@ from sqlalchemy import Column
 from sqlalchemy.engine import Engine, create_engine
 from sqlalchemy.orm import sessionmaker, Session
 
-from joku.db.tables import User, Setting, RoleState, Guild, UserColour, EventSetting
+from joku.db.tables import User, Setting, RoleState, Guild, UserColour, EventSetting, Tag
 
 logger = logging.getLogger("Jokusoramame.DB")
 logging.getLogger("sqlalchemy").setLevel(logging.INFO)
@@ -416,3 +416,63 @@ class DatabaseInterface(object):
         return original
 
     # endregion
+    # region Tags
+    async def get_tag(self, guild: discord.Guild, name: str) -> typing.Union[None, Tag]:
+        """
+        Gets a tag from the database.
+        """
+        async with threadpool():
+            with self.get_session() as sess:
+                tag = sess.query(Tag)\
+                    .filter((Tag.name == name) | (Tag.guild_id == guild.id))\
+                    .first()
+
+                return tag
+
+    async def get_all_tags_for_guild(self, guild: discord.Guild) -> typing.Sequence[Tag]:
+        """
+        Gets all tags for this guild.
+        """
+        async with threadpool():
+            with self.get_session() as sess:
+                return list(sess.query(Tag).filter(Tag.guild_id == guild.id).all())
+
+    async def save_tag(self, guild: discord.Guild, name: str, content: str, *,
+                       owner: discord.Member=None) -> Tag:
+        """
+        Saves a tag to the database.
+        """
+        tag = await self.get_tag(guild, name)
+
+        async with threadpool():
+            with self.get_session() as sess:
+                # add it first otherwise sqlalchemy cries
+                if tag is None:
+                    tag = Tag()
+                sess.add(tag)
+
+                # update tag
+                tag.name = name
+                tag.content = content
+                tag.last_modified = datetime.datetime.now()
+                if owner is not None:
+                    tag.user_id = owner.id
+
+                tag.guild_id = guild.id
+
+        return tag
+
+    async def delete_tag(self, guild: discord.Guild, name: str) -> typing.Union[Tag, None]:
+        """
+        Deletes a tag from the database.
+        """
+        tag = await self.get_tag(guild, name)
+
+        if not tag:
+            return
+
+        async with threadpool():
+            with self.get_session() as sess:
+                sess.delete(tag)
+
+        return tag

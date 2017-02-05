@@ -32,77 +32,77 @@ class Tags(Cog):
 
     @commands.group(pass_context=True, invoke_without_command=True,
                     aliases=["tags"])
-    async def tag(self, ctx, *, name: str):
+    async def tag(self, ctx: Context, *, name: str):
         """
         Tags are like aliases or autoresponses that can be added to the bot.
 
         They are made with `tag create`, and deleted with `tag delete`.
         To be accessed, they are simply called like commands are.
         """
-        tag_obb = await ctx.bot.rethinkdb.get_tag(ctx.message.guild, name)
-        if not tag_obb:
-            await ctx.channel.send("Tag not found.")
+        tag = await ctx.bot.database.get_tag(ctx.message.guild, name)
+        if not tag:
+            await ctx.channel.send(":x: Tag not found.")
             return
 
-        owner = ctx.bot.get_member(int(tag_obb["owner_id"]))
+        owner = ctx.bot.get_member(tag.user_id)
 
-        em = discord.Embed(title=tag_obb["name"], description=tag_obb["content"])
+        em = discord.Embed(title=tag.name, description=tag.content)
         em.add_field(name="Owner", value=owner.mention if owner else "<Unknown>")
-        em.add_field(name="Last Modified", value=tag_obb["last_modified"].isoformat())
+        em.add_field(name="Last Modified", value=tag.last_modified.isoformat())
 
         # Display the tag info.
         await ctx.channel.send(embed=em)
 
     @tag.command(pass_context=True, aliases=["list"])
-    async def all(self, ctx):
+    async def all(self, ctx: Context):
         """
         Shows all the tags for the current server
         """
         # looks kinda bleak but i try my best *shrug*
-        server_tags = await ctx.bot.rethinkdb.get_all_tags_for_server(ctx.message.guild)
+        server_tags = await ctx.bot.database.get_all_tags_for_guild(ctx.message.guild)
         if not server_tags:
             await ctx.channel.send(":x: This server has no tags.")
             return
 
-        await ctx.channel.send(", ".join([x['name'] for x in server_tags]))
+        await ctx.channel.send("Tags: " + ", ".join([x.name for x in server_tags]))
 
     @tag.command(pass_context=True, aliases=["edit"])
-    async def create(self, ctx, name: str, *, content: str):
+    async def create(self, ctx: Context, name: str, *, content: str):
         """
         Creates a new tag.
 
         This will overwrite other tags with the same name, if you are the owner or an administrator.
         """
-        existing_tag = await ctx.bot.rethinkdb.get_tag(ctx.message.guild, name)
+        existing_tag = await ctx.bot.database.get_tag(ctx.message.guild, name)
 
         if existing_tag:
             # Check for the admin perm.
             if not ctx.message.author.guild_permissions.administrator:
                 # Check if the owner_id matches the author id.
-                if str(ctx.message.author.id) != existing_tag["owner_id"]:
+                if ctx.message.author.id != existing_tag.user_id:
                     await ctx.channel.send(":x: You cannot edit somebody else's tag.")
                     return
 
             # Don't overwrite the owner_id.
-            owner_id = existing_tag["owner_id"]
+            owner = None
         else:
-            owner_id = str(ctx.message.author.id)
+            owner = ctx.message.author
 
         # Replace stuff in content.
         content = content.replace("@everyone", "@\u200beveryone").replace("@here", "@\u200bhere")
 
         # Set the tag.
-        await ctx.bot.rethinkdb.save_tag(ctx.message.guild, name, content, {}, owner=owner_id)
+        await ctx.bot.database.save_tag(ctx.message.guild, name, content, owner=owner)
         await ctx.channel.send(":heavy_check_mark: Tag **{}** saved.".format(name))
 
     @tag.command(pass_context=True, aliases=["remove"])
-    async def delete(self, ctx, *, name: str):
+    async def delete(self, ctx: Context, *, name: str):
         """
         Deletes a tag.
 
         You must be the owner of the tag, or an administrator.
         """
-        existing_tag = await ctx.bot.rethinkdb.get_tag(ctx.message.guild, name)
+        existing_tag = await ctx.bot.database.get_tag(ctx.message.guild, name)
 
         if not existing_tag:
             await ctx.channel.send(":x: This tag does not exist.")
@@ -110,12 +110,12 @@ class Tags(Cog):
 
         # Check the owner_id
         if not ctx.message.author.guild_permissions.administrator:
-            if existing_tag["owner_id"] != ctx.message.author.id:
+            if existing_tag.owner_id != ctx.message.author.id:
                 await ctx.channel.send(":x: You do not have permission to edit this tag.")
                 return
 
         # Now, delete the tag.
-        await ctx.bot.rethinkdb.delete_tag(ctx.message.guild, name)
+        await ctx.bot.database.delete_tag(ctx.message.guild, name)
         await ctx.channel.send(":skull_and_crossbones: Tag deleted.")
 
     # Unlike other bots, tags are registered like full commands.

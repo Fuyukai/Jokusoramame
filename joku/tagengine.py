@@ -13,6 +13,7 @@ from jinja2 import Template
 from jinja2.sandbox import SandboxedEnvironment
 
 from joku.bot import Jokusoramame, Context
+from joku.db.tables import Tag
 
 
 class TagEngine(object):
@@ -41,29 +42,29 @@ class TagEngine(object):
         )
 
     @staticmethod
-    def _pp_render_template(tmpl_env: SandboxedEnvironment, tag: dict, kwargs=None):
+    def _pp_render_template(tmpl_env: SandboxedEnvironment, tag: Tag, kwargs=None):
         """
         Called inside the process pool to render the template.
         """
-        template = tmpl_env.from_string(tag.get("content", "**Broken tag!**"))  # type: Template
+        template = tmpl_env.from_string(tag.content or "Broken tag!")  # type: Template
 
-        variables = tag.get("variables", {})
+        # variables = tag.get("variables", {})
 
-        def _set_variable(name, value):
-            variables[name] = value
+        # def _set_variable(name, value):
+        #     variables[name] = value
 
-        local = {
-            "set_variable": _set_variable,
-            **variables,
-        }
-        if kwargs:
-            local.update(kwargs)
+        # local = {
+        #     "set_variable": _set_variable,
+        #     **variables,
+        # }
+        # if kwargs:
+        #     local.update(kwargs)
 
-        rendered = template.render(**local)
+        rendered = template.render(**kwargs)
 
-        return rendered, variables
+        return rendered
 
-    async def _render_template(self, tag: dict, **kwargs):
+    async def _render_template(self, tag: Tag, **kwargs):
         """
         Renders the template in a process pool.
         """
@@ -72,9 +73,9 @@ class TagEngine(object):
 
         coro = asyncio.wait_for(coro, 5, loop=self.bot.loop)
 
-        rendered, new_variables = await coro
+        rendered = await coro
 
-        return rendered, new_variables
+        return rendered
 
     async def render_template(self, tag_id: str, ctx: Context = None, guild: discord.Guild = None,
                               **kwargs) -> str:
@@ -89,9 +90,9 @@ class TagEngine(object):
         if not tag:
             return None
 
-        final_template, new_variables = await self._render_template(tag, **kwargs)
+        final_template = await self._render_template(tag, **kwargs)
 
-        await self.bot.database.save_tag(guild, tag_id, content=tag.get("content"),
-                                         variables=new_variables)
+        # await self.bot.database.save_tag(guild, tag_id, content=tag.get("content"),
+        #                                  variables=new_variables)
 
         return final_template

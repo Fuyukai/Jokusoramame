@@ -92,7 +92,7 @@ class Tag(Base):
     __tablename__ = "tag"
 
     #: The ID of the tag.
-    id = Column(Integer, primary_key=True, autoincrement=False, nullable=False,
+    id = Column(Integer, primary_key=True, autoincrement=True, nullable=False,
                 unique=True)
 
     #: The guild ID of this tag.
@@ -100,7 +100,13 @@ class Tag(Base):
 
     #: The user ID of this tag.
     user_id = Column(BigInteger, ForeignKey("user.id"))
-    user = relationship("user", backref="tags")
+    user = relationship("User", backref="tags")
+
+    #: The name of the tag.
+    name = Column(String, nullable=False, unique=False, index=True)
+
+    #: Is this tag global?
+    global_ = Column(Boolean, default=False, nullable=False)
 
     #: The tag content.
     content = Column(String, unique=False, nullable=False)
