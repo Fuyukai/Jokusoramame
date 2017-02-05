@@ -15,9 +15,9 @@ git pull || exit 1
 
 echo "Updating requirements..."
 pip install -U -r requirements.txt || exit 1
-echo "Starting RethinkDB suspended..."
-rethinkdb --http-port 8787 --cache-size auto &
-sleep 2
+#echo "Starting RethinkDB suspended..."
+#rethinkdb --http-port 8787 --cache-size auto &
+#sleep 2
 echo "Starting Jokusoramame."
 python run.py config.yml
 
