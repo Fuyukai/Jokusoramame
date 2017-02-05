@@ -87,19 +87,27 @@ class Roleme(Cog):
         await ctx.send(":heavy_check_mark: Removed `{}` from your roles.".format(role.name))
 
     @commands.group(invoke_without_command=True, aliases=["colorme"])
-    async def colourme(self, ctx: Context, *, colour: discord.Colour):
+    async def colourme(self, ctx: Context, *, colour: discord.Colour=None):
         """
         Sets your custom colour.
         """
-        enabled = await ctx.bot.database.get_setting(ctx.guild, "colourme_enabled", {"value": False})
-        if not enabled["value"] is True:
+        enabled = await ctx.bot.database.get_setting(ctx.guild, "colourme_enabled", {"enabled": False})
+        if not enabled["enabled"] is True:
             await ctx.send(":x: Colourme is not enabled on this server.")
+            return
+
+        if colour is None:
+            role = await ctx.bot.database.get_colourme_role(ctx.author)
+            if role:
+                await ctx.send("Your colour is **`{}`**.".format(str(role.colour)))
+            else:
+                await ctx.send(":x: You have no colour role.")
+
             return
 
         guild = ctx.guild  # type: discord.Guild
 
-        role_id = await ctx.bot.database.get_colourme_role(ctx.author)
-        role = discord.utils.get(guild.roles, id=role_id)  # type: discord.Role
+        role = await ctx.bot.database.get_colourme_role(ctx.author)
 
         role_name = "Colour for {}".format(ctx.author.name[:15])
 
@@ -122,7 +130,7 @@ class Roleme(Cog):
         """
         Enables colourme for this server.
         """
-        await ctx.bot.database.set_setting(ctx.guild, "colourme_enabled", value=True)
+        await ctx.bot.database.set_setting(ctx.guild, "colourme_enabled", enabled=True)
         await ctx.send(":heavy_check_mark: Enabled colourme.")
 
     @colourme.command()
@@ -131,7 +139,7 @@ class Roleme(Cog):
         """
         Disables colourme for this server.
         """
-        await ctx.bot.database.set_setting(ctx.guild, "colourme_enabled", value=False)
+        await ctx.bot.database.set_setting(ctx.guild, "colourme_enabled", enabled=False)
         await ctx.send(":heavy_check_mark: Disabled colourme.")
 
 
