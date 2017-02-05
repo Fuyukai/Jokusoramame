@@ -1,254 +1,131 @@
 """
-Cog that handles event listeners and such.
+Cog that handles event listeners.
 """
-import datetime
-from math import floor
-
-import collections
 import discord
-import time
-import logbook
-from discord.ext.commands import Command
-
-import rethinkdb as r
 from discord.ext import commands
-import tabulate
 
-from joku.bot import Jokusoramame, Context
-from joku.checks import is_owner
+from joku.bot import Context
+from joku.checks import has_permissions
 from joku.cogs._common import Cog
 from joku.vendor.safefmt import safe_format
 
-unknown_events = {
-    11: "HEARTBEAT_ACK",
-    10: "READY",
-    9: "INVALIDATE_SESSION",
-    7: "RECONNECT"
-}
-
 
 class Events(Cog):
-    def __init__(self, bot):
-        super().__init__(bot)
-
-        self.gw_logger = logbook.Logger("discord.gateway:shard-{}".format(self.bot.shard_id))
-
-        self.current_commands = collections.deque(maxlen=20)
-
-    async def on_command(self, ctx: Context):
-        """
-        Called when a command is ran.
-        """
-        d = {
-            "ctx": ctx,
-            "command": ctx.command  ,
-            "timestamp": datetime.datetime.utcnow()
-        }
-        self.current_commands.append(d)
-
-    @commands.command(pass_context=True)
-    async def backlog(self, ctx: Context):
-        """
-        Show the most recent 20 commands.
-        """
-        fmt = ""
-        for command in self.current_commands:
-            fmt += "[{ctx.message.guild.name}][{ctx.message.channel.name}]: " \
-                   "[{ctx.message.author.name}] -> [{ctx.invoked_with}]\n".format(ctx=command["ctx"])
-
-        await ctx.channel.send(fmt, use_codeblocks=True)
-
-    @commands.group(pass_context=True, invoke_without_command=True)
-    async def events(self, ctx: Context):
-        """
-        Shows the top 10 most frequent events.
-        """
-        headers = ("Event", "Frequency")
-        data = ctx.bot.manager.events.most_common(10)
-
-        table = tabulate.tabulate(data, headers=headers, tablefmt="orgtbl")
-
-        await ctx.channel.send("```{}```".format(table))
-
-    @events.command(pass_context=True)
-    async def seq(self, ctx: Context):
-        """
-        Shows the current sequence number.
-        """
-        seq = ctx.bot.connection.sequence
-        await ctx.channel.send("Current sequence number: `{}`".format(seq))
-
-    async def on_socket_response(self, data: dict):
-        """
-        Adds events to the event counter.
-        """
-        event = data.get("t")
-        if not event:
-            event = unknown_events.get(data.get("op"))
-            if not event:
-                self.bot.logger.warn("Caught None-event: `{}` ({})".format(event, data))
-
-        self.bot.manager.events[event] += 1
-
-    async def on_message(self, message: discord.Message):
-        # Simply log the message.
-        return
-        await self.bot.rdblog.log_message(message)
-
-    async def on_typing(self, channel: discord.TextChannel, user: discord.User, when: datetime.datetime):
-        return
-        obb = {
-            "t": "TYPING_START",
-            "member_id": user.id,
-            "channel_id": channel.id
-        }
-        await self.bot.rdblog.log(obb)
-
-    async def on_message_delete(self, message: discord.Message):
-        return
-        obb = {
-            "t": "MESSAGE_DELETE",
-            "member_id": str(message.author.id),
-            "member_name": str(message.author.name),
-            "server_id": str(message.guild.id),
-            "channel_id": str(message.guild.id),
-            "content": str(message.content)
-        }
-        await self.bot.rdblog.log(obb)
-
-    async def on_message_edit(self, old: discord.Message, message: discord.Message):
-        return
-        obb = {
-            "t": "MESSAGE_UPDATE",
-            "member_id": str(message.author.id),
-            "member_name": message.author.name,
-            "server_id": str(message.guild.id),
-            "channel_id": str(message.channel.id),
-            "old_content": old.content,
-            "content": message.content
-        }
-        await self.bot.rdblog.log(obb)
-
-    async def on_member_ban(self, member: discord.Member):
-        obb = {
-            "t": "GUILD_BAN_ADD",
-            "member_id": str(member.id),
-            "member_name": member.name,
-            "server_id": str(member.guild.id)
-        }
-        #await self.bot.rdblog.log(obb)
-
-        i = await self.bot.database.get_event_message(member.guild, "bans", "`{member.name}` got **bent**")
-
-        if not i:
-            return
-
-        channel, event_msg = i
-
-        try:
-            msg = safe_format(event_msg, **{
-                "member": member,
-                "server": member.guild,
-                "channel": channel
-            })
-        except AttributeError as e:
-            await channel.send(":x: Event message has error: `{}`".format(repr(e)))
-            return
-
-        await channel.send(msg)
-
-    async def on_member_unban(self, guild: discord.Guild, member: discord.User):
-        obb = {
-            "t": "GUILD_BAN_REMOVE",
-            "member_id": str(member.id),
-            "member_name": member.name,
-            "server_id": str(guild.id)
-        }
-        #await self.bot.rdblog.log(obb)
-
-        i = await self.bot.database.get_event_message(guild, "unbans", "`{member.name}` got **unbent**")
-
-        if not i:
-            return
-
-        channel, event_msg = i
-
-        try:
-            msg = safe_format(event_msg, **{
-                "member": member,
-                "server": guild,
-                "channel": channel
-            })
-        except AttributeError as e:
-            await channel.send(":x: Event message has error: `{}`".format(repr(e)))
-            return
-
-        await channel.send(msg)
+    VALID_EVENTS = (
+        "joins",
+        "leaves"
+    )
 
     async def on_member_join(self, member: discord.Member):
         """
         Called when a member joins.
-
-        Checks if this server is subscribed to joins, and formats the welcome message as appropriate.
         """
+        event = await self.bot.database.get_event_setting(member.guild, "joins")
+        if event is None:
+            return
 
-        # Log it in the database.
-        obb = {
-            "t": "GUILD_MEMBER_ADD",
-            "member_id": str(member.id),
-            "member_name": member.name,
-            "server_id": str(member.guild.id)
+        # check if enabled
+        if not event.enabled:
+            return
+
+        channel = member.guild.get_channel(event.channel_id)
+        if not channel:
+            # bad guild admins
+            return
+
+        fmt = {
+            "server": member.guild,
+            "member": member,
+            "channel": channel
         }
-        #await self.bot.rdblog.log(obb)
-
-        i = await self.bot.database.get_event_message(member.guild, "joins", "Welcome {member.name}!")
-
-        if not i:
-            return
-
-        channel, event_msg = i
-
-        try:
-            msg = safe_format(event_msg, **{
-                "member": member,
-                "server": member.guild,
-                "channel": channel
-            })
-        except AttributeError as e:
-            await channel.send(":x: Event message has error: `{}`".format(repr(e)))
-            return
-
+        msg = safe_format(event.message or "Welcome {member.name} to {server.name}!", **fmt)
         await channel.send(msg)
 
-    async def on_member_remove(self, member: discord.Member):
-        # Log it in the database.
-        obb = {
-            "t": "GUILD_MEMBER_REMOVE",
-            "member_id": str(member.id),
-            "member_name": member.name,
-            "server_id": str(member.guild.id)
+    async def on_member_leave(self, member: discord.Member):
+        event = await self.bot.database.get_event_setting(member.guild, "leaves")
+        if event is None:
+            return
+
+        # check if enabled
+        if not event.enabled:
+            return
+
+        channel = member.guild.get_channel(event.channel_id)
+        if not channel:
+            # bad guild admins
+            return
+
+        fmt = {
+            "server": member.guild,
+            "member": member,
+            "channel": channel
         }
-        #await self.bot.rdblog.log(obb)
-
-        i = await self.bot.database.get_event_message(member.guild, "leaves", "Bye {member.name}!")
-
-        if not i:
-            return
-
-        channel, event_msg = i
-
-        try:
-            msg = safe_format(event_msg, **{
-                "member": member,
-                "server": member.guild,
-                "channel": channel
-            })
-        except AttributeError as e:
-            await channel.send(":x: Event message has error: `{}`".format(repr(e)))
-            return
-
+        msg = safe_format(event.message or "Bye {member.name}!", **fmt)
         await channel.send(msg)
 
+    @commands.group(invoke_without_command=True)
+    @has_permissions(manage_server=True)
+    async def notifications(self, ctx: Context):
+        """
+        Manages your notifications setting for this server.
 
-def setup(bot: Jokusoramame):
-    bot.add_cog(Events(bot))
+        You can either subscribe to notifications with `subscribe event`, unsubscribe with `unsubscribe event`,
+        change the message with `msg event <msg>`, or move the channel with `move`.
+
+        All commands here require MANAGE_SERVER.
+        """
+        events = await ctx.bot.database.get_enabled_events(ctx.guild)
+
+        fmt = ", ".join(events)
+        await ctx.send("**Currently enabled events for this guild:** {}".format(fmt))
+
+    @notifications.command()
+    async def subscribe(self, ctx: Context, event: str):
+        """
+        Subscribes to an event, enabling notifications for it.
+        """
+        if event not in self.VALID_EVENTS:
+            await ctx.send(":x: That is not a valid event. Valid events: {}".format(", ".join(self.VALID_EVENTS)))
+            return
+
+        await ctx.bot.database.update_event_setting(ctx.guild, event,
+                                                    enabled=True, channel=ctx.channel)
+        await ctx.send(":heavy_check_mark: Subscribed to event.")
+
+    @notifications.command()
+    async def unsubscribe(self, ctx: Context, event: str):
+        """
+        Unsubscribes from an event, disabling notifications from it.
+        """
+        events = await ctx.bot.database.get_enabled_events(ctx.guild)
+        if event not in events:
+            await ctx.send(":x: You are not subscribed to this event.")
+            return
+
+        await ctx.bot.database.update_event_setting(ctx.guild, event,
+                                                    enabled=False)
+        await ctx.send(":heavy_check_mark: Unsubscribed from event.")
+
+    @notifications.command()
+    async def msg(self, ctx: Context, event: str, *, msg: str = None):
+        """
+        Updates the message for an event.
+
+        If no message is provided, this will show the current message.
+        """
+        events = await ctx.bot.database.get_enabled_events(ctx.guild)
+        if event not in events:
+            await ctx.send(":x: You are not subscribed to this event.")
+            return
+
+        if msg is None:
+            es = await ctx.bot.database.get_event_setting(event)
+            await ctx.send("The current message for this event is: `{}`".format(es))
+            return
+
+        await ctx.bot.database.update_event_setting(ctx.guild, event,
+                                                    message=msg)
+        await ctx.send(":heavy_check_mark: Updated event message.")
+
+
+setup = Events.setup
