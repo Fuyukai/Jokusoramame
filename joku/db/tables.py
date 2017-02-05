@@ -82,6 +82,27 @@ class Guild(Base):
     roleme_roles = Column(ARRAY(BigInteger), nullable=True, default=[])
 
 
+class UserColour(Base):
+    """
+    Stores the colour state for a user.
+    """
+    __tablename__ = "user_colour"
+
+    #: The ID of this colour mapping.
+    id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
+
+    #: The user ID that is represented by this colour.
+    user_id = Column(BigInteger, ForeignKey("user.id"), nullable=False)
+    user = relationship("User", backref="colours")
+
+    #: The guild ID that is represented by this colour.
+    guild_id = Column(BigInteger, ForeignKey("guild.id"), nullable=False)
+    guild = relationship("Guild", backref="colours")
+
+    #: The role ID that this usercolour uses.
+    role_id = Column(BigInteger, nullable=False, unique=True)
+
+
 class RoleState(Base):
     """
     Represents the role state of a user.
