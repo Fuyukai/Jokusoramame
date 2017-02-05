@@ -52,10 +52,10 @@ class Moderation(Cog):
             return
 
         c = await self.bot.database.get_setting(message.guild, "mention_spam", {
-            "value": False,
+            "enabled": False,
             "threshold": 5
         })
-        if c["value"] is True:
+        if c["enabled"] is True:
             if mentions == c["threshold"]:
                 guild = message.guild  # type: discord.Guild
                 await guild.ban(message.author)
@@ -70,11 +70,11 @@ class Moderation(Cog):
         Toggles the antimention status in this server.
         """
         previous = await ctx.bot.database.get_setting(ctx.guild, "mention_spam", {
-            "value": False,
+            "enabled": False,
             "threshold": 5
         })
         if status is None or status not in ["on", "off"]:
-            current_status = previous.get("value", False)
+            current_status = previous.get("enabled", False)
             if current_status:
                 await ctx.send("Anti-mention spam is currently **on**.")
             else:
@@ -85,14 +85,14 @@ class Moderation(Cog):
         if status == "on":
             await ctx.bot.database.set_setting(ctx.guild, "mention_spam",
                                                **{
-                                                    "value": True,
+                                                    "enabled": True,
                                                     "threshold": previous["threshold"]
                                                 })
             await ctx.send(":heavy_check_mark: Enabled anti-mention spam.")
         elif status == "off":
             await ctx.bot.database.set_setting(ctx.guild, "mention_spam",
                                                **{
-                                                    "value": False,
+                                                    "enabled": False,
                                                     "threshold": previous["threshold"]
                                                 })
             await ctx.send(":heavy_check_mark: Disabled anti-mention spam.")
@@ -107,7 +107,7 @@ class Moderation(Cog):
             return
 
         previous = await ctx.bot.database.get_setting(ctx.guild, "mention_spam", {
-            "value": False,
+            "enabled": False,
             "threshold": 5
         })
         await ctx.bot.database.set_setting(ctx.guild, "mention_spam", value=previous["value"], threshold=threshold)
