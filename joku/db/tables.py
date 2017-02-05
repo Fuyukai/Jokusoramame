@@ -78,8 +78,35 @@ class Guild(Base):
     #: A relationship to the event settings.
     event_settings = relationship("EventSetting", backref="guild")
 
+    #: A relationship to the tags.
+    tags = relationship("Tag", backref="guild")
+
     #: An array of roleme role IDs this guild can have.
     roleme_roles = Column(ARRAY(BigInteger), nullable=True, default=[])
+
+
+class Tag(Base):
+    """
+    Represents a tag in the database.
+    """
+    __tablename__ = "tag"
+
+    #: The ID of the tag.
+    id = Column(Integer, primary_key=True, autoincrement=False, nullable=False,
+                unique=True)
+
+    #: The guild ID of this tag.
+    guild_id = Column(BigInteger, ForeignKey("guild.id"))
+
+    #: The user ID of this tag.
+    user_id = Column(BigInteger, ForeignKey("user.id"))
+    user = relationship("user", backref="tags")
+
+    #: The tag content.
+    content = Column(String, unique=False, nullable=False)
+
+    #: The last modified date for this tag.
+    last_modified = Column(DateTime, default=func.now())
 
 
 class UserColour(Base):
