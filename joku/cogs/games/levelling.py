@@ -187,7 +187,7 @@ class Levelling(Cog):
         for page in pages:
             await ctx.channel.send(page)
 
-    @level.command(pass_context=True)
+    @level.command(pass_context=True, aliases=['graph'])
     async def plot(self, ctx: Context):
         """
         Plots the XP curve for this server.
@@ -196,26 +196,46 @@ class Levelling(Cog):
 
         async with ctx.channel.typing():
             async with threadpool():
-                with plt.style.context("seaborn-pastel"):
-                    lvls = np.array([user.level for user in users if user.level >= 0])
-                    lvls = reject_outliers(lvls)
-                    ax = sns.distplot(lvls, hist=False)
+                lvls = np.array([user.level for user in users if user.level >= 0])
+                lvls = reject_outliers(lvls)
 
-                    # seaborn uses pyplot internally
-                    # so we can still set these
+                # This changes the line/shade colour apparently.
+                sns.set_palette(['#DFA5A4'])
+                sns.set_style('white')
 
-                    plt.xlabel("Level")
-                    plt.title("Level distribution curve for {}".format(ctx.message.guild.name))
+                # The bw argument makes it slightly less "rounded"
+                ax = sns.kdeplot(lvls, shade=True, bw=0.3)
 
-                    buf = BytesIO()
-                    plt.savefig(buf, format="png")
+                plt.xlabel('Level', fontsize=14)
+                plt.title('Level distribution curve for {}'.format(ctx.message.guild.name),
+                          fontsize=23)
 
-                    # Don't send 0-byte files
-                    buf.seek(0)
+                # "Hacky" way of limiting the x-axis but I couldnt
+                # come up with anything better
+                max_level = ceil(max(lvls) / 10) * 10
+                plt.xticks(np.arange(0, max_level, 10))
 
-                    # Cleanup.
-                    plt.clf()
-                    plt.cla()
+                # Set interval on yticks to 20%
+                plt.yticks(np.arange(0, 0.12, 0.02))
+                plt.yticks(ax.get_yticks(), np.array(ax.get_yticks() * 1000).astype(int))
+
+                # Set the limits of the axis so it doesnt
+                # expand too much in any direction
+                ax.set_ybound(0, 0.1)
+                ax.set_xbound(0, max_level + 1)
+
+                # Removes the right and top border
+                sns.despine()
+
+                buf = BytesIO()
+                plt.savefig(buf, format="png")
+
+                # Don't send 0-byte files
+                buf.seek(0)
+
+                # Cleanup.
+                plt.clf()
+                plt.cla()
 
         await ctx.channel.send(file=buf, filename="plot.png")
 
