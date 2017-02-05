@@ -95,3 +95,4 @@ rethinkdb_data/
 .idea/
 
 .atom-build.yml
+alembic.ini
