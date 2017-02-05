@@ -133,7 +133,7 @@ class UserColour(Base):
     guild = relationship("Guild", backref="colours")
 
     #: The role ID that this usercolour uses.
-    role_id = Column(BigInteger, nullable=False, unique=False)
+    role_id = Column(BigInteger, nullable=False, unique=True)
 
 
 class RoleState(Base):
