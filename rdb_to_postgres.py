@@ -79,16 +79,23 @@ with session.no_autoflush:
 
     # Create all of the colourme roles.
     colourme = r.table("roleme_colours").run()
+    roles = set()
     for obb in colourme:
         u = get_or_create_user(int(obb["user_id"]))
         g = get_or_create_guild(int(obb["server_id"]))
+
+        if u.id in [x.user_id for x in session.new if isinstance(x, UserColour)]:
+            continue
 
         ob = UserColour()
         ob.user_id = u.id
         ob.guild_id = g.id
         ob.role_id = int(obb["role_id"])
 
-        session.merge(ob)
+        roles.add(ob.role_id)
+        print("Migrated colourme for {}|{}|{}".format(ob.user_id, ob.guild_id, ob.role_id))
+
+        session.add(ob)
 
     # Create all of the tags.
     for obb in r.table("tags").run():

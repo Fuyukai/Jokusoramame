@@ -147,7 +147,7 @@ class DatabaseInterface(object):
         async with threadpool():
             with self.get_session() as session:
                 setting = session.query(Setting) \
-                    .filter((Setting.guild_id == guild.id) | (Setting.name == setting_name)) \
+                    .filter((Setting.guild_id == guild.id) & (Setting.name == setting_name)) \
                     .first()
 
                 if setting:
@@ -164,7 +164,7 @@ class DatabaseInterface(object):
         async with threadpool():
             with self.get_session() as session:
                 setting = session.query(Setting) \
-                    .filter(Setting.guild_id == guild.id and Setting.name == setting_name) \
+                    .filter((Setting.guild_id == guild.id) & (Setting.name == setting_name)) \
                     .first()
 
                 if setting is None:
@@ -219,7 +219,7 @@ class DatabaseInterface(object):
                 assert isinstance(session, Session)
 
                 current_rolestate = session.query(RoleState) \
-                    .filter((RoleState.user_id == member.id) | (RoleState.guild_id == member.guild.id)) \
+                    .filter((RoleState.user_id == member.id) & (RoleState.guild_id == member.guild.id)) \
                     .first()
 
                 if current_rolestate is None:
@@ -242,7 +242,7 @@ class DatabaseInterface(object):
                 assert isinstance(session, Session)
 
                 rolestate = session.query(RoleState) \
-                    .filter((RoleState.user_id == member_id) | (RoleState.guild_id == guild_id)) \
+                    .filter((RoleState.user_id == member_id) & (RoleState.guild_id == guild_id)) \
                     .first()
 
         return rolestate
@@ -317,7 +317,7 @@ class DatabaseInterface(object):
         async with threadpool():
             with self.get_session() as sess:
                 uc = sess.query(UserColour) \
-                    .filter((UserColour.user_id == member.id) | (UserColour.guild_id == member.guild.id)) \
+                    .filter((UserColour.user_id == member.id) & (UserColour.guild_id == member.guild.id)) \
                     .first()  # type: UserColour
 
                 if uc is None:
@@ -336,7 +336,7 @@ class DatabaseInterface(object):
         async with threadpool():
             with self.get_session() as sess:
                 uc = sess.query(UserColour) \
-                    .filter((UserColour.user_id == member.id) | (UserColour.guild_id == member.guild.id)) \
+                    .filter((UserColour.user_id == member.id) & (UserColour.guild_id == member.guild.id)) \
                     .first()  # type: UserColour
 
                 if uc is None:
@@ -379,7 +379,7 @@ class DatabaseInterface(object):
         async with threadpool():
             with self.get_session() as sess:
                 uc = sess.query(EventSetting) \
-                    .filter((EventSetting.guild_id == guild.id) | (EventSetting.event == event)) \
+                    .filter((EventSetting.guild_id == guild.id) & (EventSetting.event == event)) \
                     .first()
 
                 return uc
@@ -424,7 +424,7 @@ class DatabaseInterface(object):
         async with threadpool():
             with self.get_session() as sess:
                 tag = sess.query(Tag)\
-                    .filter((Tag.name == name) | (Tag.guild_id == guild.id))\
+                    .filter((Tag.name == name) & (Tag.guild_id == guild.id))\
                     .first()
 
                 return tag
