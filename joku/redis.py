@@ -82,9 +82,55 @@ class RedisAdapter(object):
             await redis.lpush(b, b"A")
             return True
 
-    async def ttl(self, key: bytes):
+    async def ttl(self, key: bytes) -> int:
+        """
+        Gets the TTL of a key.
+
+        :param key: The key to get.
+        :return: The TTL of that key.
+        """
         async with self.get_redis() as redis:
             return await redis.ttl(key)
+
+    async def update_last_seen(self, member: discord.Member):
+        """
+        Updates the current last seen for this member.
+
+        This will set the last seen to now.
+        """
+        async with self.get_redis() as redis:
+            assert isinstance(redis, aioredis.Redis)
+
+            # aioredis is bad
+            await redis.hmset_dict("presence:{}".format(member.id),
+                                   last_seen=time.time())
+
+    async def update_last_message(self, member: discord.Member):
+        """
+        Updates the last message time for this member.
+
+        This will set the last message to now.
+        """
+        async with self.get_redis() as redis:
+            assert isinstance(redis, aioredis.Redis)
+
+            # aioredis is bad
+            await redis.hmset_dict("presence:{}".format(member.id),
+                                   last_message=time.time())
+
+    async def get_presence_data(self, member: discord.Member):
+        """
+        Gets presence data for the specified member.
+        """
+        async with self.get_redis() as redis:
+            assert isinstance(redis, aioredis.Redis)
+
+            tracking = await redis.hgetall("presence:{}".format(member.id))
+            if not tracking:
+                return None
+
+            return {"last_seen": float(tracking.get(b"last_seen", b"0").decode()),
+                    "last_message": float(tracking.get(b"last_message", b"0").decode())}
 
     async def get_cooldown_expiration(self, user: discord.User, bucket: str):
         built_field = "exp:{}:{}".format(user.id, bucket).encode()
