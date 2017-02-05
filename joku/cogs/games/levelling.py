@@ -210,22 +210,22 @@ class Levelling(Cog):
                 plt.title('Level distribution curve for {}'.format(ctx.message.guild.name),
                           fontsize=23)
 
+                # Remove text from left
+                plt.yticks([])
+
                 # "Hacky" way of limiting the x-axis but I couldnt
                 # come up with anything better
                 max_level = ceil(max(lvls) / 10) * 10
                 plt.xticks(np.arange(0, max_level, 10))
 
-                m = max(ax.get_yticks())
-
-                plt.yticks(ax.get_yticks(), np.array(ax.get_yticks() * 1000).astype(int))
-
                 # Set the limits of the axis so it doesnt
                 # expand too much in any direction
-                ax.set_ybound(0, m)
                 ax.set_xbound(0, max_level + 1)
 
-                # Removes the right and top border
+                # Removes the spines
                 sns.despine()
+                ax.spines['bottom'].set_visible(False)
+                ax.spines['left'].set_visible(False)
 
                 buf = BytesIO()
                 plt.savefig(buf, format="png")
