@@ -2,6 +2,7 @@ import logging
 import random
 from contextlib import contextmanager
 
+import datetime
 import discord
 import typing
 from asyncio_extras import threadpool
@@ -117,6 +118,7 @@ class DatabaseInterface(object):
                     user.xp = 0
 
                 user.xp += xp_to_add
+                user.last_modified = datetime.datetime.now()
 
                 session.add(user)
 
@@ -130,6 +132,8 @@ class DatabaseInterface(object):
         async with threadpool():
             with self.get_session() as session:
                 user.level = level
+                user.last_modified = datetime.datetime.now()
+
                 session.add(user)
 
         return user
@@ -190,6 +194,7 @@ class DatabaseInterface(object):
         async with threadpool():
             with self.get_session() as session:
                 user.money += currency_to_add
+                user.last_modified = datetime.datetime.now()
 
                 session.add(user)
 
@@ -351,3 +356,5 @@ class DatabaseInterface(object):
                 sess.add(uc)
 
         return uc
+
+    # endregion
