@@ -110,7 +110,7 @@ class Moderation(Cog):
             "enabled": False,
             "threshold": 5
         })
-        await ctx.bot.database.set_setting(ctx.guild, "mention_spam", value=previous["value"], threshold=threshold)
+        await ctx.bot.database.set_setting(ctx.guild, "mention_spam", enabled=previous["enabled"], threshold=threshold)
         await ctx.send(":heavy_check_mark: Set anti-mention spam threshold to {}.".format(threshold))
 
     @commands.command(pass_context=True)
