@@ -170,3 +170,6 @@ class EventSetting(Base):
 
     #: The message that this setting contains.
     message = Column(String, unique=False, nullable=True)
+
+    #: The event channel that this setting is for.
+    channel_id = Column(BigInteger, unique=False, nullable=False)
