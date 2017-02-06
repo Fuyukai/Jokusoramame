@@ -192,6 +192,10 @@ class Levelling(Cog):
         """
         Plots the XP curve for this server.
         """
+        if ctx.author.id == 133139430495092737:
+            await ctx.send(":x: Fuck you")
+            return
+
         users = await ctx.bot.database.get_multiple_users(*ctx.message.guild.members, order_by=User.xp.desc())
 
         async with ctx.channel.typing():
