@@ -41,6 +41,7 @@ class Tracking(Cog):
         if data is None:
             em.description = "**No tracking data for this user was found.**"
         else:
+            em.description = "**Tracking data for {}**".format(member.name)
             # float bugs
             if int(data["last_seen"]) == 0:
                 if member.status == Status.online:
