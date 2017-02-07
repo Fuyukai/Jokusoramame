@@ -8,6 +8,8 @@ import asyncio
 
 import sys
 
+from asyncio_extras import threadpool
+
 import rethinkdb as r
 
 import discord
@@ -127,42 +129,6 @@ class Debug(Cog):
             .run(ctx.bot.database.connection)
 
         await ctx.channel.send("`{}`".format(d))
-
-    @debug.group(pass_context=False)
-    async def rdb(self):
-        """
-        Command group to inspect the RethinkDB status.
-        """
-
-    @rdb.command(pass_context=True)
-    async def inspect(self, ctx, *, user: discord.Member):
-        obb = await ctx.bot.rethinkdb.create_or_get_user(user)
-
-        p = pprint.pformat(obb)
-        await ctx.channel.send("```json\n{}\n```".format(p))
-
-    @rdb.command(pass_context=True)
-    async def info(self, ctx):
-        """
-        Gets data about the RethinkDB cluster.
-        """
-        data = await ctx.bot.rethinkdb.get_info()
-
-        tmp = {
-            "server_count": len(data["server_info"]),
-            "jobs": len(data["jobs"]),
-            "clients": data["stats"]["query_engine"]["client_connections"],
-            "qps": data["stats"]["query_engine"]["queries_per_sec"],
-            "rps": data["stats"]["query_engine"]["read_docs_per_sec"],
-            "wps": data["stats"]["query_engine"]["written_docs_per_sec"],
-        }
-
-        await ctx.channel.send("""**RethinkDB stats**:
-
-Connected to {server_count} server(s) in this cluster.
-There are {jobs} job(s) across {clients} client(s).
-{qps} queries per second | {rps} read docs per second | {wps} written docs per second
-        """.format(**tmp))
 
 
 def setup(bot):
