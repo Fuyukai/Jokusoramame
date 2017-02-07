@@ -18,12 +18,15 @@ BAD_RESPONSES = [
     ":fire: Your bank account went up in flames and you lost `§{}`.",
     ":grapes: You spend too much in the supermarket and you lost `§{}`.",
     ":spider: A spider arrives and you get so spooked you drop `§{}`.",
+    ":hammer_pick: The revolution comes and your wealth of `§{}` is redistributed."
 ]
 
 GOOD_RESPONSES = [
     ":money_mouth: You exploit the working class and gain `§{}`.",
     ":medal: You win first place in the Money Making Race and gain `§{}`.",
     ":slot_machine: You have a gambling addiction and win `§{}`.",
+    ":gem: You find a gem and sell it for `§{}`.",
+    ":u6709: Anata wa okane o eru. `§{}`"
 ]
 
 
@@ -43,7 +46,7 @@ class Currency(Cog):
         await ctx.channel.send(":money_with_wings: **You have earned `§{}` today.**".format(amount))
 
     @commands.command(pass_context=True)
-    async def raffle(self, ctx: Context):
+    async def raffle(self, ctx: Context, *, price: int=2):
         """
         Will you win big or will you lose out?
 
@@ -59,19 +62,13 @@ class Currency(Cog):
 
         currency = await ctx.bot.database.get_user_currency(ctx.message.author)
         if currency <= 0:
-            choice = self.rng.randint(0, 10)
-            if choice < 5:
-                await ctx.send(":dragon: A debt collector came and broke your knees. You are now debt free.")
-                await ctx.bot.database.update_user_currency(ctx.message.author, abs(currency) + 2)
-                return True
+            await ctx.send(":dragon: A debt collector came and broke your knees. You are now debt free.")
+            await ctx.bot.database.update_user_currency(ctx.message.author, abs(currency) + 2)
+            return
 
-            addiction = """Need help with a gambling addiction? We're here to help.
-
-UK: <http://www.gamcare.org.uk/>
-US: <http://www.ncpgambling.org/>
-Canada: <https://www.problemgambling.ca/Pages/Home.aspx>"""
-            await ctx.send(addiction)
-            return False
+        if price < 2:
+            await ctx.send(":x: You must buy a ticket worth at least `§2`.")
+            return
 
         amount = int((300 * np.random.randn()) + 100)  # weight slightly towards positive
 
