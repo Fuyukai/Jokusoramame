@@ -41,7 +41,7 @@ class Events(Cog):
         msg = safe_format(event.message or "Welcome {member.name} to {server.name}!", **fmt)
         await channel.send(msg)
 
-    async def on_member_leave(self, member: discord.Member):
+    async def on_member_remove(self, member: discord.Member):
         event = await self.bot.database.get_event_setting(member.guild, "leaves")
         if event is None:
             return

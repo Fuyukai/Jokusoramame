@@ -72,5 +72,4 @@ class Misc(Cog):
                            embed=em)
 
 
-
 setup = Misc.setup
