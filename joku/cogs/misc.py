@@ -70,6 +70,10 @@ class Misc(Cog):
         await channel.send("{}: This message was redirected here from {}:"
                            .format(msg.author.mention, ctx.channel.mention),
                            embed=em)
+        # send a link to the channel
+        m = await ctx.channel.send(channel.mention)
+        await asyncio.sleep(15)
+        await m.delete()
 
 
 setup = Misc.setup
