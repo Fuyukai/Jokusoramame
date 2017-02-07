@@ -70,7 +70,11 @@ class Currency(Cog):
             await ctx.send(":x: You must buy a ticket worth at least `§2`.")
             return
 
-        amount = int((300 * np.random.randn()) + 100)  # weight slightly towards positive
+        if price > currency:
+            await ctx.send(":x: It is unwise to gamble with money you don't have")
+            return
+
+        amount = int(((price * 10) * np.random.randn()) + 100)  # weight slightly towards positive
 
         await ctx.bot.database.update_user_currency(ctx.message.author, int(amount))
         if amount < 0:
