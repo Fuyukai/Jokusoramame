@@ -2,12 +2,9 @@
 Misc cog.
 """
 import asyncio
-from itertools import islice
-
-import discord
-import google
 import time
 
+import discord
 from asyncio_extras import threadpool
 from discord.ext import commands
 
