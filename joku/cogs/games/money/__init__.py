@@ -97,6 +97,9 @@ Canada: <https://www.problemgambling.ca/Pages/Home.aspx>"""
         """
         Buys an item.
         """
+        await ctx.send(":x: Temporary disabled due to broken.")
+        return
+
         item = get_item_by_name(item)
         if item is None:
             await ctx.send(":x: Item does not exist.")
