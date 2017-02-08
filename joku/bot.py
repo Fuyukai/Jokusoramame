@@ -19,7 +19,7 @@ from discord import Message
 from discord.ext import commands
 from discord.ext.commands import Bot, CommandInvokeError, CheckFailure, MissingRequiredArgument, CommandOnCooldown, \
     UserInputError
-from discord.gateway import DiscordWebSocket, ReconnectWebSocket, ResumeWebSocket
+from discord.gateway import DiscordWebSocket, ResumeWebSocket
 from discord.state import ConnectionState
 from logbook.compat import redirect_logging
 from logbook import StreamHandler
