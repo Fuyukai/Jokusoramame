@@ -126,7 +126,7 @@ class Jokusoramame(Bot):
                                                exception.__cause__, exception.__cause__.__traceback__)
             self.logger.error(''.join(lines))
 
-            if self.config.get("is_dev", False):
+            if self.config.get("developer_mode", False) is True:
                 await context.channel.send("\U0001f6ab This kills the bot (An error has happened "
                                            "and has been logged.)")
             else:
