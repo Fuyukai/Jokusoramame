@@ -72,7 +72,7 @@ class Misc(Cog):
                            embed=em)
         # send a link to the channel
         m = await ctx.channel.send(channel.mention)
-        await asyncio.sleep(15)
+        await asyncio.sleep(60)
         await m.delete()
 
 
