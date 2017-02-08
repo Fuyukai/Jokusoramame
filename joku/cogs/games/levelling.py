@@ -6,24 +6,20 @@ from math import floor, ceil
 
 import discord
 from asyncio_extras import threadpool
-
-import rethinkdb as r
 from discord.ext import commands
 
 import matplotlib as mpl
-
-from joku.db.tables import User
-
-mpl.use('Agg')
-
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy.polynomial import Polynomial as P
 import seaborn as sns
 
 from joku.bot import Jokusoramame, Context
+from joku.db.tables import User
 from joku.cogs._common import Cog
 from joku.utils import paginate_table, reject_outliers
+
+mpl.use('Agg')
 
 INCREASING_FACTOR = 50
 
