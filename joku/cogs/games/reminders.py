@@ -1,354 +1,86 @@
 """
-Cog for reminders.
-
-Reminders are database-backed - they persist in the database.
-That means between bot crashes, the reminders persist.
+Reminders cog. Database backed to ensure persistence between bot restarts.
 """
+import asyncio
+import logging
 import time
 
-import asyncio
-
-import datetime
-
 import discord
-import tabulate
-from discord.ext import commands
-from math import ceil
 
-import rethinkdb as r
-from parsedatetime import Calendar
-
-from joku import checks
-from joku.bot import Jokusoramame, Context
 from joku.cogs._common import Cog
-from joku.manager import SingleLoopManager
-from joku.utils import paginate_table
+from joku.db.tables import Reminder
 
 
-def clean(content: str) -> str:
-    return content.replace("`", "´")
+logger = logging.getLogger("Jokusoramame.Reminders")
 
 
 class Reminders(Cog):
-    # Tracks when a task is running a reminder for the specified record UUID.
-    _running_reminders = {}
+    _is_running_reminders = False
 
-    # Tracks the reminder task.
-    _reminder_task = None  # type: asyncio.Task
+    _currently_running = {}
 
-    def __init__(self, bot: Jokusoramame):
-        super().__init__(bot)
-
-    async def _loop_reminders(self, bot: Jokusoramame):
-        # Scan the reminders table periodically,
-        while True:
-            try:
-                records = await r.table("reminders").run(self.bot.database.connection)
-
-                # Pray!
-                async for record in records:
-                    # Check the reminder time.
-                    # If it's less than 5 minutes, create a reminder coroutine.
-                    time_left = record.get("expiration") - time.time()
-                    if time_left < 300:
-                        self.bot.loop.create_task(self._run_reminder(record))
-
-            except Exception:
-                self.bot.logger.exception()
-            finally:
-                await asyncio.sleep(300)
-
-    async def _run_reminder(self, record: dict):
-        r_id = record.get("id", None)
-
-        if r_id in self._running_reminders:
-            # Don't re-run.
-            return
-
-        channel = self.bot.get_channel(int(record["channel_id"]))
-        if not channel:
-            # Probably not on this shard.
-            return
-        server = channel.guild
-        member = server.get_member(int(record["user_id"]))
-
-        # Wait until we need to remind them.
-        reminder_time = record["expiration"] - time.time()
-        if reminder_time > 300:
-            # Don't bother.
-            return
-
+    async def _fire_reminder(self, reminder: Reminder):
+        """
+        Fires a reminder object to be ran.
+        """
+        # Wrap everything in a try/finally.
         try:
-            if r_id is not None:
-                self._running_reminders[r_id] = True
-            await asyncio.sleep(reminder_time)
-        finally:
-            if r_id is not None:
-                self._running_reminders.pop(r_id)
 
-        # Send the message, and remove it from the database.
-        try:
-            fmt = ":alarm_clock: {.mention}, you wanted to be reminded of: `{}`".format(member,
-                                                                                        clean(record["content"]))
-            await channel.send(fmt)
-        except:
-            self.bot.logger.error("Failed to send reminder.")
-            self.bot.logger.exception()
-            # Delete it from the DB.
-            record["repeating"] = False
-
-        # Delete from the database.
-        if not r_id:
-            # Non database-backed reminder.
-            return
-
-        # Check for repeating reminders.
-        if record.get("repeating", False) is True:
-            # Check if it still exists in the database.
-
-            r_ = await self.bot.database.to_list(
-                await r.table("reminders")
-                    .get_all(record["user_id"], index="user_id")
-                    .filter({"reminder_id": record.get("reminder_id")})
-                    .run(self.bot.database.connection)
-            )
-            if not r_:
-                # No need to add it to the database again - it was cancelled.
+            if reminder.enabled is False:
+                # race conditions?
                 return
 
-            # Move the next time down by repeat_time.
-            record["expiration"] = record["expiration"] + record["repeat_time"]
-            if 'usages' not in record:
-                record['usages'] = 0
-            record["usages"] += 1
-            i = await r.table("reminders").insert(record, conflict="update").run(self.bot.database.connection)
-        else:
-            # Remove it from the database.
-            i = await r.table("reminders").get(r_id).delete().run(self.bot.database.connection)
-        return i
+            # check to see if the reminder is valid or not
+            channel = self.bot.get_channel(reminder.channel_id)
+            if channel is None:
+                # cancel it
+                await self.bot.database.cancel_reminder(reminder.id)
+                return
+
+            guild = channel.guild  # type: discord.Guild
+            member = guild.get_member(reminder.user_id)
+            if not member:
+                await self.bot.database.cancel_reminder(reminder.user_id)
+                return
+
+            self._currently_running[reminder.id] = True
+
+            time_left = reminder.reminding_at.timestamp() - time.time()
+            # sleep for that many seconds before waking up and sending the messages.
+            await asyncio.sleep(time_left)
+
+            # send the reminder
+            try:
+                channel.send(":alarm: {}, you wanted to be reminded of: `{}`".format(member.mention, reminder.text))
+            except discord.HTTPException:
+                logger.warning("Failed to send reminder `{}`!".format(reminder.id))
+            finally:
+                # todo: repeating reminders
+                reminder.enabled = False
+
+            # mark it as disabled
+            if reminder.enabled is False:
+                await self.bot.database.cancel_reminder(reminder.id)
+
+        finally:
+            self._currently_running.pop(reminder.id, None)
 
     async def ready(self):
-        # Check if we're using a shared state and need to only run on shard 0.
-        if isinstance(self.bot.manager, SingleLoopManager):
-            # Because we're running on a single loop, we share the servers between shards.
-            # As such, this task only runs on one shard.
-            # Otherwise, it will spam the user with N messages (where N is number of shards).
-            if not self.bot.shard_id == 0:
-                return
-
-        if self._reminder_task:
-            if self._reminder_task.done():
-                del self._reminder_task
-            else:
-                return
-
-        self._reminder_task = self.bot.loop.create_task(self._loop_reminders(self.bot))
-
-    @commands.group(pass_context=True, invoke_without_command=True, aliases=["reminder"])
-    async def remind(self, ctx: Context, duration: str, *, reminder_text: str):
-        """
-        Sets a reminder to be run in the future.
-
-        Reminders are database-backed, and as such will persist even if the bot crashes.
-        The duration can be a time-string that `dateutil.parser` can parse - this means it can be an absolute
-        """
-        calendar = Calendar()
-        t_struct, parse_status = calendar.parse(duration)
-        if parse_status == 0:
-            await ctx.channel.send(":x: Invalid time format.")
+        # Start a reminder polling task.
+        if self._is_running_reminders is True:
             return
 
-        dt = datetime.datetime(*t_struct[:6])
+        self._is_running_reminders = True
 
-        timestamp = dt.timestamp()
+        try:
+            while True:
+                # Scan the reminders firing in the next 300 seconds.
+                reminders = await self.bot.database.scan_reminders(within=300)
+                for reminder in reminders:
+                    self.bot.loop.create_task(self._fire_reminder(reminder))
 
-        object = {
-            "user_id": str(ctx.message.author.id),
-            "channel_id": str(ctx.message.channel.id),
-            "expiration": timestamp,
-            "content": reminder_text,
-            "reminder_id": (await r.table("reminders").get_all(str(ctx.message.author.id), index="user_id")
-                            .count().run(ctx.bot.database.connection)) + 1,
-        }
-
-        # Should we add it to the database, or just make a reminder?
-        diff = timestamp - time.time()
-        if diff < 300:
-            # Just create a reminder now.
-            ctx.bot.loop.create_task(self._run_reminder(object))
-        else:
-            # Add it to the database.
-            i = await r.table("reminders").insert(object).run(ctx.bot.database.connection)
-
-        em = discord.Embed(description="Will remind you about `{}`.".format(reminder_text))
-        em.set_footer(text="Reminding at: ")
-        em.timestamp = dt
-
-        await ctx.channel.send(embed=em)
-
-    @remind.command(pass_context=True)
-    @commands.check(checks.is_owner)
-    async def prune(self, ctx: Context):
-        """
-        Prunes dead reminders.
-        """
-        reminds = await r.table("reminders").run(ctx.bot.database.connection)
-
-        delete_ids = []
-        async for rem in reminds:
-            channel = rem.get("channel_id")
-            user = rem.get("user_id")
-            channel = self.bot.manager.get_channel(channel)
-            if not channel:
-                delete_ids.append(rem["id"])
-                continue
-
-            # check if the server has that user
-            if not channel.server.get_member(user):
-                delete_ids.append(rem["id"])
-                continue
-
-        d = await r.table("reminders").get_all(*delete_ids).delete().run(self.bot.database.connection)
-        d = d["deleted"]
-
-        await ctx.channel.send(":heavy_check_mark: Pruned `{}` reminders.".format(d))
-
-    @remind.command(pass_context=True, aliases=["repeating"])
-    async def repeat(self, ctx: Context, duration: str, *, reminder_text: str):
-        """
-        Create a repeating reminder.
-        It is not recommended to create a repeating reminder that is under 5 minutes long.
-        """
-        calendar = Calendar()
-        t_struct, parse_status = calendar.parse(duration)
-        if parse_status == 0:
-            await ctx.channel.send(":x: Invalid time format.")
-            return
-
-        dt = datetime.datetime(*t_struct[:6])
-
-        # Get the repeating difference.
-        diff = ceil((dt - datetime.datetime.utcnow()).total_seconds())
-
-        if diff < 300:
-            await ctx.channel.send(":x: Cannot create a repeating reminder with a time under 5 minutes.")
-            return
-
-        object = {
-            "user_id": str(ctx.message.author.id),
-            "channel_id": str(ctx.message.channel.id),
-            "expiration": datetime.datetime.utcnow().timestamp() + diff,
-            "content": reminder_text,
-            "repeating": True,
-            "repeat_time": diff,
-            "reminder_id": (await r.table("reminders").get_all(str(ctx.message.author.id), index="user_id")
-                            .count().run(ctx.bot.database.connection)) + 1,
-            "usages": 0,
-        }
-
-        # Add it to the database.
-        i = await r.table("reminders").insert(object).run(ctx.bot.database.connection)
-
-        await ctx.channel.send(":heavy_check_mark: Will start reminding you at `{}`, then every `{}` seconds after.."
-                               .format(dt, diff))
-
-    @remind.command(pass_context=True)
-    async def cancel(self, ctx: Context, *, reminder_id: int):
-        """
-        Cancels one of your reminders.
-        """
-        reminder = await r.table("reminders") \
-            .get_all(str(ctx.message.author.id), index="user_id") \
-            .filter({"reminder_id": reminder_id}).run(self.bot.database.connection)
-
-        reminder = await self.bot.database.to_list(reminder)
-        if not reminder:
-            await ctx.channel.send(":x: That reminder ID does not exist.")
-            return
-
-        # Delete the reminder from the DB.
-        i = await r.table("reminders") \
-            .get_all(str(ctx.message.author.id), index="user_id") \
-            .filter({"reminder_id": reminder_id}).delete().run(self.bot.database.connection)
-
-        await ctx.channel.send(":heavy_check_mark: Deleted reminder.")
-
-    @remind.command(pass_context=True, aliases=["list"])
-    async def reminders(self, ctx: Context):
-        """
-        Shows your current reminders, and where they are.
-        """
-        headers = ["ID", "Time", "Content", "Where", "Repeating", "Usages"]
-        items = []
-
-        reminders = await r.table("reminders") \
-            .get_all(str(ctx.message.author.id), index="user_id") \
-            .order_by(r.asc("expiration")) \
-            .run(ctx.bot.database.connection)
-
-        for record in reminders:
-            # Parse the record's timestamp into a datetime.
-            dt = datetime.datetime.fromtimestamp(record["expiration"])
-            # Truncate the content, if we should.
-            content = record["content"]
-            if len(content) >= 25:
-                # Truncate the end of it with `...`
-                content = content[:22] + "..."
-
-            repeats = record.get("repeating", False)
-            reminder_id = record.get("reminder_id", "??")
-            usages = record.get("usages", 0)
-
-            # Resolve the channel and server.
-            channel = ctx.bot.manager.get_channel(int(record["channel_id"]))
-
-            if channel is None:
-                name = "Unknown"
-            else:
-                name = "{} -> #{}".format(channel.server.name, channel.name)
-            if len(name) >= 30:
-                name = name[:27] + "..."
-
-            fmt = dt.strftime("%Y-%m-%dT%H:%M:%S")
-
-            row = [reminder_id, fmt, content, name, str(repeats), usages]
-            items.append(row)
-
-        pages = paginate_table(items, headers)
-        for page in pages:
-            await ctx.channel.send(page)
-
-    @remind.command(pass_context=True)
-    async def inspect(self, ctx: Context, *, reminder_id: int):
-        """
-        Inspects a reminder for more detailed info about it.
-        """
-        reminder = await r.table("reminders") \
-            .get_all(str(ctx.message.author.id), index="user_id") \
-            .filter({"reminder_id": reminder_id}).run(self.bot.database.connection)
-
-        reminder = await self.bot.database.to_list(reminder)
-        if not reminder:
-            await ctx.channel.send(":x: This reminder does not exist.")
-            return
-
-        reminder = reminder[0]
-
-        if int(reminder.get("user_id")) != ctx.message.author.id and \
-                        ctx.message.author.id == ctx.bot.owner_id:
-            await ctx.channel.send(":x: This reminder does not exist.")
-            return
-
-        channel = discord.utils.get(ctx.bot.get_all_channels(), id=int(reminder.get("channel_id")))
-        channel = channel.mention if channel else "<unknown>"
-
-        em = discord.Embed(title="Reminder {}".format(reminder_id), description="```\n" + reminder.get("content") +
-                                                                                "```\n")
-        em.add_field(name="Channel", value=channel)
-        em.add_field(name="Repeating", value=reminder.get("repeating", False))
-
-        await ctx.channel.send(embed=em)
-
-
-def setup(bot):
-    bot.add_cog(Reminders(bot))
+                # Sleep for 300 seconds afterwards.
+                await asyncio.sleep(300)
+        finally:
+            # Stop running reminders so that a reload will cause them to start again.
+            self._is_running_reminders = False
