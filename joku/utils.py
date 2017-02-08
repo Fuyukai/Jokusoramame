@@ -35,7 +35,9 @@ def reject_outliers(data, m=2):
     """
     Rejects outliers from a numpy array.
     """
-    return data[abs(data - np.mean(data)) < m * np.std(data)]
+    first = np.where(abs(data - np.mean(data)) < m * np.std(data), data, np.zeros(len(data), dtype=np.int8))
+    # pass around again
+    return np.where(abs(first - np.mean(first)) < m * np.std(first), first, np.zeros(len(first), dtype=np.int8))
 
 
 def paginate_large_message(message: str, use_codeblocks: bool = True) -> typing.List[str]:

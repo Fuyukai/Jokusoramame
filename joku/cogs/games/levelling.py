@@ -197,8 +197,8 @@ class Levelling(Cog):
 
         async with ctx.channel.typing():
             async with threadpool():
-                lvls = np.array([user.level for user in users if user.level >= 0])
-                lvls = reject_outliers(lvls)
+                _lvls = np.array([user.level for user in users if user.level >= 0])
+                lvls = reject_outliers(_lvls, m=1)
 
                 # This changes the line/shade colour apparently.
                 sns.set_palette(['#DFA5A4'])
