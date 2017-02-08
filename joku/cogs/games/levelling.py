@@ -9,6 +9,8 @@ from asyncio_extras import threadpool
 from discord.ext import commands
 
 import matplotlib as mpl
+mpl.use('Agg')
+
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy.polynomial import Polynomial as P
@@ -19,7 +21,6 @@ from joku.db.tables import User
 from joku.cogs._common import Cog
 from joku.utils import paginate_table, reject_outliers
 
-mpl.use('Agg')
 
 INCREASING_FACTOR = 50
 
