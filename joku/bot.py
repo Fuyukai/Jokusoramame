@@ -14,6 +14,7 @@ import itertools
 import logbook
 import logging
 
+from asyncio_extras import threadpool
 from discord import Message
 from discord.ext import commands
 from discord.ext.commands import Bot, CommandInvokeError, CheckFailure, MissingRequiredArgument, CommandOnCooldown, \
@@ -249,15 +250,12 @@ class Jokusoramame(Bot):
                 self.ws = await DiscordWebSocket.from_client(self, resume=resume)
             except discord.ConnectionClosed as e:
                 await self.close()
-                try:
-                    await self.database.connection.close()
-                except Exception:
-                    pass
+                async with threadpool():
+                    try:
+                        self.database.engine.dispose()
+                    except Exception:
+                        pass
 
-                try:
-                    await self.rdblog.connection.close()
-                except Exception:
-                    pass
                 if e.code != 1000:
                     raise
 
