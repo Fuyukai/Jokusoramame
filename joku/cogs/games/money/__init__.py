@@ -26,7 +26,7 @@ GOOD_RESPONSES = [
     ":medal: You win first place in the Money Making Race and gain `§{}`.",
     ":slot_machine: You have a gambling addiction and win `§{}`.",
     ":gem: You find a gem and sell it for `§{}`.",
-    ":u6709: Anata wa okane o eru. `§{}`"
+    ":u6709: Anata wa okane o eru. (You gained `§{}`.)"
 ]
 
 
