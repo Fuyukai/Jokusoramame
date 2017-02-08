@@ -3,6 +3,7 @@ Role-me cog.
 """
 import discord
 from discord.ext import commands
+from discord.ext.commands import bot_has_permissions
 
 from joku.bot import Context
 from joku.checks import has_permissions
@@ -15,6 +16,7 @@ class Roleme(Cog):
         await self.bot.database.remove_roleme_role(role)
 
     @commands.group(invoke_without_command=True)
+    @bot_has_permissions(manage_roles=True)
     async def roleme(self, ctx: Context, *, role: discord.Role = None):
         """
         Assigns a role to you from a list of available roles.
@@ -70,6 +72,7 @@ class Roleme(Cog):
         await ctx.send(":heavy_check_mark: Removed `{}` as a roleme role.".format(role.name))
 
     @commands.command()
+    @bot_has_permissions(manage_roles=True)
     async def unroleme(self, ctx: Context, *, role: discord.Role):
         """
         Removes a previously assigned role.
@@ -87,6 +90,7 @@ class Roleme(Cog):
         await ctx.send(":heavy_check_mark: Removed `{}` from your roles.".format(role.name))
 
     @commands.group(invoke_without_command=True, aliases=["colorme"])
+    @bot_has_permissions(manage_roles=True)
     async def colourme(self, ctx: Context, *, colour: discord.Colour=None):
         """
         Sets your custom colour.
