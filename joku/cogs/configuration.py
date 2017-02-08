@@ -4,13 +4,11 @@ Configuration cog.
 import argparse
 import shlex
 
-import rethinkdb as r
 from discord.ext import commands
 from discord.ext.commands import MemberConverter, BadArgument, TextChannelConverter
 
 from joku.bot import Jokusoramame, Context
 from joku.cogs._common import Cog
-from joku.rethink import RethinkAdapter
 from joku.checks import has_permissions
 
 
