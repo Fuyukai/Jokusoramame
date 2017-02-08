@@ -259,17 +259,6 @@ class Jokusoramame(Bot):
                 if e.code != 1000:
                     raise
 
-    def die(self):
-        """
-        Kills all tasks the bot is running.
-        """
-        self.loop.stop()
-        all_tasks = asyncio.gather(*asyncio.Task.all_tasks(), loop=self.loop)
-        all_tasks.cancel()
-
-        # Get rid of the exceptions.
-        all_tasks.exception()
-
 
 class Context(commands.Context):
     def __init__(self, *args, **kwargs):
