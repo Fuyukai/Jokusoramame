@@ -23,7 +23,7 @@ class Tracking(Cog):
 
     async def on_member_update(self, before: discord.Member, after: discord.Member):
         # check to see if their after status is online and their before was not online
-        if after.status is Status.online and before.status is not Status.online:
+        if after.status is not Status.offline and before.status is not Status.online:
             await self.bot.redis.update_last_seen(after)
 
     @commands.command()
