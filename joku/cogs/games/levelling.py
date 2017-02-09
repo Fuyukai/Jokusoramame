@@ -3,6 +3,7 @@ cancer
 """
 from io import BytesIO
 from math import floor, ceil
+import textwrap
 
 import discord
 from asyncio_extras import threadpool
@@ -208,8 +209,8 @@ class Levelling(Cog):
                 ax = sns.kdeplot(lvls, shade=True, bw=0.3)
 
                 plt.xlabel('Level', fontsize=14)
-                plt.title('Level distribution curve for {}'.format(ctx.message.guild.name),
-                          fontsize=23)
+                title = textwrap.wrap('Level distribution curve for {}'.format(ctx.message.guild.name), 30)
+                plt.title('\n'.join(title), fontsize=23)
 
                 # Remove text from left
                 plt.yticks([])
@@ -227,6 +228,9 @@ class Levelling(Cog):
                 sns.despine()
                 ax.spines['bottom'].set_visible(False)
                 ax.spines['left'].set_visible(False)
+
+                # Force a tighter ( ;) ) layout.
+                plt.tight_layout()
 
                 buf = BytesIO()
                 plt.savefig(buf, format="png")
