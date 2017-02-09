@@ -176,7 +176,7 @@ class Currency(Cog):
         currency = await ctx.bot.database.get_user_currency(user)
         await ctx.channel.send("User **{}** has `§{}`.".format(user, currency))
 
-    @currency.command(pass_context=True)
+    @currency.command(pass_context=True, aliases=["top", "leaderboard"])
     async def richest(self, ctx: Context):
         """
         Shows the top 10 richest users in this server.
