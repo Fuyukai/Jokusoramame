@@ -32,6 +32,9 @@ class DatabaseInterface(object):
         """
         Connects the bot to the database.
         """
+        if dsn is None:
+            raise ValueError("No DSN provided to connect to. Did you supply one in your config file?")
+
         logger.info("Connecting to {}...".format(dsn))
         async with threadpool():
             self.engine = create_engine(dsn)
