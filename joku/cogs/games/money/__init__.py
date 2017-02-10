@@ -19,7 +19,7 @@ BAD_RESPONSES = [
     ":grapes: You spend too much in the supermarket and you lost `§{}`.",
     ":spider: A spider arrives and you get so spooked you drop `§{}`.",
     ":hammer_pick: The revolution comes and your wealth of `§{}` is redistributed.",
-    ":dragon: Ryuu ga waga teki wo kurau! (You lost §{}.)"
+    ":dragon: Ryuu ga waga teki wo kurau! (You lost `§{}`.)"
 ]
 
 GOOD_RESPONSES = [
