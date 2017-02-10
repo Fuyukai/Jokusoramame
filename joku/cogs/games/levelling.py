@@ -104,7 +104,7 @@ class Levelling(Cog):
 
             if message.channel.permissions_for(message.guild.me).embed_links:
                 em = discord.Embed(title="Level up!")
-                em.description = "**{} is now level {}!** " \
+                em.description = ":tada: **{} is now level {}!** " \
                                  "Current XP: {}".format(message.author.name, new_level, user.xp)
 
                 xp = user.xp
@@ -115,7 +115,9 @@ class Levelling(Cog):
                 em.colour = discord.Colour.green()
                 em.set_thumbnail(url=message.author.avatar_url)
 
-                await message.channel.send(embed=em)
+                msg = await message.channel.send(embed=em)
+                if message.channel.permissions_for(message.guild.me).add_reactions:
+                    await msg.add_reaction("🎉")
             else:
                 await message.channel.send(":up: **{} is now level {}!**".format(message.author, user["level"]))
 
