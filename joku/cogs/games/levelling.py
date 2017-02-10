@@ -258,9 +258,13 @@ class Levelling(Cog):
             await ctx.channel.send(":no_entry_sign: **Bots cannot have XP.**")
             return
 
-        xp = (await ctx.bot.database.get_or_create_user(user)).xp
+        u = await ctx.bot.database.get_or_create_user(user)
 
-        level, exp_required = get_next_exp_required(xp)
+        level, exp_required = get_next_exp_required(u.xp)
+        if level < u.level:
+            # for cheaters like me
+            exp_required = int(INCREASING_FACTOR * (u.level * (u.level + 1) / 2))
+            level = u.level
 
         await ctx.channel.send("**{}** needs `{}` XP to advance to level `{}`.".format(user.name, exp_required,
                                                                                        level + 1))
