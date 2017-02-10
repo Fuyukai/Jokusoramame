@@ -117,18 +117,12 @@ class Debug(Cog):
         await ctx.channel.send(":put_litter_in_its_place: User **{}** has had their XP set to 0.".format(user))
 
     @debug.command(pass_context=True)
-    async def resetlvl(self, ctx: Context, *, user: discord.Member):
+    async def resetlvl(self, ctx: Context, *, user: discord.Member=None):
         """
         Resets a user's level to 0.
         """
-        user = await ctx.bot.database.create_or_get_user(user)
-        user["level"] = 0
-
-        d = await r.table("users") \
-            .insert(user, conflict="update", return_changes=True) \
-            .run(ctx.bot.database.connection)
-
-        await ctx.channel.send("`{}`".format(d))
+        user = await ctx.bot.database.set_user_level(user or ctx.author, 0)
+        await ctx.channel.send(":put_litter_in_its_place:")
 
 
 def setup(bot):
