@@ -72,12 +72,8 @@ class Jokusoramame(AutoShardedBot):
         self.extensions = OrderedDict()
         self.cogs = OrderedDict()
 
-        self._rotator_task = None  # type: asyncio.Task
-        self._avatar_rotator = None  # type: asyncio.Task
-
-        # Our own task.
-        # We can use this to kill ourselves by running `self.own_task.cancel()`.
-        self.own_task = None  # type: asyncio.Task
+        # Is the bot fully loaded yet?
+        self.loaded = False
 
     # Utility functions.
     def get_member(self, id: int):
@@ -152,6 +148,12 @@ class Jokusoramame(AutoShardedBot):
         await self.change_presence(game=discord.Game(name="Type j!help for help!"))
 
     async def on_ready(self):
+        # Only ever load once.
+        if self.loaded is True:
+            return
+
+        self.loaded = False
+
         self.logger.info("Loaded Jokusoramame, logged in as {}#{}.".format(self.user.name, self.user.discriminator))
         self.logger.info("Guilds: {}".format(len(self.guilds)))
         self.logger.info("Users: {}".format(len(set(self.get_all_members()))))
