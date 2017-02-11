@@ -194,7 +194,7 @@ class DatabaseInterface(object):
         """
         Updates the user's current currency.
         """
-        user = await self.get_or_create_user(member, detatch=True)
+        user = await self.get_or_create_user(member)
         async with threadpool():
             with self.get_session() as session:
                 user.money += currency_to_add
