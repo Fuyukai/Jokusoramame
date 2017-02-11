@@ -45,3 +45,5 @@ webserver:
 oauth:
   # Your OAuth2 secret key.
   secret_key: asjsfdyysafdw
+  # Your OAuth2 redirect URI.
+  redirect_uri: http://127.0.0.1/oauth2/redirect

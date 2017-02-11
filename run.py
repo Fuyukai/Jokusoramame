@@ -26,11 +26,8 @@ def main():
         config_data = yaml.load(f, Loader=yaml.Loader)
 
     bot = Jokusoramame(config=config_data)
-
-    while True:
-        bot.logger.info("Launching Jokusoramame in autosharded mode...")
-        bot.run()
-        bot.logger.info("Bot crashed, rebooting.")
+    bot.logger.info("Launching Jokusoramame in autosharded mode...")
+    bot.run()
 
 if __name__ == "__main__":
     main()

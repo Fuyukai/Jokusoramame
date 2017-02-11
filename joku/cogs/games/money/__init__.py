@@ -6,7 +6,7 @@ import time
 from discord.ext import commands
 from discord.ext.commands import BucketType
 
-import rethinkdb as r
+# import rethinkdb as r
 
 from joku.bot import Jokusoramame, Context
 from joku.cogs._common import Cog

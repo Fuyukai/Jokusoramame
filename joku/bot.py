@@ -11,6 +11,8 @@ import random
 
 import discord
 import itertools
+
+import itsdangerous
 import logbook
 import logging
 
@@ -21,6 +23,7 @@ from discord.ext.commands import Bot, CommandInvokeError, CheckFailure, MissingR
     UserInputError, AutoShardedBot
 from discord.gateway import DiscordWebSocket, ResumeWebSocket
 from discord.state import ConnectionState
+from kyoukai import Kyoukai
 from logbook.compat import redirect_logging
 from logbook import StreamHandler
 
@@ -71,6 +74,24 @@ class Jokusoramame(AutoShardedBot):
         self.commands = OrderedDict()
         self.extensions = OrderedDict()
         self.cogs = OrderedDict()
+
+        # Web related things.
+        kyk = Kyoukai("Jokusoramame")
+
+        @kyk.root.before_request
+        async def before_request(ctx: Context):
+            # add .bot property to ctx
+            ctx.bot = self
+            return ctx
+
+        self.webserver = kyk
+
+        self.signer = itsdangerous.Serializer(secret_key=self.config["webserver"]["cookie_key"],
+                                              salt="jamie.anime")
+
+        # OAuth2 class
+        from joku.web.oauth import OAuth2DanceHelper
+        self.oauth = OAuth2DanceHelper(bot=self)
 
         # Is the bot fully loaded yet?
         self.loaded = False
@@ -198,6 +219,15 @@ class Jokusoramame(AutoShardedBot):
             if hasattr(cog, "ready"):
                 self.loop.create_task(cog.ready())
 
+        self.logger.info("Booting up Kyoukai internal webserver...")
+        # always add oauth2 bp
+        from joku.web.oauth import bp as oauth2_bp
+        self.webserver.register_blueprint(oauth2_bp)
+
+        self.webserver.finalize()
+        # TODO: Config values
+        await self.webserver.start()
+
         new_time = time.time() - self.startup_time
 
         self.logger.info("Bot ready in {} seconds.".format(new_time))
@@ -211,8 +241,7 @@ class Jokusoramame(AutoShardedBot):
         if message.guild is not None:
             self.logger.info(" On server: {} ({})".format(message.guild.name, message.guild.id))
 
-
-        #if await self.database.is_channel_ignored(message.channel, type_="commands"):
+        # if await self.database.is_channel_ignored(message.channel, type_="commands"):
         #    return
 
         await super().on_message(message)
