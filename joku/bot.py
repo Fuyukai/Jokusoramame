@@ -18,7 +18,7 @@ from asyncio_extras import threadpool
 from discord import Message
 from discord.ext import commands
 from discord.ext.commands import Bot, CommandInvokeError, CheckFailure, MissingRequiredArgument, CommandOnCooldown, \
-    UserInputError
+    UserInputError, AutoShardedBot
 from discord.gateway import DiscordWebSocket, ResumeWebSocket
 from discord.state import ConnectionState
 from logbook.compat import redirect_logging
@@ -28,8 +28,6 @@ from joku.db.interface import DatabaseInterface
 from joku.utils import paginate_large_message
 
 from joku.redis import RedisAdapter
-
-from joku import manager
 
 try:
     import yaml
@@ -41,26 +39,17 @@ redirect_logging()
 StreamHandler(sys.stderr).push_application()
 
 
-class Jokusoramame(Bot):
+class Jokusoramame(AutoShardedBot):
     def __init__(self, config: dict, *args, **kwargs):
         """
         Creates a new instance of the bot.
 
         :param config: The config to create this with.
-
-        :param manager: The bot manager to use.
-        :param state: The type of state to use. This can either be the vanilla ConnectionState, or a modified subclass.
         """
-
-        # Get the shard ID.
-        shard_id = kwargs.get("shard_id", 0)
-
-        self.manager = kwargs.get("manager")  # type: manager.SingleLoopManager
-
         self.config = config
 
         # Logging stuff
-        self.logger = logbook.Logger("Jokusoramame:Shard-{}".format(shard_id))
+        self.logger = logbook.Logger("Jokusoramame")
         self.logger.level = logbook.INFO
 
         logging.root.setLevel(logging.INFO)
@@ -68,18 +57,14 @@ class Jokusoramame(Bot):
         # Call init.
         super().__init__(command_prefix=self.get_command_prefix, *args, **kwargs)
 
-        # Override ConnectionState.
-        self.connection = kwargs.get("state", ConnectionState) \
-            (dispatch=self.dispatch, chunker=self._chunker,
-             syncer=self._syncer, http=self.http, loop=self.loop)
-
-        self.app_id = ""
-        self.owner_id = ""
+        # Used later on.
+        self.app_id = 0
+        self.owner_id = 0
 
         self.startup_time = time.time()
 
+        # Create our connections.
         self.database = DatabaseInterface(self)
-
         self.redis = RedisAdapter(self)
 
         # Re-assign commands and extensions.
@@ -136,7 +121,7 @@ class Jokusoramame(Bot):
 
             # Log to the error channel.
             error_channel_id = self.config.get("log_channels", {}).get("error_channel", "")
-            error_channel = self.manager.get_channel(error_channel_id)
+            error_channel = self.get_channel(error_channel_id)
 
             if not error_channel:
                 self.logger.error("Could not find error channel!")
@@ -169,7 +154,7 @@ class Jokusoramame(Bot):
     async def on_ready(self):
         self.logger.info("Loaded Jokusoramame, logged in as {}#{}.".format(self.user.name, self.user.discriminator))
         self.logger.info("Guilds: {}".format(len(self.guilds)))
-        self.logger.info("Users: {}".format(self.manager.unique_member_count))
+        self.logger.info("Users: {}".format(len(set(self.get_all_members()))))
 
         app_info = await self.application_info()
         self.app_id = app_info.id
@@ -238,26 +223,26 @@ class Jokusoramame(Bot):
         token = self.config["bot_token"]
         return await super().login(token)
 
-    async def connect(self):
-        self.ws = await DiscordWebSocket.from_client(self)
+    @asyncio.coroutine
+    def connect(self):
+        """|coro|
+
+        Creates a websocket connection and lets the websocket listen
+        to messages from discord.
+
+        Raises
+        -------
+        GatewayNotFound
+            If the gateway to connect to discord is not found. Usually if this
+            is thrown then there is a discord API outage.
+        ConnectionClosed
+            The websocket connection has been terminated.
+        """
+        yield from self.launch_shards()
 
         while not self.is_closed():
-            try:
-                await self.ws.poll_event()
-            except (ResumeWebSocket) as e:
-                resume = type(e) is ResumeWebSocket
-                self.logger.info('Got ' + type(e).__name__)
-                self.ws = await DiscordWebSocket.from_client(self, resume=resume)
-            except discord.ConnectionClosed as e:
-                await self.close()
-                async with threadpool():
-                    try:
-                        self.database.engine.dispose()
-                    except Exception:
-                        pass
-
-                if e.code != 1000:
-                    raise
+            pollers = [shard.get_future() for shard in self.shards.values()]
+            yield from asyncio.wait(pollers, loop=self.loop, return_when=asyncio.FIRST_COMPLETED)
 
 
 class Context(commands.Context):
