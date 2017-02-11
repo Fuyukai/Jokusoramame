@@ -1,0 +1,28 @@
+[[source]]
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+
+[packages]
+numpy = "*"
+kyoukai = "==2.0.2"
+matplotlib = "==2.0.0"
+seaborn = "*"
+tabulate = "*"
+psutil = "*"
+sqlalchemy = ">=1.1.0"
+psycopg2 = "*"
+jinja2 = "*"
+dill = "*"
+aioredis = "*"
+gitpython = "*"
+requests-oauthlib = "*"
+alembic = "*"
+logbook = "*"
+parsedatetime = "*"
+aiopixiv = "*"
+itsdangerous = "*"
+
+[packages."discord.py"]
+git = "https://github.com/Rapptz/discord.py.git"
+ref = "rewrite"
+editable = 1
