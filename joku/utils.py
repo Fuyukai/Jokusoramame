@@ -3,19 +3,18 @@ Common utilities shared across the bot.
 """
 import typing
 
+import datetime
 import discord
 import tabulate
 import numpy as np
+from parsedatetime import Calendar
+
+
+
 
 
 def get_role(guild: discord.Guild, role_id: int) -> discord.Role:
     return discord.utils.get(guild.roles, id=role_id)
-
-
-def get_index(cbl, item: typing.Iterable):
-    for num, _ in enumerate(item):
-        if cbl(_):
-            return num
 
 
 def calculate_server_shard(guild: discord.Guild, shard_count: int) -> int:
@@ -31,13 +30,47 @@ def calculate_server_shard(guild: discord.Guild, shard_count: int) -> int:
     return (guild.id >> 22) % shard_count
 
 
+# copied from https://github.com/joferkington/oost_paper_code/blob/master/utilities.py
+def is_outlier(points, thresh=3.5):
+    """
+    Returns a boolean array with True if points are outliers and False
+    otherwise.
+
+    Parameters:
+    -----------
+        points : An numobservations by numdimensions array of observations
+        thresh : The modified z-score to use as a threshold. Observations with
+            a modified z-score (based on the median absolute deviation) greater
+            than this value will be classified as outliers.
+
+    Returns:
+    --------
+        mask : A numobservations-length boolean array.
+
+    References:
+    ----------
+        Boris Iglewicz and David Hoaglin (1993), "Volume 16: How to Detect and
+        Handle Outliers", The ASQC Basic References in Quality Control:
+        Statistical Techniques, Edward F. Mykytka, Ph.D., Editor.
+    """
+    if len(points.shape) == 1:
+        points = points[:, None]
+    median = np.median(points, axis=0)
+    diff = np.sum((points - median) ** 2, axis=-1)
+    diff = np.sqrt(diff)
+    med_abs_deviation = np.median(diff)
+
+    modified_z_score = 0.6745 * diff / med_abs_deviation
+
+    return modified_z_score > thresh
+
+
 def reject_outliers(data, m=2):
     """
     Rejects outliers from a numpy array.
     """
-    first = np.where(abs(data - np.mean(data)) < m * np.std(data), data, np.zeros(len(data), dtype=np.int8))
-    # pass around again
-    return np.where(abs(first - np.mean(first)) < m * np.std(first), first, np.zeros(len(first), dtype=np.int8))
+    c = np.where(is_outlier(data, thresh=m), np.zeros(len(data), dtype=np.int8), data)
+    return c[c != 0]
 
 
 def paginate_large_message(message: str, use_codeblocks: bool = True) -> typing.List[str]:

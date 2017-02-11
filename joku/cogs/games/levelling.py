@@ -20,8 +20,7 @@ import seaborn as sns
 from joku.bot import Jokusoramame, Context
 from joku.db.tables import User
 from joku.cogs._common import Cog
-from joku.utils import paginate_table, reject_outliers
-
+from joku.utils import paginate_table, reject_outliers, is_outlier
 
 INCREASING_FACTOR = 50
 
@@ -201,7 +200,9 @@ class Levelling(Cog):
         async with ctx.channel.typing():
             async with threadpool():
                 _lvls = np.array([user.level for user in users if user.level >= 0])
-                lvls = reject_outliers(_lvls, m=1)
+
+                # 12 is reasonable for rejecting the super outliers
+                lvls = reject_outliers(_lvls, m=12)
 
                 # This changes the line/shade colour apparently.
                 sns.set_palette(['#DFA5A4'])
