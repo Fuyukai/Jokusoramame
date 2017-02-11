@@ -10,7 +10,7 @@ import sys
 
 from asyncio_extras import threadpool
 
-import rethinkdb as r
+#import rethinkdb as r
 
 import discord
 from discord.ext import commands
@@ -32,7 +32,7 @@ class Debug(Cog):
     async def eval(self, ctx, *, cmd):
         try:
             d = eval(cmd, {
-                "r": r, "asyncio": asyncio,
+                "asyncio": asyncio,
                 "member": ctx.message.author, "message": ctx.message,
                 "guild": ctx.message.guild, "channel": ctx.message.channel,
                 "bot": ctx.bot, "self": self, "ctx": ctx,
