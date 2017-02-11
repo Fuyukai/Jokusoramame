@@ -8,20 +8,40 @@ dbots_token: dniewudbyuewbdfuewvfueqwh89defbewyfbuewhf
 
 # The cogs to load.
 autoload:
+  - joku.cogs.core
   - joku.cogs.debug
 
 # The redis configuration.
 redis:
   address: !!python/tuple ["127.0.0.1", 6432]
 
+# The database address to connect to.
+dsn: postgresql+psycopg2://joku@127.0.0.1/joku
+
 # If the bot is in developer mode or not.
 # If it is, the bot will be booted in non-sharded mode, beware!
 developer_mode: false
 
-# The game text rotation.
-game_rotation:
-  - "Type j!help for help!"
+# The pixiv configuration.
+pixiv:
+  username: "my@email.com"
+  password: mypixivpassword
 
 # Log channel IDs.
 log_channels:
   error_channel: 0
+
+# The webserver configuration.
+webserver:
+  # The IP to bind to.
+  ip: 127.0.0.1
+  # The port to bind to.
+  port: 4444
+  # The secret cookie key to use.
+  # CHANGE THIS TO SOMETHING UNIQUE!
+  cookie_key: "I am insecure, please hack me!"
+
+# The OAuth2 configuration.
+oauth:
+  # Your OAuth2 secret key.
+  secret_key: asjsfdyysafdw
