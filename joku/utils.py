@@ -10,7 +10,23 @@ import numpy as np
 from parsedatetime import Calendar
 
 
+def parse_time(time_str: str) -> int:
+    """
+    Parses a time.
 
+    :param time_str: The time string to parse.
+    :return: The total number of seconds between now and then.
+    """
+    calendar = Calendar()
+    t_struct, parse_status = calendar.parse(time_str)
+
+    if parse_status == 0:
+        return None
+
+    dt = datetime.datetime(*t_struct[:6])
+    diff = np.ceil((dt - datetime.datetime.utcnow()).total_seconds())
+
+    return diff
 
 
 def get_role(guild: discord.Guild, role_id: int) -> discord.Role:
