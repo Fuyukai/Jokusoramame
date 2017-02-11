@@ -114,7 +114,7 @@ class DatabaseInterface(object):
         """
         Updates the XP of a user.
         """
-        user = await self.get_or_create_user(member, detatch=True)
+        user = await self.get_or_create_user(member)
         async with threadpool():
             with self.get_session() as session:
                 if xp_to_add is None:
@@ -134,7 +134,7 @@ class DatabaseInterface(object):
         """
         Sets a user's level.
         """
-        user = await self.get_or_create_user(member, detatch=True)
+        user = await self.get_or_create_user(member)
         async with threadpool():
             with self.get_session() as session:
                 user.level = level
