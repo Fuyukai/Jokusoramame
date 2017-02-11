@@ -71,16 +71,19 @@ class DatabaseInterface(object):
     # endregion
     # region User
 
-    async def get_or_create_user(self, member: discord.Member, *, detatch: bool = False) -> User:
+    async def get_or_create_user(self, member: discord.Member=None, id: int=None) -> User:
         """
         Gets or creates a user object.
         """
+        if member is not None:
+            id = member.id
+
         async with threadpool():
             with self.get_session() as session:
-                obb = session.query(User).filter(User.id == member.id).first()
+                obb = session.query(User).filter(User.id == id).first()
 
                 if obb is None:
-                    obb = User(id=member.id)
+                    obb = User(id=id)
 
         return obb
 
