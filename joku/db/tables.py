@@ -33,6 +33,9 @@ class User(Base):
     #: The inventory for this user.
     inventory = relationship("UserInventoryItem", lazy="joined")
 
+    #: The OAuth2 access code.
+    oauth_token = Column(JSONB, nullable=True)
+
     def __repr__(self):
         return "<User id={} xp={} money={}>".format(self.id, self.xp, self.money)
 
