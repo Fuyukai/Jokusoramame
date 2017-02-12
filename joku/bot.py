@@ -144,7 +144,7 @@ class Jokusoramame(AutoShardedBot):
             if not error_channel:
                 self.logger.error("Could not find error channel!")
             else:
-                fmt = "Server: {}\nChannel: {}\nCommand: {}\n\n{}".format(context.message.server.name,
+                fmt = "Server: {}\nChannel: {}\nCommand: {}\n\n{}".format(context.message.guild.name,
                                                                           context.message.channel.name,
                                                                           context.invoked_with,
                                                                           ''.join(lines))
