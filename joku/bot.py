@@ -144,11 +144,11 @@ class Jokusoramame(AutoShardedBot):
             if not error_channel:
                 self.logger.error("Could not find error channel!")
             else:
-                fmt = "Server: {}\nChannel: {}\nCommand: {}\n\n{}".format(context.message.guild.name,
+                fmt = "Server: {}\nChannel: {}\nCommand: {}\n\n```{}```".format(context.message.guild.name,
                                                                           context.message.channel.name,
                                                                           context.invoked_with,
                                                                           ''.join(lines))
-                await context.channel.send(fmt)
+                await error_channel.channel.send(fmt)
             return
 
         # Switch based on isinstance.
