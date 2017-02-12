@@ -261,9 +261,9 @@ class Core(Cog):
         embed.add_field(name="Memory usage", value="{:.2f} MiB".format(memory_usage))
         embed.add_field(name="Version", value=VERSION)
 
-        embed.add_field(name="Servers", value=str(sum(1 for x in ctx.bot.manager.get_all_servers())))
-        embed.add_field(name="Users", value=str(sum(1 for x in ctx.bot.manager.get_all_members())))
-        embed.add_field(name="Unique users", value=str(ctx.bot.manager.unique_member_count))
+        embed.add_field(name="Servers", value=str(sum(1 for x in ctx.bot.guilds)))
+        embed.add_field(name="Users", value=str(sum(1 for x in ctx.bot.get_all_members())))
+        embed.add_field(name="Unique users", value=str(len(set(ctx.bot.get_all_members()))))
 
         embed.add_field(name="Python version", value=platform.python_version())
         embed.add_field(name="Hostname", value=platform.node())
