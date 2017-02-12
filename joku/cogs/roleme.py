@@ -35,6 +35,11 @@ class Roleme(Cog):
             return
 
         member = ctx.author  # type: discord.Member
+
+        if role in member.roles:
+            await ctx.send(":x: You already have this role.")
+            return
+
         await member.add_roles(role)
         await ctx.send(":heavy_check_mark: Given you the `{}` role.".format(role.name))
 
