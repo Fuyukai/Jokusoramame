@@ -49,9 +49,9 @@ class Roleme(Cog):
         await ctx.bot.database.add_roleme_role(role)
         await ctx.send(":heavy_check_mark: Created new roleme role `{}`.".format(name))
 
-    @roleme.command()
+    @roleme.command(name="enable")
     @has_permissions(manage_roles=True)
-    async def enable(self, ctx: Context, *, role: discord.Role):
+    async def _enable(self, ctx: Context, *, role: discord.Role):
         """
         Adds a role to the list of roles that can be given.
         """
@@ -62,9 +62,9 @@ class Roleme(Cog):
         await ctx.bot.database.add_roleme_role(role)
         await ctx.send(":heavy_check_mark: Added `{}` as a roleme role.".format(role.name))
 
-    @roleme.command()
+    @roleme.command(name="disable")
     @has_permissions(manage_roles=True)
-    async def disable(self, ctx: Context, *, role: discord.Role):
+    async def _disable(self, ctx: Context, *, role: discord.Role):
         """
         Removes a role from the list of roles that can be given.
         """
