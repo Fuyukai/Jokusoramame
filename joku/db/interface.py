@@ -220,6 +220,7 @@ class DatabaseInterface(object):
         Saves the rolestate for a member.
         """
         guild = await self.get_or_create_guild(member.guild)
+        user = await self.get_or_create_user(member)
 
         async with threadpool():
             with self.get_session() as session:
@@ -236,6 +237,7 @@ class DatabaseInterface(object):
                 # Add role IDs directly as an array.
                 current_rolestate.nick = member.nick
                 current_rolestate.roles = [r.id for r in member.roles]
+                session.merge(user)
                 session.add(current_rolestate)
 
         return current_rolestate
