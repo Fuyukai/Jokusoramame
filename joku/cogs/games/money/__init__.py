@@ -30,6 +30,15 @@ GOOD_RESPONSES = [
     ":u6709: Anata wa okane o eru. (You gained `§{}`.)"
 ]
 
+BODY_PARTS = [
+    "knees",
+    "shin",
+    "arms",
+    "kidneys",
+    "skull",
+    "gluteus maximus",
+]
+
 
 class Currency(Cog):
     @commands.command(pass_context=True)
@@ -63,7 +72,8 @@ class Currency(Cog):
 
         currency = await ctx.bot.database.get_user_currency(ctx.message.author)
         if currency <= 0:
-            await ctx.send(":dragon: A debt collector came and broke your knees. You are now debt free.")
+            await ctx.send(":dragon: A debt collector came and broke your {}. "
+                           "You are now debt free.".format(self.rng.choice(BODY_PARTS)))
             await ctx.bot.database.update_user_currency(ctx.message.author, abs(currency) + 2)
             return
 

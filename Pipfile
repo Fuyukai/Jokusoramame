@@ -4,7 +4,7 @@ verify_ssl = true
 
 [packages]
 numpy = "*"
-kyoukai = "==2.0.2"
+kyoukai = "==2.0.3"
 matplotlib = "==2.0.0"
 seaborn = "*"
 tabulate = "*"
