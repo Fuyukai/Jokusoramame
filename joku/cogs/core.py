@@ -180,25 +180,23 @@ class Core(Cog):
         """
         Reloads all the modules for every shard.
         """
-        if not isinstance(ctx.bot.manager, SingleLoopManager):
-            await ctx.channel.send(":x: Cannot reload all shards inside a ThreadManager.")
-            return
+        #if not isinstance(ctx.bot.manager, SingleLoopManager):
+        #    await ctx.channel.send(":x: Cannot reload all shards inside a ThreadManager.")
+        #    return
 
         # Reload the config file.
-        ctx.bot.manager.reload_config_file()
+        #ctx.bot.manager.reload_config_file()
 
-        for shard in ctx.bot.manager.bots.copy().values():
-            shard.extra_events = {}
-            for extension in shard.extensions.copy():
-                shard.unload_extension(extension)
-                try:
-                    shard.load_extension(extension)
-                except BaseException as e:
-                    shard.logger.exception()
-                else:
-                    shard.logger.info("Reloaded {}.".format(extension))
+        for extension in ctx.bot.extensions.copy():
+            ctx.bot.unload_extension(extension)
+            try:
+                ctx.bot.load_extension(extension)
+            except BaseException as e:
+                ctx.bot.logger.exception()
+            else:
+                ctx.bot.logger.info("Reloaded {}.".format(extension))
 
-            await ctx.channel.send(":heavy_check_mark: Reloaded shard `{}`.".format(shard.shard_id))
+        await ctx.channel.send(":heavy_check_mark: Reloaded bot.")
 
     @commands.command(pass_context=True)
     @commands.check(is_owner)
