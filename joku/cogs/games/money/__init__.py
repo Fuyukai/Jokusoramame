@@ -96,82 +96,6 @@ class Currency(Cog):
         await ctx.send(choice.format(abs(amount)))
         await ctx.bot.redis.set_bucket_with_expiration(ctx.message.author, "raffles", expiration=3600)
 
-    @commands.group(pass_context=True, invoke_without_command=True)
-    async def store(self, ctx: Context):
-        """
-        Store command
-        """
-        await ctx.channel.send("**Use `store buy` to buy things, or `store sell` to sell things.**")
-
-    @store.command()
-    @commands.cooldown(1, 5, BucketType.user)
-    async def buy(self, ctx: Context, *, item: str):
-        """
-        Buys an item.
-        """
-        await ctx.send(":x: Temporary disabled due to broken.")
-        return
-
-        item = get_item_by_name(item)
-        if item is None:
-            await ctx.send(":x: Item does not exist.")
-            return
-
-        cls = item(ctx)  # type: BaseItem
-        price = await cls.buy()
-
-        if price is None:
-            await ctx.send(":x: You do not have enough money to buy this.")
-            return
-
-        await ctx.send(":heavy_check_mark: Bought `{}` for `§{}`.".format(cls.name, price))
-
-    @commands.command(aliases=["inv"])
-    async def inventory(self, ctx: Context):
-        """
-        Shows your inventory.
-        """
-        user = await ctx.bot.database.get_or_create_user(ctx.author)
-
-        inventory_items = []
-        for item in user.inventory:
-            id, count = item.item_id, item.count
-            item = get_item_by_id(id)
-
-            if not item:
-                # ok
-                continue
-
-            inventory_items.append((item.name, count))
-
-        if not inventory_items:
-            await ctx.send(":x: You have no items.")
-            return
-
-        fmt = "**Inventory for {}:**\n\n".format(ctx.author.name)
-        fmt += ", ".join("`{} ({})`".format(item, count) for (item, count) in inventory_items)
-        await ctx.send(fmt)
-
-    @commands.command()
-    @commands.cooldown(1, 5, BucketType.user)
-    async def use(self, ctx: Context, *, item: str):
-        """
-        Uses an item.
-        """
-        item = get_item_by_name(item)
-        if not item:
-            await ctx.send(":x: This item does not exist.")
-            return
-
-        count = await ctx.bot.database.get_user_item_count(ctx.author, item.id)
-        if count <= 0:
-            await ctx.send(":x: You do not have any of these.")
-            return
-
-        # make a new instance and call `.use()`
-        item = item(ctx)  # type: BaseItem
-        await item.use()
-
     @commands.group(pass_context=True, invoke_without_command=True, aliases=["money"])
     async def currency(self, ctx: Context, *, target: discord.Member = None):
         """
@@ -186,6 +110,36 @@ class Currency(Cog):
 
         currency = await ctx.bot.database.get_user_currency(user)
         await ctx.channel.send("User **{}** has `§{}`.".format(user, currency))
+
+    @currency.command(pass_context=True, aliases=["bottom"])
+    async def poorest(self, ctx: Context):
+        """
+        Shows the top 10 poorest users in this server.
+        """
+        users = await ctx.bot.database.get_multiple_users(*ctx.message.guild.members, order_by=User.money.asc())
+
+        base = "**Bottom 10 users (in this server):**\n\n```{}```"
+
+        # Create a table using tabulate.
+        headers = ["POS", "User", "Currency"]
+        table = []
+
+        for n, u in enumerate(users[:10]):
+            try:
+                member = ctx.message.guild.get_member(u.id).name
+                # Unicode and tables suck
+                member = member.encode("ascii", errors="replace").decode()
+            except AttributeError:
+                # Prevent race condition - member leaving between command invocation and here
+                continue
+            table.append([len(users) - (n + 1), member, u.money])
+
+        # Format the table.
+        table = tabulate.tabulate(table, headers=headers, tablefmt="orgtbl")
+
+        fmtted = base.format(table)
+
+        await ctx.channel.send(fmtted)
 
     @currency.command(pass_context=True, aliases=["top", "leaderboard"])
     async def richest(self, ctx: Context):
@@ -208,11 +162,7 @@ class Currency(Cog):
             except AttributeError:
                 # Prevent race condition - member leaving between command invocation and here
                 continue
-            # position, name, xp, level
-            try:
-                table.append([n + 1, member, u.money])
-            except KeyError:
-                table.append([n + 1, member, 0])
+            table.append([n + 1, member, u.money])
 
         # Format the table.
         table = tabulate.tabulate(table, headers=headers, tablefmt="orgtbl")
