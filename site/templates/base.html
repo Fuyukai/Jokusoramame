@@ -1,0 +1,105 @@
+{# The base template for all of Joku's site. #}
+
+{# Useful things #}
+{% set current = "" %}
+{% macro is_active(link) %}
+    {% if current == link %}is-active{% endif %}
+{% endmacro %}
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Joku - Juck Fava</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="title" content="Joku"/>
+    <meta name="description" content="Joku - yet another General Purpose Botto"/>
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+          integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-material-design/0.5.10/css/bootstrap-material-design.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-material-design/0.5.10/css/ripples.min.css" />
+
+    <style>
+        body {
+            /* Less dark than bootstrap, less light than default */
+            background-color: #fafafa;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: "Quicksand", sans-serif;
+        }
+
+        .navbar-white {
+            background-color: inherit;
+            color: #000000; /* text is unreadable otherwise */
+            /*font-family: "Quicksand", sans-serif;*/
+        }
+
+        .btn-less-pad {
+            padding-left: 2px;
+            padding-right: 2px;
+        }
+
+    </style>
+
+    {% block head %}
+        {# Any custom header content goes here #}
+    {% endblock %}
+
+</head>
+<body>
+{# Everything lives inside a container #}
+<div class="container">
+    {% block navbar %}
+        <div class="navbar navbar-white" style="margin-top: 5px">
+            <div class="container-fluid">
+                <div class="navbar-header">
+                    <button type="button" class="navbar-toggle" data-toggle="collapse"
+                            data-target=".navbar-inverse-collapse">
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" href="">
+                        Jokusoramame
+                    </a>
+                    <a class="btn btn-less-pad" href="{{ ctx.bot.invite_url }}" style="margin-top: 13px">
+                        <i class="fa fa-plus" aria-hidden="true"></i>
+                        Add bot to your server
+                    </a>
+                    <a class="btn btn-less-pad" href="https://discord.gg/uQwVat8" style="margin-top: 13px;">
+                        <i class="fa fa-arrow-right" aria-hidden="true"></i>
+                        Join the bot's server
+                    </a>
+                </div>
+                <div class="navbar-collapse collapse navbar-inverse-collapse">
+                    <ul class="nav navbar-nav navbar-right">
+                        <li><a href="javascript:void(0)">Link</a></li>
+
+                        {% if ctx.current_user is not none %}
+                            Logged in as {{ ctx.current_user.username }}
+                        {% else %}
+                            {{ navbar_login() }}
+                        {% endif %}
+
+                    </ul>
+                </div>
+            </div>
+        </div>
+    {% endblock %}
+
+    {% block body %}
+        {# All body content goes here. #}
+    {% endblock %}
+</div>
+
+<script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"
+        integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
+        crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-material-design/0.5.10/js/material.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-material-design/0.5.10/js/ripples.min.js"></script>
+<script>$.material.init()</script>
+</body>
+</html>

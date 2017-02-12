@@ -63,6 +63,7 @@ class Jokusoramame(AutoShardedBot):
         # Used later on.
         self.app_id = 0
         self.owner_id = 0
+        self.invite_url = ""
 
         self.startup_time = time.time()
 
@@ -185,7 +186,10 @@ class Jokusoramame(AutoShardedBot):
 
         self.logger.info("I am owned by {}#{} ({}).".format(app_info.owner.name, app_info.owner.discriminator,
                                                             self.owner_id))
-        self.logger.info("Invite link: {}".format(discord.utils.oauth_url(self.app_id)))
+
+        self.invite_url = discord.utils.oauth_url(self.app_id)
+
+        self.logger.info("Invite link: {}".format(discord.utils.oauth_url(self.invite_url)))
 
         try:
             await self.database.connect(self.config.get("dsn", None))
@@ -223,6 +227,8 @@ class Jokusoramame(AutoShardedBot):
         # always add oauth2 bp
         from joku.web.oauth import bp as oauth2_bp
         self.webserver.register_blueprint(oauth2_bp)
+        from joku.web.root import root as root_bp
+        self.webserver.register_blueprint(root_bp)
 
         self.webserver.finalize()
         # TODO: Config values
