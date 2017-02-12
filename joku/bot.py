@@ -148,7 +148,7 @@ class Jokusoramame(AutoShardedBot):
                                                                           context.message.channel.name,
                                                                           context.invoked_with,
                                                                           ''.join(lines))
-                await context.channel.send(fmt, use_codeblocks=True)
+                await context.channel.send(fmt)
             return
 
         # Switch based on isinstance.
