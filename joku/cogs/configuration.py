@@ -84,7 +84,7 @@ class Config(Cog):
             user_id = ctx.author.id
 
         rolestate = await self.bot.database.get_rolestate_for_id(ctx.guild.id, user_id)
-        user = await ctx.bot.get_user_info(user_id)
+        user = await ctx.bot.get_user_info(user_id)  # type: discord.User
 
         em = discord.Embed(title="Rolestate viewer")
 
@@ -94,6 +94,8 @@ class Config(Cog):
         else:
             em.description = "This shows the most recent rolestate for a user ID. This is **not accurate** if they " \
                              "haven't left before, or are still in the guild."
+
+            em.add_field(name="Username", value=user.name)
 
             em.add_field(name="Nick", value=rolestate.nick, inline=False)
             roles = ", ".join([get_role(ctx.guild, r_id).mention for r_id in rolestate.roles if r_id != ctx.guild.id])
