@@ -25,7 +25,7 @@ class User(Base):
     level = Column(Integer, nullable=False, default=1)
 
     #: The money of the user.
-    money = Column(Integer, nullable=False, default=200)
+    money = Column(BigInteger, nullable=False, default=200)
 
     #: The last modified time of the user.
     last_modified = Column(DateTime(), server_default=func.now())
