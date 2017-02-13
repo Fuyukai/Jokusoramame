@@ -133,6 +133,7 @@ class Tags(Cog):
         # Create the arguments for the template.
         args = {
             "args": shlex.split(ctx.message.content[len(ctx.prefix):])[1:],
+            "clean_args": shlex.split(ctx.message.clean_content[len(ctx.prefix):])[1:],
             "message": copy.copy(ctx.message),
             "channel": copy.copy(ctx.message.channel),
             "author": copy.copy(ctx.message.author),
