@@ -1,4 +1,5 @@
 """"""
+import datetime
 import discord
 import numpy as np
 import tabulate
@@ -10,7 +11,6 @@ from discord.ext.commands import BucketType
 
 from joku.bot import Jokusoramame, Context
 from joku.cogs._common import Cog
-from joku.cogs.games.money.inventory import get_item_by_name, BaseItem, get_item_by_id
 from joku.db.tables import User
 from joku.redis import with_redis_cooldown
 
@@ -40,6 +40,20 @@ BODY_PARTS = [
 ]
 
 
+def calculate_monetary_decay(money: int, factor: float = -0.15, hours: int = 1) -> int:
+    """
+    Calculates monetary decay over X hours.
+    """
+    return int(np.math.ceil(money * (np.math.exp(factor * hours))))
+
+
+def get_next_decay(currency: int, factor: float=-0.05) -> int:
+    if 0 < currency <= 1:
+        return 0
+
+    return currency - calculate_monetary_decay(currency, factor=factor)
+
+
 class Currency(Cog):
     @commands.command(pass_context=True)
     @with_redis_cooldown(bucket="daily_currency")
@@ -56,7 +70,7 @@ class Currency(Cog):
         await ctx.channel.send(":money_with_wings: **You have earned `§{}` today.**".format(amount))
 
     @commands.command(pass_context=True)
-    async def raffle(self, ctx: Context, *, price: int=2):
+    async def raffle(self, ctx: Context, *, price: int = 2):
         """
         Will you win big or will you lose out?
 
@@ -86,6 +100,7 @@ class Currency(Cog):
             return
 
         amount = int(((price * 10) * np.random.randn()) + 100)  # weight slightly towards positive
+        amount -= price
 
         await ctx.bot.database.update_user_currency(ctx.message.author, int(amount))
         if amount < 0:
@@ -109,7 +124,26 @@ class Currency(Cog):
             return
 
         currency = await ctx.bot.database.get_user_currency(user)
-        await ctx.channel.send("User **{}** has `§{}`.".format(user, currency))
+
+        if ctx.channel.permissions_for(ctx.guild.me).embed_links:
+            day = self.rng.randint(1, 31)
+            hour, minute, second = self.rng.randint(0, 23), self.rng.randint(0, 59), self.rng.randint(0, 59)
+
+            ts = datetime.datetime(year=2008, month=7, day=day, hour=hour, minute=minute, second=second)
+
+            em = discord.Embed(title="First National Bank of Joku")
+            em.description = "Your decay is the amount of money you gain or lose **every hour**.\n" \
+                             "You do not lose money if you are you below the Basic Tax Bracket of §1343."
+            em.set_author(name=user.display_name)
+
+            em.add_field(name="Currency", value="§{}".format(currency))
+            em.add_field(name="Next decay amount", value="§{}".format(get_next_decay(currency)))
+            em.set_thumbnail(url=user.avatar_url)
+            em.timestamp = ts
+            em.set_footer(text="Thanks capitalism!")
+            await ctx.send(embed=em)
+        else:
+            await ctx.channel.send("User **{}** has `§{}`.".format(user, currency))
 
     @currency.command(pass_context=True, aliases=["bottom"])
     async def poorest(self, ctx: Context):
