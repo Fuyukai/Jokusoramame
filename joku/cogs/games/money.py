@@ -48,7 +48,7 @@ def calculate_monetary_decay(money: int, factor: float = -0.15, hours: int = 1) 
 
 
 def get_next_decay(currency: int, factor: float=-0.05) -> int:
-    if 0 < currency <= 1:
+    if 0 < currency <= 1343:
         return 0
 
     return currency - calculate_monetary_decay(currency, factor=factor)
