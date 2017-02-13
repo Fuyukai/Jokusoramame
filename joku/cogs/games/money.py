@@ -185,6 +185,7 @@ class Currency(Cog):
             em.set_thumbnail(url=user.avatar_url)
             em.timestamp = ts
             em.set_footer(text="Thanks capitalism!")
+            em.colour = user.colour
             await ctx.send(embed=em)
         else:
             await ctx.channel.send("User **{}** has `§{}`.".format(user, currency))
