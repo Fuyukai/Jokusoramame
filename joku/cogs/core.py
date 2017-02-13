@@ -315,9 +315,8 @@ class Core(Cog):
         await ctx.channel.send("Fuck you")
 
     @commands.command(pass_context=True)
-    async def invite(self, ctx):
-        invite = discord.utils.oauth_url(ctx.bot.app_id)
-        await ctx.channel.send("**To invite the bot to your server, use this link: {}**".format(invite))
+    async def invite(self, ctx: Context):
+        await ctx.channel.send("**To invite the bot to your server, use this link: {}**".format(ctx.bot.invite_url))
 
     @commands.command(pass_context=True)
     async def help(self, ctx: Context, *, command: str = None):
@@ -379,13 +378,7 @@ class Core(Cog):
         """
         Shows the bot's uptime.
         """
-
-        em = discord.Embed(title="Uptime statistics")
-
-        em.add_field(name="Bot Uptime", value=self._get_uptime_text(ctx.bot.manager.start_time))
-        em.add_field(name="Shard Uptime", value=self._get_uptime_text(ctx.bot.startup_time))
-
-        await ctx.channel.send(embed=em)
+        await ctx.channel.send(self._get_uptime_text(ctx.bot.startup_time))
 
 
 def setup(bot: Jokusoramame):
