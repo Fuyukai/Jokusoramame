@@ -40,7 +40,7 @@ BODY_PARTS = [
 ]
 
 
-def calculate_monetary_decay(money: int, factor: float = -0.15, hours: int = 1) -> int:
+def calculate_monetary_decay(money: int, factor: float = -0.05, hours: int = 1) -> int:
     """
     Calculates monetary decay over X hours.
     """
