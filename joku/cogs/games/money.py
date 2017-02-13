@@ -1,13 +1,18 @@
 """"""
 import datetime
+
+import asyncio
 import discord
 import numpy as np
 import tabulate
 import time
+
+from asyncio_extras import threadpool
 from discord.ext import commands
 from discord.ext.commands import BucketType
 
 # import rethinkdb as r
+from sqlalchemy.orm import Session
 
 from joku.bot import Jokusoramame, Context
 from joku.cogs._common import Cog
@@ -40,14 +45,14 @@ BODY_PARTS = [
 ]
 
 
-def calculate_monetary_decay(money: int, factor: float = -0.05, hours: int = 1) -> int:
+def calculate_monetary_decay(money: int, factor: float = -0.005, hours: int = 1) -> int:
     """
     Calculates monetary decay over X hours.
     """
     return int(np.math.ceil(money * (np.math.exp(factor * hours))))
 
 
-def get_next_decay(currency: int, factor: float=-0.05) -> int:
+def get_next_decay(currency: int, factor: float=-0.005) -> int:
     if 0 < currency <= 1343:
         return 0
 
@@ -55,6 +60,45 @@ def get_next_decay(currency: int, factor: float=-0.05) -> int:
 
 
 class Currency(Cog):
+    running = False
+
+    async def ready(self):
+        if self.running is True:
+            return
+
+        self.running = True
+
+        # Wait until the hour is up.
+        try:
+            now = datetime.datetime.now()
+            next = datetime.datetime(year=now.year, month=now.month, day=now.day,
+                                     hour=now.hour + 1, minute=0, second=0)
+            to_wait = (next - now).total_seconds()
+
+            while True:
+                self.logger.info("Waiting {} seconds before applying next decay.".format(to_wait))
+                await asyncio.sleep(to_wait)
+
+                # decay
+                total = 0
+                async with threadpool():
+                    with self.bot.database.get_session() as sess:
+                        assert isinstance(sess, Session)
+
+                        users = list(sess.query(User).filter((User.money < 0) | (User.money > 1343)).all())
+                        for user in users:
+                            decay = get_next_decay(user.money)
+                            user.money -= decay
+                            total += decay
+
+                            # update the user
+                            sess.merge(user)
+
+                self.logger.info("Decayed §{}.".format(total))
+                to_wait = 60 * 60  # 1 hr
+        finally:
+            self.running = False
+
     @commands.command(pass_context=True)
     @with_redis_cooldown(bucket="daily_currency")
     async def daily(self, ctx: Context):
@@ -132,12 +176,12 @@ class Currency(Cog):
             ts = datetime.datetime(year=2008, month=7, day=day, hour=hour, minute=minute, second=second)
 
             em = discord.Embed(title="First National Bank of Joku")
-            em.description = "Your decay is the amount of money you gain or lose **every hour**.\n" \
+            em.description = "Your tax is the amount of money you gain or lose **every hour**.\n" \
                              "You do not lose money if you are you below the Basic Tax Bracket of §1343."
             em.set_author(name=user.display_name)
 
             em.add_field(name="Currency", value="§{}".format(currency))
-            em.add_field(name="Next decay amount", value="§{}".format(get_next_decay(currency)))
+            em.add_field(name="Next tax amount", value="§{}".format(get_next_decay(currency)))
             em.set_thumbnail(url=user.avatar_url)
             em.timestamp = ts
             em.set_footer(text="Thanks capitalism!")
