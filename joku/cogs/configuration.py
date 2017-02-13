@@ -4,12 +4,14 @@ Configuration cog.
 import argparse
 import shlex
 
+import discord
 from discord.ext import commands
 from discord.ext.commands import MemberConverter, BadArgument, TextChannelConverter
 
 from joku.bot import Jokusoramame, Context
 from joku.cogs._common import Cog
 from joku.checks import has_permissions
+from joku.utils import get_role
 
 
 class ArgumentParser(argparse.ArgumentParser):
@@ -21,7 +23,7 @@ class ArgumentParser(argparse.ArgumentParser):
 class Config(Cog):
     @commands.command(pass_context=True)
     @has_permissions(manage_server=True, manage_messages=True)
-    async def inviscop(self, ctx: Context, *, status: str=None):
+    async def inviscop(self, ctx: Context, *, status: str = None):
         """
         Manages the Invisible cop
 
@@ -46,9 +48,9 @@ class Config(Cog):
             else:
                 await ctx.channel.send(":x: No.")
 
-    @commands.command(pass_context=True)
+    @commands.group(pass_context=True, invoke_without_command=True)
     @has_permissions(manage_server=True, manage_roles=True)
-    async def rolestate(self, ctx: Context, *, status: str=None):
+    async def rolestate(self, ctx: Context, *, status: str = None):
         """
         Manages rolestate.
 
@@ -72,6 +74,33 @@ class Config(Cog):
                 return
             else:
                 await ctx.channel.send(":x: No.")
+
+    @rolestate.command()
+    async def view(self, ctx: Context, *, user_id: int = None):
+        """
+        Views the current rolestate of a member.
+        """
+        if user_id is None:
+            user_id = ctx.author.id
+
+        rolestate = await self.bot.database.get_rolestate_for_id(ctx.guild.id, user_id)
+        user = await ctx.bot.get_user_info(user_id)
+
+        em = discord.Embed(title="Rolestate viewer")
+
+        if rolestate is None:
+            em.description = "**No rolestate found for this user here.**"
+        else:
+            em.description = "This shows the most recent rolestate for a user ID. This is **not accurate** if they " \
+                             "haven't left before, or are still in the guild."
+
+            em.add_field(name="Nick", value=rolestate.nick, inline=False)
+            roles = ", ".join([get_role(ctx.guild, r_id).mention for r_id in rolestate.roles])
+            em.add_field(name="Roles", value=roles, inline=False)
+        em.set_thumbnail(url=user.avatar_url)
+        em.set_footer(text="Rolestate for guild {}".format(ctx.guild.name))
+
+        await ctx.send(embed=em)
 
     @commands.command(pass_context=True)
     @has_permissions(manage_server=True, manage_channels=True)
@@ -129,9 +158,9 @@ class Config(Cog):
             query = await r.table("settings") \
                 .get_all(ctx.message.guild.id, index="server_id") \
                 .filter({
-                            "name": "ignore", "target": converted.id,
-                            "type": args.type
-                            }) \
+                "name": "ignore", "target": converted.id,
+                "type": args.type
+            }) \
                 .run(ctx.bot.database.connection)
 
             got = await ctx.bot.database.to_list(query)
@@ -148,9 +177,9 @@ class Config(Cog):
             query = await r.table("settings") \
                 .get_all(ctx.message.guild.id, index="server_id") \
                 .filter({
-                            "name": "ignore", "target": converted.id,
-                            "type": args.type
-                            }) \
+                "name": "ignore", "target": converted.id,
+                "type": args.type
+            }) \
                 .run(ctx.bot.database.connection)
 
             got = await self.bot.database.to_list(query)
@@ -162,7 +191,7 @@ class Config(Cog):
             built_dict = {
                 "server_id": ctx.message.guild.id, "name": "ignore",
                 "target": converted.id, "type": args.type
-                }
+            }
 
             result = await r.table("settings").insert(built_dict).run(self.bot.database.connection)
             await ctx.channel.send(":heavy_check_mark: Added ignore rule.")
