@@ -95,7 +95,7 @@ class Config(Cog):
                              "haven't left before, or are still in the guild."
 
             em.add_field(name="Nick", value=rolestate.nick, inline=False)
-            roles = ", ".join([get_role(ctx.guild, r_id).mention for r_id in rolestate.roles])
+            roles = ", ".join([get_role(ctx.guild, r_id).mention for r_id in rolestate.roles if r_id != ctx.guild.id])
             em.add_field(name="Roles", value=roles, inline=False)
         em.set_thumbnail(url=user.avatar_url)
         em.set_footer(text="Rolestate for guild {}".format(ctx.guild.name))
