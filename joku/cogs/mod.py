@@ -27,6 +27,8 @@ class Moderation(Cog):
         setting = await self.bot.database.get_setting(member.guild, "rolestate", {})
         if setting.get("status") == 1:
             rolestate = await self.bot.database.get_rolestate_for_member(member)
+            if rolestate is None:
+                return
 
             roles = [discord.utils.get(member.guild.roles, id=r_id) for r_id in rolestate.roles]
             roles = [r for r in roles if r is not None]
