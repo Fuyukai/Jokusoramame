@@ -45,14 +45,14 @@ BODY_PARTS = [
 ]
 
 
-def calculate_monetary_decay(money: int, factor: float = -0.005, hours: int = 1) -> int:
+def calculate_monetary_decay(money: int, factor: float = -0.05, hours: int = 1) -> int:
     """
     Calculates monetary decay over X hours.
     """
     return int(np.math.ceil(money * (np.math.exp(factor * hours))))
 
 
-def get_next_decay(currency: int, factor: float=-0.005) -> int:
+def get_next_decay(currency: int, factor: float=-0.05) -> int:
     if 0 < currency <= 1343:
         return 0
 
