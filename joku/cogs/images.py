@@ -1,23 +1,29 @@
 """
-Cog for interacting with the Pixiv API.
+Cog for interacting with various image APIs.
 """
 import random
+import asyncio
+import datetime
 
+import arrow
 import aiopixiv
 import aiohttp
-import asyncio
 import discord
-
-import threading
+import pytz
 from discord.ext import commands
 from io import BytesIO
 from dateutil.parser import parse
 
+from joku import VERSION
 from joku.bot import Context
 from joku.cogs._common import Cog
 
 
-class Pixiv(Cog):
+class Images(Cog):
+    UNSPLASH_BASE = "https://api.unsplash.com"
+    UNSPLASH_RANDOM_PHOTO = UNSPLASH_BASE + "/photos/random"
+    UNSPLASH_SEARCH = UNSPLASH_BASE + "/search/photos"
+
     def __init__(self, bot):
         super().__init__(bot)
 
@@ -32,7 +38,7 @@ class Pixiv(Cog):
         Commands for interacting with the Pixiv API.
         """
 
-    async def produce_embed(self, item: dict):
+    async def pixiv_produce_embed(self, item: dict):
         """
         Produces an embed from a Pixiv illustration object.
         """
@@ -88,7 +94,7 @@ class Pixiv(Cog):
 
             item = random.SystemRandom().choice(illusts)
 
-            embed = await self.produce_embed(item)
+            embed = await self.pixiv_produce_embed(item)
             if embed:
                 try:
                     await ctx.channel.send(embed=embed)
@@ -121,13 +127,85 @@ class Pixiv(Cog):
 
             item = random.SystemRandom().choice(illusts)
 
-            embed = await self.produce_embed(item)
+            embed = await self.pixiv_produce_embed(item)
 
             try:
                 await ctx.channel.send(embed=embed)
             except discord.HTTPException:
                 await ctx.channel.send(":frowning: Discord didn't like our embed.")
 
+    async def make_unsplash_request(self, url: str, *, params: dict = None):
+        """
+        Makes a request to Unsplash using the right headers.
+        """
+        headers = {
+            "User-Agent": "DiscordBot Jokusoramame/{}".format(VERSION),
+            "Authorization": "Client-ID {}".format(self.bot.config["unsplash_client_id"]),
+            "Accept-Version": "v1",
+            "X-You-Are-Awesome": "true"
+        }
+
+        async with self.sess.get(url, headers=headers, params=params) as r:
+            assert isinstance(r, aiohttp.ClientResponse)
+            if r.status == 401:
+                raise RuntimeError("Token invalid for Unsplash")
+
+            return await r.json()
+
+    def make_unsplash_embed(self, req: dict) -> discord.Embed:
+        em = discord.Embed(title=req["id"])
+        # credit the author
+        description = "Photo by [{name}]({url}) / [Unsplash](https://unsplash.com/)."
+        em.description = description.format(name=req["user"]["name"], url=req["user"]["links"]["html"])
+        # add the image (obviously)
+        em.set_image(url=req["urls"]["full"])
+        em.url = req["links"]["html"]
+        em.colour = discord.Colour(int(req["color"][1:], 16))
+        # add the author again anyway
+        em.set_author(name=req["user"]["name"], url=req["user"]["links"]["html"])
+
+        # there has got to be a better way
+        class _ts:
+            _ = arrow.get(req["created_at"]).datetime.astimezone(pytz.UTC)
+
+            def isoformat(self):
+                return self._.strftime("%Y-%m-%dT%H:%M:%S.%f")
+
+        em._timestamp = _ts()
+
+        return em
+
+    @commands.group(pass_context=True, invoke_without_command=True, name="unsplash")
+    async def _unsplash(self, ctx: Context):
+        """
+        Displays images from unsplash. 
+        """
+
+    @_unsplash.command(pass_context=True)
+    async def random(self, ctx: Context):
+        """
+        Shows a random image from Unsplash.
+        """
+        req = await self.make_unsplash_request(self.UNSPLASH_RANDOM_PHOTO)
+
+        em = self.make_unsplash_embed(req)
+        await ctx.send(embed=em)
+
+    @_unsplash.command(pass_context=True)
+    async def search(self, ctx: Context, *, search_text: str):
+        """
+        Searches Unsplash for an image.
+        """
+        async with ctx.channel.typing():
+            results = await self.make_unsplash_request(self.UNSPLASH_SEARCH, params={
+                "query": search_text,
+                "per_page": 50
+            })
+        req = random.choice(results["results"])
+
+        em = self.make_unsplash_embed(req)
+        await ctx.send(embed=em)
+
 
 def setup(bot):
-    bot.add_cog(Pixiv(bot))
+    bot.add_cog(Images(bot))
