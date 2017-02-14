@@ -71,8 +71,14 @@ class Currency(Cog):
         # Wait until the hour is up.
         try:
             now = datetime.datetime.now()
+            if now.hour == 23:
+                # clamp
+                hour = 0
+            else:
+                hour = now.hour + 1
+
             next = datetime.datetime(year=now.year, month=now.month, day=now.day,
-                                     hour=now.hour + 1, minute=0, second=0)
+                                     hour=hour + 1, minute=0, second=0)
             to_wait = (next - now).total_seconds()
 
             while True:
