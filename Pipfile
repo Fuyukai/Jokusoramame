@@ -21,6 +21,8 @@ logbook = "*"
 parsedatetime = "*"
 aiopixiv = "*"
 itsdangerous = "*"
+arrow = "*"
+pytz = "*"
 
 [packages."discord.py"]
 git = "https://github.com/Rapptz/discord.py.git"

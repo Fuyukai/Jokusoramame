@@ -29,5 +29,8 @@ def main():
     bot.logger.info("Launching Jokusoramame in autosharded mode...")
     bot.run()
 
+    # fuck off forever
+    bot.loop.set_exception_handler(lambda *args, **kwargs: None)
+
 if __name__ == "__main__":
     main()
