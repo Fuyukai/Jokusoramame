@@ -94,10 +94,12 @@ class Reminders(Cog):
         """
         Sets a reminder to be ran in the future.
         """
-        dt, seconds = parse_time(tstr, seconds=False)
-        if seconds is None:
+        _  = parse_time(tstr, seconds=False)
+        if _ is None:
             await ctx.send(":x: Invalid time string.")
             return
+
+        dt, seconds = _
 
         reminder = await ctx.bot.database.create_reminder(ctx.channel, ctx.author, content, remind_at=dt)
         if seconds < 300:
