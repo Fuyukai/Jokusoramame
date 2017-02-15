@@ -101,7 +101,7 @@ class Jokusoramame(AutoShardedBot):
             # Use `jd!` prefix.
             return "jd!"
 
-        return ["j" + s for s in "!?^&$}#~:"] + ["J" + s for s in "!?^&$}#~:"]
+        return ["j" + s for s in ["!", "?", "::"]] + ["J" + s for s in ["!", "?", "::"]]
 
     async def rotate_game_text(self):
         for i in itertools.cycle(self.config.get("game_rotation", [])):
