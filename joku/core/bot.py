@@ -222,8 +222,8 @@ class Jokusoramame(AutoShardedBot):
         self.webserver.register_blueprint(root_bp)
 
         self.webserver.finalize()
-        # TODO: Config values
-        await self.webserver.start()
+        ws_cfg = self.config.get("webserver", {})
+        await self.webserver.start(ip=ws_cfg.get("ip", "127.0.0.1"), port=ws_cfg.get("port", 4444))
 
         new_time = time.time() - self.startup_time
 
