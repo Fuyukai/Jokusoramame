@@ -94,7 +94,7 @@ class Reminders(Cog):
         """
         Sets a reminder to be ran in the future.
         """
-        _  = parse_time(tstr, seconds=False)
+        _ = parse_time(tstr, seconds=False)
         if _ is None:
             await ctx.send(":x: Invalid time string.")
             return
