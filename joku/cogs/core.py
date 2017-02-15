@@ -251,7 +251,6 @@ class Core(Cog):
         embed.url = ctx.bot.invite_url
         embed.title = "Add the bot to your server"
         embed.description = "[Join the server](https://discord.gg/uQwVat8])"
-        embed.title = "Official Server Invite"
 
         # Add the required fields.
         embed.add_field(name="Shards", value=ctx.bot.shard_count)
