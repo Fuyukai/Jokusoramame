@@ -20,6 +20,7 @@ from kyoukai import Kyoukai
 from logbook import StreamHandler
 from logbook.compat import redirect_logging
 
+from joku.core.commands import DoNotRun
 from joku.core.redis import RedisAdapter
 from joku.db.interface import DatabaseInterface
 
@@ -156,6 +157,9 @@ class Jokusoramame(AutoShardedBot):
 
         elif isinstance(exception, UserInputError):
             await context.channel.send("\U0001f6ab Error: {}".format(' '.join(exception.args)))
+
+        elif isinstance(exception, DoNotRun):
+            pass
 
     async def on_connect(self):
         await self.change_presence(game=discord.Game(name="Type j!help for help!"))

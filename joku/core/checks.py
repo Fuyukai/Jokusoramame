@@ -3,6 +3,8 @@ Specific checks.
 """
 from discord.ext.commands import CheckFailure, check
 
+from joku.core.commands import DoNotRun
+
 
 def is_owner(ctx):
     if ctx.message.author.id not in [214796473689178133, ctx.bot.owner_id]:
@@ -26,3 +28,13 @@ def has_permissions(**perms):
         ))
 
     return check(predicate)
+
+
+def mod_command(func):
+    async def mod_command(ctx):
+        if ctx.prefix not in ["j::", "J::"]:
+            raise DoNotRun
+
+        return True
+
+    return check(mod_command)
