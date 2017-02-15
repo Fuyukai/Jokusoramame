@@ -10,7 +10,7 @@ import numpy as np
 from parsedatetime import Calendar
 
 
-def parse_time(time_str: str) -> int:
+def parse_time(time_str: str, seconds: int=True) -> typing.Union[None, int, typing.Tuple[datetime.datetime, int]]:
     """
     Parses a time.
 
@@ -24,9 +24,12 @@ def parse_time(time_str: str) -> int:
         return None
 
     dt = datetime.datetime(*t_struct[:6])
-    diff = np.ceil((dt - datetime.datetime.utcnow()).total_seconds())
 
-    return diff
+    diff = np.ceil((dt - datetime.datetime.utcnow()).total_seconds())
+    if seconds:
+        return diff
+    else:
+        return dt, diff
 
 
 def get_role(guild: discord.Guild, role_id: int) -> discord.Role:

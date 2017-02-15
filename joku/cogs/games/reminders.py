@@ -6,10 +6,12 @@ import logging
 import time
 
 import discord
+from discord.ext import commands
 
+from joku.bot import Context
 from joku.cogs._common import Cog
 from joku.db.tables import Reminder
-
+from joku.utils import parse_time
 
 logger = logging.getLogger("Jokusoramame.Reminders")
 
@@ -25,7 +27,6 @@ class Reminders(Cog):
         """
         # Wrap everything in a try/finally.
         try:
-
             if reminder.enabled is False:
                 # race conditions?
                 return
@@ -34,12 +35,14 @@ class Reminders(Cog):
             channel = self.bot.get_channel(reminder.channel_id)
             if channel is None:
                 # cancel it
+                self.logger.warning("Reminder channel was empty - not reminding...")
                 await self.bot.database.cancel_reminder(reminder.id)
                 return
 
             guild = channel.guild  # type: discord.Guild
             member = guild.get_member(reminder.user_id)
             if not member:
+                self.logger.warning("Reminder member was dead - not reminding...")
                 await self.bot.database.cancel_reminder(reminder.user_id)
                 return
 
@@ -51,16 +54,17 @@ class Reminders(Cog):
 
             # send the reminder
             try:
-                channel.send(":alarm: {}, you wanted to be reminded of: `{}`".format(member.mention, reminder.text))
+                await channel.send(":alarm_clock: {}, you wanted to be reminded of: `{}`".format(member.mention,
+                                                                                                 reminder.text))
             except discord.HTTPException:
                 logger.warning("Failed to send reminder `{}`!".format(reminder.id))
             finally:
                 # todo: repeating reminders
                 reminder.enabled = False
 
-            # mark it as disabled
-            if reminder.enabled is False:
-                await self.bot.database.cancel_reminder(reminder.id)
+                # mark it as disabled
+                if reminder.enabled is False:
+                    await self.bot.database.cancel_reminder(reminder.id)
 
         finally:
             self._currently_running.pop(reminder.id, None)
@@ -84,3 +88,31 @@ class Reminders(Cog):
         finally:
             # Stop running reminders so that a reload will cause them to start again.
             self._is_running_reminders = False
+
+    @commands.command()
+    async def remind(self, ctx: Context, tstr: str, *, content: str):
+        """
+        Sets a reminder to be ran in the future.
+        """
+        dt, seconds = parse_time(tstr, seconds=False)
+        if seconds is None:
+            await ctx.send(":x: Invalid time string.")
+            return
+
+        reminder = await ctx.bot.database.create_reminder(ctx.channel, ctx.author, content, remind_at=dt)
+        if seconds < 300:
+            # make the reminder immediately.
+            t = self.bot.loop.create_task(self._fire_reminder(reminder))
+        else:
+            t = asyncio.sleep(0)
+
+        em = discord.Embed(title="Remembering things so you don't have to")
+        em.description = content
+        em.set_footer(text="Reminding at: ")
+        em.timestamp = dt
+
+        await ctx.send(embed=em)
+        await t
+
+
+setup = Reminders.setup

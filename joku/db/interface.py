@@ -14,7 +14,7 @@ from sqlalchemy.orm import sessionmaker, Session
 from joku.db.tables import User, Setting, RoleState, Guild, UserColour, EventSetting, Tag, Reminder
 
 logger = logging.getLogger("Jokusoramame.DB")
-logging.getLogger("sqlalchemy").setLevel(logging.INFO)
+#logging.getLogger("sqlalchemy").setLevel(logging.INFO)
 
 
 class DatabaseInterface(object):
