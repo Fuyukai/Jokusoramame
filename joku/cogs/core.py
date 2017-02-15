@@ -248,7 +248,9 @@ class Core(Cog):
 
         embed.colour = me.colour
 
-        embed.url = "https://discord.gg/uQwVat8"
+        embed.url = ctx.bot.invite_url
+        embed.title = "Add the bot to your server"
+        embed.description = "[Join the server](https://discord.gg/uQwVat8])"
         embed.title = "Official Server Invite"
 
         # Add the required fields.
