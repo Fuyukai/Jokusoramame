@@ -7,7 +7,7 @@ from kyoukai.blueprint import Blueprint
 from werkzeug.utils import redirect
 from werkzeug.wrappers import Response
 
-from joku.bot import Jokusoramame
+from joku.core.bot import Jokusoramame
 from joku.web.tmpl import render_template
 
 root = Blueprint("root")

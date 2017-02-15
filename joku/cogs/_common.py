@@ -1,11 +1,9 @@
+import random
 from collections import OrderedDict
 
-import threading
-
 import aiohttp
-import random
 
-from joku.bot import Jokusoramame
+from joku.core.bot import Jokusoramame
 
 
 class _CogMeta(type):

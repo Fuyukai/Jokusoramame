@@ -8,8 +8,8 @@ import discord
 from discord import Status
 from discord.ext import commands
 
-from joku.bot import Context
 from joku.cogs._common import Cog
+from joku.core.bot import Context
 
 
 class Tracking(Cog):

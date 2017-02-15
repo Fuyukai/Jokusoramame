@@ -4,12 +4,11 @@ Bot launcher.
 This class is responsible for bootstrapping the bot.
 """
 import os
-import sys
 import shutil
-
+import sys
 from ruamel import yaml
 
-from joku.bot import Jokusoramame
+from joku.core.bot import Jokusoramame
 
 
 def main():

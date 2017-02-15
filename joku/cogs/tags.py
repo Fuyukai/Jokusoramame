@@ -2,26 +2,17 @@
 Generic tag bot, yay.
 """
 import asyncio
-import shlex
-
-import traceback
-from concurrent.futures import ProcessPoolExecutor
-
 import copy
+import shlex
+import traceback
+
 import discord
 from discord.ext import commands
-from discord.ext.commands import CommandError, CommandNotFound, CommandInvokeError
-from jinja2.sandbox import SandboxedEnvironment
-
-from joku.bot import Jokusoramame, Context
-
-# Import a few modules, for usage inside the renderer.
-import random
-import string
-import base64
+from discord.ext.commands import CommandError, CommandInvokeError, CommandNotFound
 
 from joku.cogs._common import Cog
-from joku.tagengine import TagEngine
+from joku.core.bot import Context, Jokusoramame
+from joku.core.tagengine import TagEngine
 
 
 class Tags(Cog):

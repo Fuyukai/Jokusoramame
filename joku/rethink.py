@@ -2,19 +2,16 @@
 A RethinkDB database interface.
 """
 import datetime
-import os
 import random
-import typing
 
 import discord
 import logbook
-import time
-
-import rethinkdb as r
 import pytz
-
-from joku.utils import get_role, get_index
+import rethinkdb as r
+import typing
 from rethinkdb.asyncio_net.net_asyncio import AsyncioCursor
+
+from joku.core.utils import get_index, get_role
 
 r.set_loop_type("asyncio")
 

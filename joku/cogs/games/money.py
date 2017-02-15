@@ -1,23 +1,19 @@
 """"""
-import datetime
-
 import asyncio
+import datetime
+import time
+
 import discord
 import numpy as np
 import tabulate
-import time
-
 from asyncio_extras import threadpool
 from discord.ext import commands
-from discord.ext.commands import BucketType
-
-# import rethinkdb as r
 from sqlalchemy.orm import Session
 
-from joku.bot import Jokusoramame, Context
 from joku.cogs._common import Cog
+from joku.core.bot import Context
+from joku.core.redis import with_redis_cooldown
 from joku.db.tables import User
-from joku.redis import with_redis_cooldown
 
 BAD_RESPONSES = [
     ":fire: Your bank account went up in flames and you lost `§{}`.",

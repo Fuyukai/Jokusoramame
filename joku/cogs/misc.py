@@ -5,12 +5,11 @@ import asyncio
 import time
 
 import discord
-from asyncio_extras import threadpool
 from discord.ext import commands
 
-from joku.bot import Context
-from joku.checks import has_permissions
 from joku.cogs._common import Cog
+from joku.core.bot import Context
+from joku.core.checks import has_permissions
 
 
 class Misc(Cog):

@@ -2,35 +2,26 @@
 Main bot class.
 """
 import asyncio
-import os
+import itertools
+import logging
 import sys
+import time
 import traceback
 from collections import OrderedDict
-import time
-import random
 
 import discord
-import itertools
-
 import itsdangerous
 import logbook
-import logging
-
-from asyncio_extras import threadpool
 from discord import Message
 from discord.ext import commands
-from discord.ext.commands import Bot, CommandInvokeError, CheckFailure, MissingRequiredArgument, CommandOnCooldown, \
-    UserInputError, AutoShardedBot
-from discord.gateway import DiscordWebSocket, ResumeWebSocket
-from discord.state import ConnectionState
+from discord.ext.commands import AutoShardedBot, CheckFailure, CommandInvokeError, CommandOnCooldown, \
+    MissingRequiredArgument, UserInputError
 from kyoukai import Kyoukai
-from logbook.compat import redirect_logging
 from logbook import StreamHandler
+from logbook.compat import redirect_logging
 
+from joku.core.redis import RedisAdapter
 from joku.db.interface import DatabaseInterface
-from joku.utils import paginate_large_message
-
-from joku.redis import RedisAdapter
 
 try:
     import yaml

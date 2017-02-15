@@ -8,10 +8,10 @@ import time
 import discord
 from discord.ext import commands
 
-from joku.bot import Context
 from joku.cogs._common import Cog
+from joku.core.bot import Context
+from joku.core.utils import parse_time
 from joku.db.tables import Reminder
-from joku.utils import parse_time
 
 logger = logging.getLogger("Jokusoramame.Reminders")
 

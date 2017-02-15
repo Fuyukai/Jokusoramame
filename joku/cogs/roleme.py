@@ -5,9 +5,9 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import bot_has_permissions
 
-from joku.bot import Context
-from joku.checks import has_permissions
 from joku.cogs._common import Cog
+from joku.core.bot import Context
+from joku.core.checks import has_permissions
 
 
 class Roleme(Cog):

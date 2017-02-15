@@ -4,9 +4,9 @@ TODO-list module.
 import discord
 from discord.ext import commands
 
-from joku.bot import Jokusoramame, Context
 from joku.cogs._common import Cog
-from joku.utils import paginate_table
+from joku.core.bot import Context
+from joku.core.utils import paginate_table
 
 
 class Todos(Cog):

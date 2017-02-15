@@ -1,25 +1,19 @@
 """
 OAuth dance part of the bot.
 """
-import asyncio
-import functools
 import json
 import os
 
+import itsdangerous
 import typing
-
-import discord
 from asyncio_extras import threadpool
 from kyoukai.asphalt import HTTPRequestContext
 from kyoukai.blueprint import Blueprint
 from requests_oauthlib import OAuth2Session
 from sqlalchemy.orm import Session
 from werkzeug.utils import redirect
-from werkzeug.wrappers import Response
-import itsdangerous
 
-from joku.bot import Jokusoramame
-from joku.db.tables import User
+from joku.core.bot import Jokusoramame
 
 API_BASE_URL = "https://discordapp.com/api/v6"
 AUTHORIZATION_BASE_URL = API_BASE_URL + '/oauth2/authorize'

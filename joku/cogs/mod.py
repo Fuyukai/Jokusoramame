@@ -2,15 +2,15 @@
 Non-generic moderation cog.
 """
 import asyncio
-import random
 import collections
+import random
 
 import discord
 from discord.ext import commands
 
-from joku.bot import Context
 from joku.cogs._common import Cog
-from joku import checks
+from joku.core import checks
+from joku.core.bot import Context
 
 
 class Moderation(Cog):

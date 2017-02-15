@@ -1,18 +1,16 @@
 """
 A Jinja2-based tag engine for tags.
 """
-from concurrent.futures import ThreadPoolExecutor
-
-import dill
+import asyncio
 import random
 import string
+from concurrent.futures import ThreadPoolExecutor
 
-import asyncio
 import discord
 from jinja2 import Template
 from jinja2.sandbox import SandboxedEnvironment
 
-from joku.bot import Jokusoramame, Context
+from joku.core.bot import Context, Jokusoramame
 from joku.db.tables import Tag
 
 

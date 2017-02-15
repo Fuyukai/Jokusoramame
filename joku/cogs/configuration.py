@@ -2,16 +2,14 @@
 Configuration cog.
 """
 import argparse
-import shlex
 
 import discord
 from discord.ext import commands
-from discord.ext.commands import MemberConverter, BadArgument, TextChannelConverter
 
-from joku.bot import Jokusoramame, Context
 from joku.cogs._common import Cog
-from joku.checks import has_permissions
-from joku.utils import get_role
+from joku.core.bot import Context
+from joku.core.checks import has_permissions
+from joku.core.utils import get_role
 
 
 class ArgumentParser(argparse.ArgumentParser):

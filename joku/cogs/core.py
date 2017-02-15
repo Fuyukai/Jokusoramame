@@ -1,31 +1,26 @@
 """
 Core commands.
 """
+import asyncio
 import datetime
 import inspect
+import json
 import os
 import platform
 
 import aiohttp
-import asyncio
 import discord
-import json
-
-import threading
-
 import git
+import psutil
 import tabulate
 from discord.ext import commands
-from discord.ext.commands import Command, CheckFailure
-import psutil
+from discord.ext.commands import CheckFailure, Command
 from discord.ext.commands.bot import _default_help_command
 
 from joku import VERSION
-from joku.bot import Jokusoramame, Context
-from joku.checks import is_owner
 from joku.cogs._common import Cog
-from joku.manager import SingleLoopManager
-from joku.threadmanager import ThreadManager
+from joku.core.bot import Context, Jokusoramame
+from joku.core.checks import is_owner
 
 
 class Core(Cog):
@@ -61,7 +56,7 @@ class Core(Cog):
         with aiohttp.ClientSession() as sess:
             while True:
                 try:
-                    token = self.bot.manager.config.get("dbots_token", None)
+                    token = self.bot.config.get("dbots_token", None)
                     if not token:
                         self.bot.logger.error("Cannot get token.")
                         return
@@ -74,7 +69,7 @@ class Core(Cog):
                         "Content-Type": "application/json"
                     }
                     body = {
-                        "server_count": str(sum(1 for server in self.bot.manager.get_all_servers()))
+                        "server_count": str(sum(1 for server in self.bot.guilds))
                     }
 
                     url = "https://bots.discord.pw/api/bots/{}/stats".format(self.bot.user.id)

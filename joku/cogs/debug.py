@@ -1,23 +1,17 @@
 """
 Debug cog.
 """
-import inspect
-import pprint
-import traceback
 import asyncio
-
+import inspect
 import sys
-
-from asyncio_extras import threadpool
-
-#import rethinkdb as r
+import traceback
 
 import discord
 from discord.ext import commands
 
-from joku.bot import Jokusoramame, Context
-from joku.checks import is_owner
 from joku.cogs._common import Cog
+from joku.core.bot import Context
+from joku.core.checks import is_owner
 
 
 class Debug(Cog):

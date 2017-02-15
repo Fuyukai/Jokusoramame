@@ -1,15 +1,15 @@
 """
 cancer
 """
-from io import BytesIO
-from math import floor, ceil
 import textwrap
+from io import BytesIO
+from math import ceil, floor
 
 import discord
+import matplotlib as mpl
 from asyncio_extras import threadpool
 from discord.ext import commands
 
-import matplotlib as mpl
 mpl.use('Agg')
 
 import matplotlib.pyplot as plt
@@ -17,10 +17,10 @@ import numpy as np
 from numpy.polynomial import Polynomial as P
 import seaborn as sns
 
-from joku.bot import Jokusoramame, Context
+from joku.core.bot import Jokusoramame, Context
 from joku.db.tables import User
 from joku.cogs._common import Cog
-from joku.utils import paginate_table, reject_outliers, is_outlier
+from joku.core.utils import paginate_table, reject_outliers
 
 INCREASING_FACTOR = 50
 
