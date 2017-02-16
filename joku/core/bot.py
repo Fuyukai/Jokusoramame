@@ -102,7 +102,7 @@ class Jokusoramame(AutoShardedBot):
             # Use `jd!` prefix.
             return ["jd!", "jd::"]
 
-        return ["j" + s for s in ["!", "?", "::"]] + ["J" + s for s in ["!", "?", "::"]]
+        return ["j" + s for s in ["!", "?", "::", "->"]] + ["J" + s for s in ["!", "?", "::", "->"]]
 
     async def rotate_game_text(self):
         for i in itertools.cycle(self.config.get("game_rotation", [])):
@@ -232,14 +232,17 @@ class Jokusoramame(AutoShardedBot):
             self.logger.exception("Failed to load Kyoukai!")
 
         from joku.core.checks import md_check, non_md_check
+        n = 0
         for command in self.walk_commands():
-            print("checking", command)
             if command.name == "help":
                 continue
 
             # add `not_md_check` only if `md_check` is not in the command's checks
-            if md_check not in command.checks:
+            if md_check not in command.checks and non_md_check not in command.checks:
                 command.checks.append(non_md_check)
+                n += 1
+
+        self.logger.info("Applied {} new checks to commands.".format(n))
 
         new_time = time.time() - self.startup_time
 
