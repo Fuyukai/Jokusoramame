@@ -30,11 +30,10 @@ def has_permissions(**perms):
     return check(predicate)
 
 
-def mod_command(func):
-    async def mod_command(ctx):
-        if ctx.prefix not in ["j::", "J::"]:
+def mod_command():
+    def _(ctx):
+        if ctx.prefix not in ["j::", "J::", "jd::"]:
             raise DoNotRun
 
         return True
-
-    return check(mod_command)
+    return check(_)

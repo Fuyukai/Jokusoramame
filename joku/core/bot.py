@@ -100,7 +100,7 @@ class Jokusoramame(AutoShardedBot):
     async def get_command_prefix(self: 'Jokusoramame', message: discord.Message):
         if self.config.get("developer_mode", False):
             # Use `jd!` prefix.
-            return "jd!"
+            return ["jd!", "jd::"]
 
         return ["j" + s for s in ["!", "?", "::"]] + ["J" + s for s in ["!", "?", "::"]]
 
@@ -206,8 +206,7 @@ class Jokusoramame(AutoShardedBot):
             try:
                 self.load_extension(cog)
             except Exception as e:
-                self.logger.error("Failed to load cog {}!".format(cog))
-                self.logger.exception()
+                self.logger.exception("Failed to load cog {}!".format(cog))
             else:
                 self.logger.info("Loaded cog {}.".format(cog))
 
@@ -227,7 +226,10 @@ class Jokusoramame(AutoShardedBot):
 
         self.webserver.finalize()
         ws_cfg = self.config.get("webserver", {})
-        await self.webserver.start(ip=ws_cfg.get("ip", "127.0.0.1"), port=ws_cfg.get("port", 4444))
+        try:
+            await self.webserver.start(ip=ws_cfg.get("ip", "127.0.0.1"), port=ws_cfg.get("port", 4444))
+        except Exception as e:
+            self.logger.exception("Failed to load Kyoukai!")
 
         new_time = time.time() - self.startup_time
 
