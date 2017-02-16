@@ -6,7 +6,7 @@ from discord.ext import commands
 
 from joku.cogs._common import Cog
 from joku.core.bot import Context
-from joku.core.checks import has_permissions
+from joku.core.checks import has_permissions, mod_command
 from joku.vendor.safefmt import safe_format
 
 
@@ -65,6 +65,7 @@ class Events(Cog):
 
     @commands.group(invoke_without_command=True)
     @has_permissions(manage_server=True)
+    @mod_command()
     async def notifications(self, ctx: Context):
         """
         Manages your notifications setting for this server.
@@ -80,6 +81,8 @@ class Events(Cog):
         await ctx.send("**Currently enabled events for this guild:** {}".format(fmt))
 
     @notifications.command()
+    @has_permissions(manage_server=True)
+    @mod_command()
     async def subscribe(self, ctx: Context, event: str):
         """
         Subscribes to an event, enabling notifications for it.
@@ -93,6 +96,8 @@ class Events(Cog):
         await ctx.send(":heavy_check_mark: Subscribed to event.")
 
     @notifications.command()
+    @has_permissions(manage_server=True)
+    @mod_command()
     async def unsubscribe(self, ctx: Context, event: str):
         """
         Unsubscribes from an event, disabling notifications from it.
@@ -107,6 +112,8 @@ class Events(Cog):
         await ctx.send(":heavy_check_mark: Unsubscribed from event.")
 
     @notifications.command()
+    @has_permissions(manage_server=True)
+    @mod_command()
     async def msg(self, ctx: Context, event: str, *, msg: str = None):
         """
         Updates the message for an event.

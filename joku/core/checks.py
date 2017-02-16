@@ -30,10 +30,23 @@ def has_permissions(**perms):
     return check(predicate)
 
 
-def mod_command():
-    def _(ctx):
-        if ctx.prefix not in ["j::", "J::", "jd::"]:
-            raise DoNotRun
+def md_check(ctx):
+    if ctx.prefix not in ["j::", "J::", "jd::"]:
+        raise DoNotRun
 
-        return True
-    return check(_)
+    return True
+
+
+def non_md_check(ctx):
+    # never directly added to a class
+    if ctx.prefix in ["j::", "J::", "jd::"]:
+        raise DoNotRun
+
+    return True
+
+
+def mod_command():
+    """
+    Marks a command as a mod command only.
+    """
+    return check(md_check)

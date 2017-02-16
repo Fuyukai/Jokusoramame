@@ -15,7 +15,7 @@ import logbook
 from discord import Message
 from discord.ext import commands
 from discord.ext.commands import AutoShardedBot, CheckFailure, CommandInvokeError, CommandOnCooldown, \
-    MissingRequiredArgument, UserInputError
+    MissingRequiredArgument, UserInputError, Command, Group
 from kyoukai import Kyoukai
 from logbook import StreamHandler
 from logbook.compat import redirect_logging
@@ -230,6 +230,16 @@ class Jokusoramame(AutoShardedBot):
             await self.webserver.start(ip=ws_cfg.get("ip", "127.0.0.1"), port=ws_cfg.get("port", 4444))
         except Exception as e:
             self.logger.exception("Failed to load Kyoukai!")
+
+        from joku.core.checks import md_check, non_md_check
+        for command in self.walk_commands():
+            print("checking", command)
+            if command.name == "help":
+                continue
+
+            # add `not_md_check` only if `md_check` is not in the command's checks
+            if md_check not in command.checks:
+                command.checks.append(non_md_check)
 
         new_time = time.time() - self.startup_time
 

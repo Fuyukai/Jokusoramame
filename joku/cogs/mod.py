@@ -11,6 +11,7 @@ from discord.ext import commands
 from joku.cogs._common import Cog
 from joku.core import checks
 from joku.core.bot import Context
+from joku.core.checks import mod_command
 
 
 class Moderation(Cog):
@@ -67,6 +68,7 @@ class Moderation(Cog):
     # anti mention spam
     @commands.group(pass_context=True, invoke_without_command=True)
     @checks.has_permissions(ban_members=True)
+    @mod_command()
     async def antimention(self, ctx: Context, *, status: str = None):
         """
         Toggles the antimention status in this server.
@@ -118,6 +120,7 @@ class Moderation(Cog):
     @commands.command(pass_context=True)
     @checks.has_permissions(ban_members=True)
     @commands.bot_has_permissions(ban_members=True)
+    @mod_command()
     async def xban(self, ctx: Context, user_id: int):
         """
         Cross-bans a user.
@@ -139,6 +142,7 @@ class Moderation(Cog):
     @commands.command(pass_context=True)
     @commands.cooldown(rate=1, per=5 * 60, type=commands.BucketType.guild)
     @checks.has_permissions(kick_members=True)
+    @mod_command()
     async def islandbot(self, ctx: Context):
         """
         Who will be voted off of the island?
@@ -253,6 +257,7 @@ class Moderation(Cog):
 
     @commands.command(pass_context=True)
     @checks.has_permissions(manage_nicknames=True)
+    @mod_command()
     async def massnick(self, ctx: Context, prefix: str = "", suffix: str = ""):
         """
         Mass-nicknames an entire server.

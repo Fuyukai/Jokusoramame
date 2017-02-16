@@ -8,7 +8,7 @@ from discord.ext import commands
 
 from joku.cogs._common import Cog
 from joku.core.bot import Context
-from joku.core.checks import has_permissions
+from joku.core.checks import has_permissions, mod_command
 from joku.core.utils import get_role
 
 
@@ -21,6 +21,7 @@ class ArgumentParser(argparse.ArgumentParser):
 class Config(Cog):
     @commands.command(pass_context=True)
     @has_permissions(manage_server=True, manage_messages=True)
+    @mod_command()
     async def inviscop(self, ctx: Context, *, status: str = None):
         """
         Manages the Invisible cop
@@ -48,6 +49,7 @@ class Config(Cog):
 
     @commands.group(pass_context=True, invoke_without_command=True)
     @has_permissions(manage_server=True, manage_roles=True)
+    @mod_command()
     async def rolestate(self, ctx: Context, *, status: str = None):
         """
         Manages rolestate.
@@ -74,6 +76,8 @@ class Config(Cog):
                 await ctx.channel.send(":x: No.")
 
     @rolestate.command()
+    @has_permissions(manage_server=True, manage_roles=True)
+    @mod_command()
     async def view(self, ctx: Context, *, user_id: int = None):
         """
         Views the current rolestate of a member.

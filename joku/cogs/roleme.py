@@ -7,7 +7,7 @@ from discord.ext.commands import bot_has_permissions
 
 from joku.cogs._common import Cog
 from joku.core.bot import Context
-from joku.core.checks import has_permissions
+from joku.core.checks import has_permissions, mod_command
 
 
 class Roleme(Cog):
@@ -45,6 +45,7 @@ class Roleme(Cog):
 
     @roleme.command()
     @has_permissions(manage_roles=True)
+    @mod_command()
     async def add(self, ctx: Context, *, name: str):
         """
         Creates a new role that users can be given.
@@ -56,6 +57,7 @@ class Roleme(Cog):
 
     @roleme.command(name="enable")
     @has_permissions(manage_roles=True)
+    @mod_command()
     async def _enable(self, ctx: Context, *, role: discord.Role):
         """
         Adds a role to the list of roles that can be given.
@@ -69,6 +71,7 @@ class Roleme(Cog):
 
     @roleme.command(name="disable")
     @has_permissions(manage_roles=True)
+    @mod_command()
     async def _disable(self, ctx: Context, *, role: discord.Role):
         """
         Removes a role from the list of roles that can be given.
@@ -135,6 +138,7 @@ class Roleme(Cog):
 
     @colourme.command()
     @has_permissions(manage_roles=True)
+    @mod_command()
     async def enable(self, ctx: Context):
         """
         Enables colourme for this server.
@@ -144,6 +148,7 @@ class Roleme(Cog):
 
     @colourme.command()
     @has_permissions(manage_roles=True)
+    @mod_command()
     async def disable(self, ctx: Context):
         """
         Disables colourme for this server.

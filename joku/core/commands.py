@@ -3,12 +3,10 @@ Custom command subclasses because I hate myself
 """
 import argparse
 
-from discord.ext.commands import command, Command
+from discord.ext.commands import command, Command, CommandError
 from discord.ext.commands.errors import UserInputError
 
-from joku.core.bot import Context
-
-DoNotRun = type("DoNotRun", (Exception,), {})
+DoNotRun = type("DoNotRun", (CommandError,), {})
 
 
 class ArgparseCommand(Command):
@@ -52,7 +50,7 @@ class ArgparseCommand(Command):
         # set callback to an instance of itself
         self.callback = self.callback()
 
-    async def _parse_arguments(self, ctx: Context):
+    async def _parse_arguments(self, ctx):
         # add instance if applicable
         ctx.args = [] if self.instance is None else [self.instance]
         # always add context

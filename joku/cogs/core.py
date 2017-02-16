@@ -299,6 +299,10 @@ class Core(Cog):
         if command is None:
             # List the commands.
             base = "**Commands:**\nUse `{}help <command>` for more information about each command.\n\n".format(prefix)
+
+            if prefix.endswith("::"):
+                base += "**This will only show moderation related commands.**\n\n"
+
             counter = 1
             for (name, cls) in ctx.bot.cogs.items():
                 cmds = []

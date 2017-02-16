@@ -9,7 +9,7 @@ from discord.ext import commands
 
 from joku.cogs._common import Cog
 from joku.core.bot import Context
-from joku.core.checks import has_permissions
+from joku.core.checks import has_permissions, mod_command
 
 
 class Misc(Cog):
@@ -44,6 +44,7 @@ class Misc(Cog):
 
     @commands.command()
     @has_permissions(manage_messages=True)
+    @mod_command()
     async def redirect(self, ctx: Context, channel: discord.TextChannel, message: int):
         """
         Redirects a message to another channel.
