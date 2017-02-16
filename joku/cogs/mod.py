@@ -102,6 +102,8 @@ class Moderation(Cog):
             await ctx.send(":heavy_check_mark: Disabled anti-mention spam.")
 
     @antimention.command()
+    @checks.has_permissions(ban_members=True)
+    @mod_command()
     async def threshold(self, ctx: Context, threshold: int):
         """
         Changes the threshold for anti-mention spam to ban at.
