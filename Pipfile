@@ -23,6 +23,7 @@ aiopixiv = "*"
 itsdangerous = "*"
 arrow = "*"
 pytz = "*"
+wikipedia = "*"
 
 [packages."discord.py"]
 git = "https://github.com/Rapptz/discord.py.git"

@@ -70,11 +70,13 @@ class Currency(Cog):
             if now.hour == 23:
                 # clamp
                 hour = 0
+                day = now.day + 1
             else:
                 hour = now.hour + 1
+                day = now.day
 
-            next = datetime.datetime(year=now.year, month=now.month, day=now.day,
-                                     hour=hour + 1, minute=0, second=0)
+            next = datetime.datetime(year=now.year, month=now.month, day=day,
+                                     hour=hour, minute=0, second=0)
             to_wait = (next - now).total_seconds()
 
             while True:
