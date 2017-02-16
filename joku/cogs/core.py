@@ -21,6 +21,7 @@ from joku import VERSION
 from joku.cogs._common import Cog
 from joku.core.bot import Context, Jokusoramame
 from joku.core.checks import is_owner
+from joku.core.commands import DoNotRun
 
 
 class Core(Cog):
@@ -87,10 +88,10 @@ class Core(Cog):
 
     def can_run_recursive(self, ctx, command: Command):
         # Check if the command has a parent.
-        if command.parent is not None:
-            rec = self.can_run_recursive(ctx, command.parent)
-            if not rec:
-                return False
+        #if command.parent is not None:
+        #    rec = self.can_run_recursive(ctx, command.parent)
+        #    if not rec:
+        #        return False
 
         try:
             can_run = command.can_run(ctx)
@@ -115,38 +116,12 @@ class Core(Cog):
 
     @shards.command(pass_context=True)
     @commands.check(is_owner)
-    async def kill(self, ctx: Context, shard_id: int):
+    async def kill(self, ctx: Context):
         """
-        Kills a bot, by forcing it to logout.
+        Kills the bot.
         """
-        bot = ctx.bot.manager.bots.get(shard_id)
-        if not bot:
-            await ctx.channel.send(":x: That shard does not exist.")
-
-        await ctx.channel.send(":heavy_check_mark: Rebooting shard `{}`.".format(shard_id))
-        if isinstance(ctx.bot.manager, ThreadManager):
-            asyncio.run_coroutine_threadsafe(bot.logout(), bot.loop)
-        else:
-            bot.loop.create_task(bot.logout())
-
-    @shards.command(pass_context=True)
-    @commands.check(is_owner)
-    async def restart(self, ctx: Context):
-        """
-        Forces a restart of all shards.
-        """
-        ctx.bot.manager.reload_config_file()
-
-        await ctx.channel.send(":hourglass: Scheduling a reboot for all shards...")
-        # This injects the task into the shards WITHOUT yielding to the event loop.
-        for shard in ctx.bot.manager.bots.values():
-            if isinstance(ctx.bot.manager, ThreadManager):
-                asyncio.run_coroutine_threadsafe(shard.logout(), shard.loop)
-            elif isinstance(ctx.bot.manager, SingleLoopManager):
-                shard.loop.create_task(shard.logout())
-
-        # Now we yield to the loop, and let it kill us.
-        await asyncio.sleep(0)
+        await ctx.channel.send(":heavy_check_mark: Killing bot.")
+        ctx.bot.loop.create_task(ctx.bot.logout())
 
     @commands.command(pass_context=True)
     @commands.check(is_owner)
@@ -341,7 +316,7 @@ class Core(Cog):
                         try:
                             if self.can_run_recursive(ctx, m):
                                 cmds.append("`" + new_name + "`")
-                        except CheckFailure:
+                        except (CheckFailure, DoNotRun):
                             pass
 
                 # Make sure the user can run any commands for this cog.
