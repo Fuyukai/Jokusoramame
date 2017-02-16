@@ -200,7 +200,11 @@ class Images(Cog):
                 "query": search_text,
                 "per_page": 50
             })
-        req = random.choice(results["results"])
+        try:
+            req = random.choice(results["results"])
+        except IndexError:
+            await ctx.send(":x: No results found.")
+            return
 
         em = self.make_unsplash_embed(req)
         await ctx.send(embed=em)
