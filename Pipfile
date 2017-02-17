@@ -24,6 +24,7 @@ itsdangerous = "*"
 arrow = "*"
 pytz = "*"
 wikipedia = "*"
+googlemaps = "*"
 
 [packages."discord.py"]
 git = "https://github.com/Rapptz/discord.py.git"
