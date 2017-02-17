@@ -69,7 +69,7 @@ class NASA(Cog):
         """
         Displays a satellite image at the specified latitude and longitude.
         
-        To find your lat/long, use https://mynasadata.larc.nasa.gov/latitudelongitude-finder/.
+        To find your lat/long, you can use `j!geocode <place>`.
         
         An optional date can be provided which will attempt to show data from that date. This date must be in 
         YY-MM-DD format.
