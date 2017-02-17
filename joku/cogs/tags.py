@@ -37,7 +37,7 @@ class Tags(Cog):
 
         owner = ctx.bot.get_member(tag.user_id)
 
-        em = discord.Embed(title=tag.name, description=tag.content)
+        em = discord.Embed(title=tag.name, description="```{}```".format(tag.content))
         em.add_field(name="Owner", value=owner.mention if owner else "<Unknown>")
         em.add_field(name="Last Modified", value=tag.last_modified.isoformat())
 
