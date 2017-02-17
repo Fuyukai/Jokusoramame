@@ -5,6 +5,7 @@ import textwrap
 from io import BytesIO
 from math import ceil, floor
 
+import asyncio
 import discord
 import matplotlib as mpl
 from asyncio_extras import threadpool
@@ -73,6 +74,8 @@ def get_next_exp_required(xp: int, a: int = INCREASING_FACTOR):
 
 
 class Levelling(Cog):
+    plot_lock = asyncio.Lock()
+
     async def on_message(self, message: discord.Message):
         # Add XP, and show if they levelled up.
         if message.author.bot:
@@ -198,52 +201,53 @@ class Levelling(Cog):
         users = await ctx.bot.database.get_multiple_users(*ctx.message.guild.members, order_by=User.xp.desc())
 
         async with ctx.channel.typing():
-            async with threadpool():
-                _lvls = np.array([user.level for user in users if user.level >= 0])
+            async with self.plot_lock:
+                async with threadpool():
+                    _lvls = np.array([user.level for user in users if user.level >= 0])
 
-                # 12 is reasonable for rejecting the super outliers
-                lvls = reject_outliers(_lvls, m=12)
+                    # 12 is reasonable for rejecting the super outliers
+                    lvls = reject_outliers(_lvls, m=12)
 
-                # This changes the line/shade colour apparently.
-                sns.set_palette(['#DFA5A4'])
-                sns.set_style('white')
+                    # This changes the line/shade colour apparently.
+                    sns.set_palette(['#DFA5A4'])
+                    sns.set_style('white')
 
-                # The bw argument makes it slightly less "rounded"
-                ax = sns.kdeplot(lvls, shade=True, bw=0.3)
+                    # The bw argument makes it slightly less "rounded"
+                    ax = sns.kdeplot(lvls, shade=True, bw=0.3)
 
-                plt.xlabel('Level', fontsize=14)
-                title = textwrap.wrap('Level distribution curve for {}'.format(ctx.message.guild.name), 30)
-                plt.title('\n'.join(title), fontsize=23)
+                    plt.xlabel('Level', fontsize=14)
+                    title = textwrap.wrap('Level distribution curve for {}'.format(ctx.message.guild.name), 30)
+                    plt.title('\n'.join(title), fontsize=23)
 
-                # Remove text from left
-                plt.yticks([])
+                    # Remove text from left
+                    plt.yticks([])
 
-                # "Hacky" way of limiting the x-axis but I couldnt
-                # come up with anything better
-                max_level = ceil(max(lvls) / 10) * 10
-                plt.xticks(np.arange(0, max_level, 10))
+                    # "Hacky" way of limiting the x-axis but I couldnt
+                    # come up with anything better
+                    max_level = ceil(max(lvls) / 10) * 10
+                    plt.xticks(np.arange(0, max_level, 10))
 
-                # Set the limits of the axis so it doesnt
-                # expand too much in any direction
-                ax.set_xbound(0, max_level + 1)
+                    # Set the limits of the axis so it doesnt
+                    # expand too much in any direction
+                    ax.set_xbound(0, max_level + 1)
 
-                # Removes the spines
-                sns.despine()
-                ax.spines['bottom'].set_visible(False)
-                ax.spines['left'].set_visible(False)
+                    # Removes the spines
+                    sns.despine()
+                    ax.spines['bottom'].set_visible(False)
+                    ax.spines['left'].set_visible(False)
 
-                # Force a tighter ( ;) ) layout.
-                plt.tight_layout()
+                    # Force a tighter ( ;) ) layout.
+                    plt.tight_layout()
 
-                buf = BytesIO()
-                plt.savefig(buf, format="png")
+                    buf = BytesIO()
+                    plt.savefig(buf, format="png")
 
-                # Don't send 0-byte files
-                buf.seek(0)
+                    # Don't send 0-byte files
+                    buf.seek(0)
 
-                # Cleanup.
-                plt.clf()
-                plt.cla()
+                    # Cleanup.
+                    plt.clf()
+                    plt.cla()
 
         await ctx.channel.send(file=buf, filename="plot.png")
 
