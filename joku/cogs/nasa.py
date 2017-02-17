@@ -23,6 +23,8 @@ class NASA(Cog):
         Makes a request to the NASA API.
         """
         key = self.bot.config["nasa_api_key"]
+        if params is None:
+            params = {}
         params = {"api_key": key, **params}
 
         async with self.session.get(url, params=params) as r:
@@ -37,6 +39,30 @@ class NASA(Cog):
         """
         Allows you to query NASA data.
         """
+
+    @nasa.command()
+    async def apod(self, ctx: Context):
+        """
+        Displays the Astronomical Picture Of the Day.
+        """
+        url = "https://api.nasa.gov/planetary/apod"
+
+        async with ctx.channel.typing():
+            data = await self.make_nasa_request(url)
+
+            em = discord.Embed(title=data["title"])
+            em.description = data["explanation"]
+            em.url = data["url"]
+            em.set_image(url=data["hdurl"])
+
+            if 'copyright' in data:
+                em.set_footer(text="Powered by the NASA API | Copyright (C) {}".format(data["copyright"]),
+                              icon_url="https://images.nasa.gov/images/nasa_logo-large.ee501ef4.png")
+            else:
+                em.set_footer(text="Powered by the NASA API",
+                              icon_url="https://images.nasa.gov/images/nasa_logo-large.ee501ef4.png")
+
+            await ctx.send(embed=em)
 
     @nasa.command()
     async def imagery(self, ctx: Context, lat: float, long: float, date: str=None):

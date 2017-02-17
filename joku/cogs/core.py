@@ -87,12 +87,6 @@ class Core(Cog):
                     await asyncio.sleep(15)
 
     def can_run_recursive(self, ctx, command: Command):
-        # Check if the command has a parent.
-        #if command.parent is not None:
-        #    rec = self.can_run_recursive(ctx, command.parent)
-        #    if not rec:
-        #        return False
-
         try:
             can_run = command.can_run(ctx)
         except CheckFailure:
@@ -100,21 +94,7 @@ class Core(Cog):
         else:
             return can_run
 
-    @commands.group(pass_context=True, invoke_without_command=True)
-    async def shards(self, ctx: Context):
-        """
-        Shows shard status.
-        """
-        headers = ["Shard", "Servers", "Members"]
-        items = []
-
-        for bot_id, bot in ctx.bot.manager.bots.items():
-            items.append((bot_id, len(bot.guilds), sum(1 for i in bot.get_all_members())))
-
-        tbl = tabulate.tabulate(items, headers, tablefmt="orgtbl")
-        await ctx.channel.send("```{}```".format(tbl))
-
-    @shards.command(pass_context=True)
+    @commands.command(pass_context=True)
     @commands.check(is_owner)
     async def kill(self, ctx: Context):
         """
@@ -125,36 +105,10 @@ class Core(Cog):
 
     @commands.command(pass_context=True)
     @commands.check(is_owner)
-    async def reloadshard(self, ctx):
-        """
-        Reloads all modules for a shard.
-        """
-        # Reload the config file so that all cogs are ready.
-        ctx.bot.manager.reload_config_file()
-
-        # Reload this shard
-        for extension in ctx.bot.extensions.copy():
-            ctx.bot.unload_extension(extension)
-            try:
-                ctx.bot.load_extension(extension)
-            except BaseException as e:
-                ctx.bot.logger.exception()
-            else:
-                ctx.bot.logger.info("Reloaded {}.".format(extension))
-
-        await ctx.channel.send(":heavy_check_mark: Reloaded shard.")
-
-    @commands.command(pass_context=True)
-    @commands.check(is_owner)
     async def reloadall(self, ctx: Context):
         """
         Reloads all the modules for every shard.
         """
-        #if not isinstance(ctx.bot.manager, SingleLoopManager):
-        #    await ctx.channel.send(":x: Cannot reload all shards inside a ThreadManager.")
-        #    return
-
-        # Reload the config file.
         #ctx.bot.manager.reload_config_file()
 
         for extension in ctx.bot.extensions.copy():
