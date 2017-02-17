@@ -88,13 +88,14 @@ class NASA(Cog):
                 em.set_image(url=data["url"])
                 em.url = data["url"]
                 # em.timestamp = arrow.get(data["date"]).datetime
-                em.add_field(name="Cloud coverage", value="{}%".format(round(data["cloud_score"] * 100, 2)))
+                em.add_field(name="Cloud coverage (est)", value="{}%".format(round(data["cloud_score"] * 100, 2)))
                 em.add_field(name="Picture date", value=data["date"])
                 em.colour = discord.Colour.green()
 
             else:
                 em = discord.Embed(title="Error fetching image data")
                 em.description = data["error"]
+                em.description += "\n\n**Try a different date.**"
                 em.colour = discord.Colour.red()
 
             em.set_footer(text="All data provided by the NASA API (https://api.nasa.gov).",
