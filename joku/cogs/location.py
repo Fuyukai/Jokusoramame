@@ -56,6 +56,33 @@ class Location(Cog):
 
         await ctx.send(embed=em)
 
+    @commands.command(aliases=["ungeocode"])
+    async def geodecode(self, ctx: Context, lat: float, long: float):
+        """
+        Decodes a lat/long pair into a place name.
+        """
+        async with ctx.channel.typing():
+            geocode_result = await self.bot.loop.run_in_executor(None, self.maps.reverse_geocode, (lat, long))
+
+        if not geocode_result:
+            await ctx.send(":x: That lat/long pair does not match any known location.")
+            return
+
+        wanted = geocode_result[0]
+
+        em = discord.Embed(title="Geodecode")
+        em.description = "The place here is **{}**.".format(wanted["formatted_address"])
+        em.set_footer(text="Powered by Google Maps")
+
+        em.add_field(name="Place types", value=", ".join(x.replace("_", " ").capitalize() for x in wanted["types"]))
+        em.add_field(name="Location type", value=wanted["geometry"]["location_type"].replace("_", "").capitalize())
+
+        em.colour = discord.Colour.green()
+
+        em.timestamp = datetime.datetime.now()
+
+        await ctx.send(embed=em)
+
     @commands.command()
     @commands.cooldown(rate=1, per=5, type=BucketType.channel)
     async def directions(self, ctx: Context, from_: str, to: str):
