@@ -39,14 +39,20 @@ class NASA(Cog):
         """
 
     @nasa.command()
-    async def imagery(self, ctx: Context, lat: float, long: float):
+    async def imagery(self, ctx: Context, lat: float, long: float, date: str=None):
         """
         Displays a satellite image at the specified latitude and longitude.
         
         To find your lat/long, use https://mynasadata.larc.nasa.gov/latitudelongitude-finder/.
+        
+        An optional date can be provided which will attempt to show data from that date. This date must be in 
+        YY-MM-DD format.
         """
         url = "https://api.nasa.gov/planetary/earth/imagery"
         params = {"lat": str(lat), "lon": str(long), "cloud_score": "True"}
+
+        if date is not None:
+            params["date"] = date
 
         async with ctx.channel.typing():
             data = await self.make_nasa_request(url, params)
@@ -54,13 +60,16 @@ class NASA(Cog):
             if 'error' not in data:
                 em = discord.Embed(title=data["id"])
                 em.set_image(url=data["url"])
+                em.url = data["url"]
                 # em.timestamp = arrow.get(data["date"]).datetime
                 em.add_field(name="Cloud coverage", value="{}%".format(round(data["cloud_score"] * 100, 2)))
                 em.add_field(name="Picture date", value=data["date"])
+                em.colour = discord.Colour.green()
 
             else:
                 em = discord.Embed(title="Error fetching image data")
                 em.description = data["error"]
+                em.colour = discord.Colour.red()
 
             em.set_footer(text="All data provided by the NASA API (https://api.nasa.gov).",
                           icon_url="https://images.nasa.gov/images/nasa_logo-large.ee501ef4.png")
@@ -109,6 +118,9 @@ class NASA(Cog):
             em.add_field(name="Closest approach", value="{} AU".format(miss_distance))
             em.set_footer(text="All data provided by the NASA API (https://api.nasa.gov).",
                           icon_url="https://images.nasa.gov/images/nasa_logo-large.ee501ef4.png")
+
+            em.colour = discord.Colour.light_grey()
+
         await ctx.send(embed=em)
 
 
