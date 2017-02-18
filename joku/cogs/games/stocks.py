@@ -160,7 +160,7 @@ class Stocks(Cog):
                 rows.append([name, stock.amount, total_available,
                              "{:.2f}".format(stock.price)])
 
-        table = tabulate.tabulate(rows, headers=headers, tablefmt="orgtbl")
+        table = tabulate.tabulate(rows, headers=headers, tablefmt="orgtbl", disable_numparse=True)
         await ctx.send("```{}```".format(table))
 
     @stocks.command()
@@ -213,9 +213,36 @@ class Stocks(Cog):
             return
 
         await ctx.bot.database.change_user_stock_amount(ctx.author, channel, amount=amount)
-        await ctx.send(":heavy_check_mark: Brought {} stocks at `§{:.2f}`.".format(amount, price))
+        await ctx.send(":heavy_check_mark: Brought {} stocks for `§{:.2f}`.".format(amount, price))
 
     @stocks.command()
+    async def sell(self, ctx: Context, stock: str, amount: int):
+        """
+        Sells a stock.
+        """
+        if amount <= 0:
+            await ctx.send(":x: Nice try.")
+            return
+
+        # try and identify the stock
+        channel = self._identify_stock(ctx.guild.channels, stock.upper())
+        if channel is None:
+            await ctx.send(":x: That stock does not exist.")
+            return
+
+        us = await ctx.bot.database.get_user_stock(ctx.author, channel)
+        if us is None or us.amount == 0:  # never delete userstock, is inefficient
+            await ctx.send(":x: You do not own any of this stock.")
+            return
+
+        if us.amount < amount:
+            await ctx.send(":x: Cannot sell more shares than you have.")
+            return
+
+        await ctx.bot.database.change_user_stock_amount(ctx.author, channel, amount=-amount)
+        await ctx.send(":heavy_check_mark: Sold {} stocks for `§{:.2f}`.".format(amount, us.stock.price * amount))
+
+    @stocks.command(aliases=["plot"])
     async def graph(self, ctx: Context):
         """
         Graphs the stock trends for this channel.
