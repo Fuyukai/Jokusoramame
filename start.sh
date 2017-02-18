@@ -1,11 +1,6 @@
 #!/usr/bin/env bash
-if [[ ! -d "./.venv" ]]; then
-    echo "Creating new virtualenv..."
-    python3.5 -m venv .venv
-fi
-# Source the virtualenv.
-source .venv/bin/activate
-PATH=.venv/bin/:/usr/bin:/usr/sbin:/bin:/sbin
+
+pipenv &> /dev/null || { echo "You must have 'pipenv' installed to boot this bot."; exit; }
 
 # Git pull
 BRANCH=`git rev-parse --abbrev-ref HEAD`
@@ -14,8 +9,6 @@ echo "Pulling latest version..."
 git pull || exit 1
 
 echo "Updating requirements..."
-pip install -U -r requirements.txt || exit 1
+pipenv --three install || exit 1;
 echo "Starting Jokusoramame."
-python run.py config.yml
-
-echo "Bot has terminated, killing RethinkDB safely."
+pipenv run python3.6 run.py config.yml
