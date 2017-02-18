@@ -132,6 +132,32 @@ class RedisAdapter(object):
             return {"last_seen": float(tracking.get(b"last_seen", b"0").decode()),
                     "last_message": float(tracking.get(b"last_message", b"0").decode())}
 
+    async def update_stock_prices(self, channel: discord.TextChannel, new_price: float):
+        """
+        Updates a stock's cached price.
+        """
+        async with self.get_redis() as redis:
+            assert isinstance(redis, aioredis.Redis)
+
+            key = "stocks:{}".format(channel.id)
+            # push to the right of the key
+            await redis.rpush(key, new_price)
+            # ltrim to bound size
+            await redis.ltrim(key, 0, 59)
+
+    async def get_historical_prices(self, channel: discord.TextChannel):
+        """
+        Gets the historical stock prices for a channel.
+        """
+        async with self.get_redis() as redis:
+            assert isinstance(redis, aioredis.Redis)
+
+            key = "stocks:{}".format(channel.id)
+
+            r = await redis.lrange(key, 0, 59)
+
+        return [float(_.decode()) for _ in r]
+
     async def get_cooldown_expiration(self, user: discord.User, bucket: str):
         built_field = "exp:{}:{}".format(user.id, bucket).encode()
 
