@@ -3,17 +3,24 @@ Fake stock market system.
 """
 import datetime
 import asyncio
+from io import BytesIO
+
+import pytz
 import typing
-import itertools
 from math import log
 
 import discord
+import arrow
 import numpy as np
 import tabulate
 from asyncio_extras import threadpool
-from discord import ChannelType
-
 from discord.ext import commands
+import matplotlib as mpl
+
+mpl.use('Agg')
+
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 
 from joku.cogs._common import Cog
 from joku.core.bot import Context
@@ -25,10 +32,11 @@ class Stocks(Cog):
     A fake stocks system.
     """
     _running = False
+    _plot_lock = asyncio.Lock()
 
     @staticmethod
     def get_hist_mult(x: int) -> float:
-        return (x / (10 ** np.ceil(log(x, 10)))) / 4
+        return x / (10 ** np.ceil(log(x, 10)))
 
     def _get_name(self, channel: discord.TextChannel):
         """
@@ -107,15 +115,17 @@ class Stocks(Cog):
 
                         mult += np.random.lognormal(mean=-2)
                         mult = self.rng.choice([-1, 1]) * mult
-                        mult = max(-0.5, min(mult, 0.5))  # clamp multiplier to 0.5 either way
+                        mult = max(-0.9, min(mult, 0.9))  # clamp multiplier to 0.9 either way
                         mult = 1 + mult
 
                         old_price = stock.price
-                        new_price = max(2.00, round(old_price * mult, 2))
+                        # clamp prices to [2, 70]
+                        new_price = min(70.0, max(2.00, round(old_price * mult, 2)))
 
                         # edit the stock price
                         # run in a task so we don't wait for the task to finish
                         self.bot.loop.create_task(self.bot.database.change_stock(channel, price=new_price))
+                        await self.bot.redis.update_stock_prices(channel, new_price)
                         self.logger.info("Stock {} gone from {} -> {}".format(channel.id, old_price, new_price))
 
         finally:
@@ -128,7 +138,7 @@ class Stocks(Cog):
 
         await self.bot.redis.increase_history_count(message.channel)
 
-    @commands.group(invoke_without_command=True)
+    @commands.group(invoke_without_command=True, aliases=["stock"])
     async def stocks(self, ctx: Context):
         """
         Controls the stock market for this server.
@@ -204,6 +214,72 @@ class Stocks(Cog):
 
         await ctx.bot.database.change_user_stock_amount(ctx.author, channel, amount=amount)
         await ctx.send(":heavy_check_mark: Brought {} stocks at `§{:.2f}`.".format(amount, price))
+
+    @stocks.command()
+    async def graph(self, ctx: Context):
+        """
+        Graphs the stock trends for this channel.
+        """
+        stocks = await ctx.bot.database.get_stocks_for(ctx.guild)
+
+        tds = []
+        for c in stocks:
+            channel = ctx.guild.get_channel(c.channel_id)
+            if not channel:
+                continue
+
+            name = self._get_name(channel)
+            tds.append((name, await ctx.bot.redis.get_historical_prices(channel)))
+
+        async with ctx.channel.typing():
+            async with self._plot_lock:
+                async with threadpool():
+                    # calculate the dates
+                    dates = [arrow.now(pytz.UTC).replace(minutes=-i) for i in range(0, len(tds[0][1]))]
+                    dates = list(reversed([dt.strftime("%H:%M") for dt in dates]))
+
+                    # axis labels
+                    plt.xlabel("Time UTC (HH:MM)")
+                    plt.ylabel("Price (§)")
+
+                    # hacky to get the right bottom
+                    x = np.arange(0, len(tds[0][1]))
+
+                    # current line colour legend
+                    legend = []
+
+                    # rainbowify the lines
+                    colours = cm.rainbow(np.linspace(0, 1, len(tds)))
+                    for history, colour in zip(tds, colours):
+                        # extract the name and add it to the legend
+                        name, values = history
+                        legend.append(name)
+                        # plot against dates
+                        plt.plot(x, values, color=colour)
+
+                    # xticks the data
+                    plt.xticks(x, dates, rotation=270)
+
+                    plt.title("1st Stock Market of Joku")
+
+                    # only show every 2nd tick
+                    ax = plt.gca()
+                    plt.setp(ax.get_xticklabels()[::2], visible=False)
+
+                    plt.legend(legend, loc="upper left")
+                    plt.tight_layout()
+
+                    buf = BytesIO()
+                    plt.savefig(buf, format="png")
+
+                    # Don't send 0-byte files
+                    buf.seek(0)
+
+                    # Cleanup.
+                    plt.clf()
+                    plt.cla()
+
+        await ctx.channel.send(file=buf, filename="plot.png")
 
     @stocks.command(name="setup")
     @has_permissions(manage_server=True)

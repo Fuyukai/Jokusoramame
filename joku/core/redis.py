@@ -142,10 +142,12 @@ class RedisAdapter(object):
             assert isinstance(redis, aioredis.Redis)
 
             key = "stocks:{}".format(channel.id)
+            llen = await redis.llen(key)
+            if llen >= 60:
+                # pop off the left to make room for the new key
+                await redis.lpop(key)
             # push to the right of the key
-            await redis.rpush(key, new_price)
-            # ltrim to bound size
-            await redis.ltrim(key, 0, 59)
+            await redis.rpush(key, str(new_price).encode())
 
     async def get_historical_prices(self, channel: discord.TextChannel):
         """
