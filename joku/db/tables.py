@@ -1,4 +1,4 @@
-from sqlalchemy import Column, BigInteger, Integer, DateTime, func, String, ForeignKey, Boolean
+from sqlalchemy import Column, BigInteger, Integer, DateTime, func, String, ForeignKey, Boolean, Float
 from sqlalchemy.dialects.postgresql import JSONB, ARRAY
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
@@ -61,6 +61,9 @@ class UserInventoryItem(Base):
     #: The count for this inventory item.
     count = Column(Integer, autoincrement=False, nullable=False)
 
+    #: The stocks this user contains.
+    stocks = relationship("UserStock", back_populates="user")
+
 
 class Guild(Base):
     """
@@ -89,6 +92,51 @@ class Guild(Base):
 
     #: Are stocks enabled for this guild?
     stocks_enabled = Column(Boolean, default=False)
+
+
+class UserStock(Base):
+    """
+    A secondary table that represents a user and stock pair.
+    """
+    __tablename__ = "user__stock"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+
+    #: The user ID associated with this.
+    user_id = Column(BigInteger, ForeignKey("user.id"))
+    user = relationship("User")
+
+    #: The stock ID associated with this.
+    stock_id = Column(Integer, ForeignKey("stock.id"))
+    stock = relationship("Stock")
+
+    #: The amount of stock this user owns.
+    amount = Column(Integer, nullable=False, unique=False)
+
+
+class Stock(Base):
+    """
+    Represents a stock in a guild.
+    """
+    __tablename__ = "stock"
+
+    #: The ID of the stock.
+    id = Column(Integer, primary_key=True, autoincrement=True)
+
+    #: The guild ID this stokc is associated with.
+    guild_id = Column(BigInteger, ForeignKey("guild.id"))
+
+    #: The channel ID this stock is associated with.
+    channel_id = Column(BigInteger, unique=True, nullable=False)
+
+    #: The current price of this stock.
+    price = Column(Float, unique=False, nullable=False)
+
+    #: The number of stocks available.
+    amount = Column(Integer, unique=False, nullable=False)
+
+    #: A relationship between the stock and UserStock table.
+    users = relationship("UserStock", back_populates="stock")
 
 
 class Tag(Base):
