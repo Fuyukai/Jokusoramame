@@ -178,6 +178,9 @@ class Stocks(Cog):
             if not channel:
                 continue
 
+            if userstock.amount <= 0:
+                continue
+
             rows.append([self._get_name(channel), userstock.amount,
                          "{:.2f}".format(float(userstock.amount * userstock.stock.price))])
 
