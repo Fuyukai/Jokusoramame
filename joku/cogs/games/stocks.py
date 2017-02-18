@@ -46,7 +46,7 @@ class Stocks(Cog):
 
         return name.upper()
 
-    @commands.group()
+    @commands.group(invoke_without_command=True)
     async def stocks(self, ctx: Context):
         """
         Controls the stock market for this server.
