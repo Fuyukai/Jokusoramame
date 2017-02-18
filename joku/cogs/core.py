@@ -188,7 +188,7 @@ class Core(Cog):
 
         embed.add_field(name="Servers", value=str(sum(1 for x in ctx.bot.guilds)))
         embed.add_field(name="Users", value=str(sum(1 for x in ctx.bot.get_all_members())))
-        embed.add_field(name="Unique users", value=str(len(set(ctx.bot.get_all_members()))))
+        embed.add_field(name="Unique users", value=str(len(set(m.id for m in ctx.bot.get_all_members()))))
 
         embed.add_field(name="Python version", value=platform.python_version())
         embed.add_field(name="Hostname", value=platform.node())
