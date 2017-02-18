@@ -11,4 +11,4 @@ git pull || exit 1
 echo "Updating requirements..."
 pipenv --three install || exit 1;
 echo "Starting Jokusoramame."
-pipenv run python3.6 run.py config.yml
+pipenv run python3 run.py config.yml
