@@ -56,7 +56,7 @@ class DatabaseInterface(object):
             session.close()
 
     # region Guild
-    async def get_or_create_guild(self, guild: discord.Guild):
+    async def get_or_create_guild(self, guild: discord.Guild) -> Guild:
         """
         Creates or gets a guild object from the database.
         """
@@ -69,6 +69,16 @@ class DatabaseInterface(object):
                     sess.add(g)
 
         return g
+
+    async def get_multiple_guilds(self, *guilds: typing.List[discord.Guild]) -> typing.Sequence[Guild]:
+        """
+        Gets multiple guilds.
+        """
+        async with threadpool():
+            with self.get_session() as sess:
+                g = sess.query(Guild).filter(Guild.id.in_([g.id for g in guilds])).all()
+
+        return list(g)
 
     # endregion
 

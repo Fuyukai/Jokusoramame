@@ -1,7 +1,11 @@
 """
 Fake stock market system.
 """
+import datetime
+import asyncio
 import typing
+import itertools
+from math import log
 
 import discord
 import numpy as np
@@ -20,6 +24,11 @@ class Stocks(Cog):
     """
     A fake stocks system.
     """
+    _running = False
+
+    @staticmethod
+    def get_hist_mult(x: int) -> float:
+        return (x / (10 ** np.ceil(log(x, 10)))) / 4
 
     def _get_name(self, channel: discord.TextChannel):
         """
@@ -44,7 +53,7 @@ class Stocks(Cog):
 
             name += part[0]
         else:
-            name += sp[-1][1:5-len(name)]
+            name += sp[-1][1:5 - len(name)]
 
         return name.upper()
 
@@ -55,6 +64,62 @@ class Stocks(Cog):
         for channel in channels:
             if self._get_name(channel) == name:
                 return channel
+
+    async def ready(self):
+        """
+        Begins fluctuating stock prices.
+        """
+        if self._running:
+            return
+
+        self._running = True
+
+        try:
+            while True:
+                # collect all the guilds that have stocks enabled
+                guilds = await self.bot.database.get_multiple_guilds(*self.bot.guilds)
+                collected = [g for g in guilds if g.stocks_enabled]
+
+                # sleep until the minute
+                t = datetime.datetime.utcnow()
+                sleeptime = 60 - (t.second + t.microsecond / 1000000.0)
+                self.logger.info("Sleeping for {} seconds before changing stocks".format(sleeptime))
+                await asyncio.sleep(sleeptime)
+
+                # void warranty
+                for channel in itertools.chain(*(self.bot.connection._guilds[c.id].channels for c in collected)):
+                    stock = await self.bot.database.get_stock(channel)
+                    if stock is None:
+                        continue
+                    # update the price
+                    history = await self.bot.redis.get_and_pop_history_count(channel)
+                    if history != 0:
+                        mult = self.get_hist_mult(history)
+                    else:
+                        mult = 0
+
+                    mult += np.random.lognormal(mean=-2)
+                    mult = self.rng.choice([-1, 1]) * mult
+                    mult = max(-0.5, min(mult, 0.5))  # clamp multiplier to 0.5 either way
+                    mult = 1 + mult
+
+                    old_price = stock.price
+                    new_price = round(old_price * mult, 2)
+
+                    # edit the stock price
+                    # run in a task so we don't wait for the task to finish
+                    self.bot.loop.create_task(self.bot.database.change_stock(channel, price=new_price))
+                    self.logger.info("Stock {} gone from {} -> {}".format(channel.id, old_price, new_price))
+
+        finally:
+            self._running = False
+
+    async def on_message(self, message: discord.Message):
+        # increment history for this channel
+        if message.channel.guild is None:
+            return
+
+        await self.bot.redis.increase_history_count(message.channel)
 
     @commands.group(invoke_without_command=True)
     async def stocks(self, ctx: Context):
@@ -167,5 +232,9 @@ class Stocks(Cog):
 
         await ctx.send(":heavy_check_mark: Injected `§{}` into the market over `{}` stocks.".format(round(
             total_value, 2), count))
+
+        await ctx.send(":warning: If you have had a lot of messages between adding the bot and setting up the stocks "
+                       "system, stocks may see huge initial swings as history is counted.")
+
 
 setup = Stocks.setup

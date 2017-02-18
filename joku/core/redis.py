@@ -129,8 +129,10 @@ class RedisAdapter(object):
             if not tracking:
                 return None
 
-            return {"last_seen": float(tracking.get(b"last_seen", b"0").decode()),
-                    "last_message": float(tracking.get(b"last_message", b"0").decode())}
+            return {
+                "last_seen": float(tracking.get(b"last_seen", b"0").decode()),
+                "last_message": float(tracking.get(b"last_message", b"0").decode())
+            }
 
     async def update_stock_prices(self, channel: discord.TextChannel, new_price: float):
         """
@@ -166,6 +168,29 @@ class RedisAdapter(object):
             return None
 
         return ttl
+
+    async def increase_history_count(self, channel: discord.TextChannel):
+        """
+        Increases the history count for a channel.
+        """
+        async with self.get_redis() as redis:
+            assert isinstance(redis, aioredis.Redis)
+
+            key = "stocks:{}:history".format(channel.id)
+            return await redis.incr(key)
+
+    async def get_and_pop_history_count(self, channel: discord.TextChannel):
+        """
+        Gets and pops the history count for a channel.
+        """
+        async with self.get_redis() as redis:
+            assert isinstance(redis, aioredis.Redis)
+
+            key = "stocks:{}:history".format(channel.id)
+            h = int((await redis.get(key)) or 0)
+            await redis.delete(key)
+
+        return h
 
     async def set_bucket_with_expiration(self, user: discord.User, bucket: str, expiration: int):
         """
