@@ -373,7 +373,7 @@ class Stocks(Cog):
                     ax = plt.gca()
                     plt.setp(ax.get_xticklabels()[::2], visible=False)
 
-                    plt.legend(legend, loc="upper left")
+                    plt.legend(legend, loc="best")
                     plt.tight_layout()
 
                     buf = BytesIO()
