@@ -87,6 +87,9 @@ class Guild(Base):
     #: An array of roleme role IDs this guild can have.
     roleme_roles = Column(ARRAY(BigInteger), nullable=True, default=[])
 
+    #: Are stocks enabled for this guild?
+    stocks_enabled = Column(Boolean, default=False)
+
 
 class Tag(Base):
     """
