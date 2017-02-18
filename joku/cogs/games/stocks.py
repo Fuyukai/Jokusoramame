@@ -1,6 +1,8 @@
 """
 Fake stock market system.
 """
+import typing
+
 import discord
 import numpy as np
 import tabulate
@@ -46,6 +48,14 @@ class Stocks(Cog):
 
         return name.upper()
 
+    def _identify_stock(self, channels: typing.Sequence[discord.TextChannel], name: str) -> discord.TextChannel:
+        """
+        Identifies a stock.
+        """
+        for channel in channels:
+            if self._get_name(channel) == name:
+                return channel
+
     @commands.group(invoke_without_command=True)
     async def stocks(self, ctx: Context):
         """
@@ -69,6 +79,57 @@ class Stocks(Cog):
 
         table = tabulate.tabulate(rows, headers=headers, tablefmt="orgtbl")
         await ctx.send("```{}```".format(table))
+
+    @stocks.command()
+    async def portfolio(self, ctx: Context):
+        """
+        Shows off your current stock portfolio for this guild.
+        """
+        stocks = await ctx.bot.database.get_user_stocks(ctx.author, guild=ctx.guild)
+
+        headers = ["Name", "Shares", "Total value"]
+        rows = []
+
+        for userstock in stocks:
+            channel = ctx.guild.get_channel(userstock.stock.channel_id)
+            if not channel:
+                continue
+
+            rows.append([self._get_name(channel), userstock.amount, float(userstock.amount * userstock.stock.price)])
+
+        table = tabulate.tabulate(rows, headers=headers, tablefmt="orgtbl", disable_numparse=True)
+        await ctx.send("```{}```".format(table))
+
+    @stocks.command()
+    async def buy(self, ctx: Context, stock: str, amount: int):
+        """
+        Buys a stock.
+        """
+        # try and identify the stock
+        channel = self._identify_stock(ctx.guild.channels, stock.upper())
+        if channel is None:
+            await ctx.send(":x: That stock does not exist.")
+            return
+
+        total_available = await ctx.bot.database.get_remaining_stocks(channel)
+        if total_available < 1:
+            await ctx.send(":x: This stock is all sold out.")
+            return
+
+        if total_available - amount < 0:
+            await ctx.send(":x: Cannot buy more shares than are in existence.")
+            return
+
+        stock = await ctx.bot.database.get_stock(channel)
+        price = stock.price * amount
+
+        user = await ctx.bot.database.get_or_create_user(ctx.author)
+        if user.money < price:
+            await ctx.send(":x: It is unwise to buy shares with money you don't have.")
+            return
+
+        await ctx.bot.database.change_user_stock_amount(ctx.author, channel, amount=amount)
+        await ctx.send(":heavy_check_mark: Brought {} stocks at `§{}`.".format(amount, price))
 
     @stocks.command(name="setup")
     @has_permissions(manage_server=True)

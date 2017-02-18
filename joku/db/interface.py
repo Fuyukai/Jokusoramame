@@ -667,7 +667,7 @@ class DatabaseInterface(object):
                 if total is None:
                     return stock.amount
 
-        return total - stock.amount
+        return stock.amount - total
 
     async def change_stock(self, channel: discord.TextChannel, *,
                            amount: int = None, price: int = None) -> Stock:
@@ -712,7 +712,7 @@ class DatabaseInterface(object):
             ustock.user_id = user.id  # will always exist
             ustock.stock = await self.get_stock(channel)
             # udpate manually
-            ustock.stock_id = ustock.stock.id
+            ustock.stock_id = ustock.stock.channel_id
 
         async with threadpool():
             with self.get_session() as sess:
@@ -724,7 +724,7 @@ class DatabaseInterface(object):
                         ustock.amount += amount
                     else:
                         ustock.amount = amount
-                    user.money += int(amount * ustock.stock.price)
+                    user.money += int(-amount * ustock.stock.price)
 
                     sess.merge(ustock)
                     sess.merge(user)
