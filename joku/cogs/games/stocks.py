@@ -111,11 +111,11 @@ class Stocks(Cog):
                         mult = 1 + mult
 
                         old_price = stock.price
-                        new_price = round(old_price * mult, 2)
+                        new_price = max(2.00, round(old_price * mult, 2))
 
                         # edit the stock price
                         # run in a task so we don't wait for the task to finish
-                        self.bot.loop.create_task(self.bot.database.change_stock(channel, price=min(2.00, new_price)))
+                        self.bot.loop.create_task(self.bot.database.change_stock(channel, price=new_price))
                         self.logger.info("Stock {} gone from {} -> {}".format(channel.id, old_price, new_price))
 
         finally:
@@ -147,7 +147,8 @@ class Stocks(Cog):
 
                 name = self._get_name(channel)
                 total_available = await ctx.bot.database.get_remaining_stocks(channel)
-                rows.append([name, stock.amount, total_available, stock.price])
+                rows.append([name, stock.amount, total_available,
+                             "{:.2f}".format(stock.price)])
 
         table = tabulate.tabulate(rows, headers=headers, tablefmt="orgtbl")
         await ctx.send("```{}```".format(table))
@@ -167,7 +168,8 @@ class Stocks(Cog):
             if not channel:
                 continue
 
-            rows.append([self._get_name(channel), userstock.amount, float(userstock.amount * userstock.stock.price)])
+            rows.append([self._get_name(channel), userstock.amount,
+                         "{:.2f}".format(float(userstock.amount * userstock.stock.price))])
 
         table = tabulate.tabulate(rows, headers=headers, tablefmt="orgtbl", disable_numparse=True)
         await ctx.send("```{}```".format(table))
@@ -197,11 +199,11 @@ class Stocks(Cog):
 
         user = await ctx.bot.database.get_or_create_user(ctx.author)
         if user.money < price:
-            await ctx.send(":x: It is unwise to buy shares with money you don't have.")
+            await ctx.send(":x: You need `§{:.2f}` to buy this.".format(price))
             return
 
         await ctx.bot.database.change_user_stock_amount(ctx.author, channel, amount=amount)
-        await ctx.send(":heavy_check_mark: Brought {} stocks at `§{}`.".format(amount, price))
+        await ctx.send(":heavy_check_mark: Brought {} stocks at `§{:.2f}`.".format(amount, price))
 
     @stocks.command(name="setup")
     @has_permissions(manage_server=True)
