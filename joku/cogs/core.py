@@ -272,7 +272,7 @@ class Core(Cog):
                             new_name = m.name
                         # Check if the author can run the command.
                         try:
-                            if self.can_run_recursive(ctx, m):
+                            if await m.can_run(ctx):
                                 cmds.append("`" + new_name + "`")
                         except (CheckFailure, DoNotRun):
                             pass
