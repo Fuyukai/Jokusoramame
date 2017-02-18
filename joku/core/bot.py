@@ -270,27 +270,6 @@ class Jokusoramame(AutoShardedBot):
         token = self.config["bot_token"]
         return await super().login(token)
 
-    @asyncio.coroutine
-    def connect(self):
-        """|coro|
-
-        Creates a websocket connection and lets the websocket listen
-        to messages from discord.
-
-        Raises
-        -------
-        GatewayNotFound
-            If the gateway to connect to discord is not found. Usually if this
-            is thrown then there is a discord API outage.
-        ConnectionClosed
-            The websocket connection has been terminated.
-        """
-        yield from self.launch_shards()
-
-        while not self.is_closed():
-            pollers = [shard.get_future() for shard in self.shards.values()]
-            yield from asyncio.wait(pollers, loop=self.loop, return_when=asyncio.FIRST_COMPLETED)
-
 
 class Context(commands.Context):
     def __init__(self, *args, **kwargs):
