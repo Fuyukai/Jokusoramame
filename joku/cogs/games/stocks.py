@@ -146,7 +146,7 @@ class Stocks(Cog):
         stocks = await ctx.bot.database.get_stocks_for(ctx.guild)
 
         # OH BOY IT'S TABLE O CLOCK
-        headers = ["Name", "Total shares", "Available shares", "Price/share"]
+        headers = ["Name", "Total shares", "Available shares", "Price/share", "%age remaining"]
         rows = []
 
         async with ctx.channel.typing():
@@ -158,7 +158,7 @@ class Stocks(Cog):
                 name = self._get_name(channel)
                 total_available = await ctx.bot.database.get_remaining_stocks(channel)
                 rows.append([name, stock.amount, total_available,
-                             "{:.2f}".format(stock.price)])
+                             "{:.2f}".format(stock.price), round(100 - ((total_available / stock.amount) * 100), 2)])
 
         table = tabulate.tabulate(rows, headers=headers, tablefmt="orgtbl", disable_numparse=True)
         await ctx.send("```{}```".format(table))
