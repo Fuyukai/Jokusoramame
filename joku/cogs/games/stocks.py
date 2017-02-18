@@ -87,29 +87,36 @@ class Stocks(Cog):
                 await asyncio.sleep(sleeptime)
 
                 # void warranty
-                for channel in itertools.chain(*(self.bot.connection._guilds[c.id].channels for c in collected)):
-                    stock = await self.bot.database.get_stock(channel)
-                    if stock is None:
+                for guild in collected:
+                    guild = self.bot.connection._guilds.get(guild.id)  # type: discord.Guild
+                    if not guild:
                         continue
-                    # update the price
-                    history = await self.bot.redis.get_and_pop_history_count(channel)
-                    if history != 0:
-                        mult = self.get_hist_mult(history)
-                    else:
-                        mult = 0
 
-                    mult += np.random.lognormal(mean=-2)
-                    mult = self.rng.choice([-1, 1]) * mult
-                    mult = max(-0.5, min(mult, 0.5))  # clamp multiplier to 0.5 either way
-                    mult = 1 + mult
+                    stocks = await self.bot.database.get_stocks_for(guild)
 
-                    old_price = stock.price
-                    new_price = round(old_price * mult, 2)
+                    for stock in stocks:
+                        channel = guild.get_channel(stock.channel_id)
+                        if channel is None:
+                            continue
+                        # update the price
+                        history = await self.bot.redis.get_and_pop_history_count(channel)
+                        if history != 0:
+                            mult = self.get_hist_mult(history)
+                        else:
+                            mult = 0
 
-                    # edit the stock price
-                    # run in a task so we don't wait for the task to finish
-                    self.bot.loop.create_task(self.bot.database.change_stock(channel, price=new_price))
-                    self.logger.info("Stock {} gone from {} -> {}".format(channel.id, old_price, new_price))
+                        mult += np.random.lognormal(mean=-2)
+                        mult = self.rng.choice([-1, 1]) * mult
+                        mult = max(-0.5, min(mult, 0.5))  # clamp multiplier to 0.5 either way
+                        mult = 1 + mult
+
+                        old_price = stock.price
+                        new_price = round(old_price * mult, 2)
+
+                        # edit the stock price
+                        # run in a task so we don't wait for the task to finish
+                        self.bot.loop.create_task(self.bot.database.change_stock(channel, price=min(2.00, new_price)))
+                        self.logger.info("Stock {} gone from {} -> {}".format(channel.id, old_price, new_price))
 
         finally:
             self._running = False
