@@ -36,6 +36,9 @@ class User(Base):
     #: The OAuth2 access code.
     oauth_token = Column(JSONB, nullable=True)
 
+    #: The stocks this user contains.
+    stocks = relationship("UserStock", back_populates="user")
+
     def __repr__(self):
         return "<User id={} xp={} money={}>".format(self.id, self.xp, self.money)
 
@@ -60,9 +63,6 @@ class UserInventoryItem(Base):
 
     #: The count for this inventory item.
     count = Column(Integer, autoincrement=False, nullable=False)
-
-    #: The stocks this user contains.
-    stocks = relationship("UserStock", back_populates="user")
 
 
 class Guild(Base):
@@ -104,14 +104,17 @@ class UserStock(Base):
 
     #: The user ID associated with this.
     user_id = Column(BigInteger, ForeignKey("user.id"))
-    user = relationship("User")
+    user = relationship("User", lazy="joined")
 
     #: The stock ID associated with this.
-    stock_id = Column(Integer, ForeignKey("stock.id"))
-    stock = relationship("Stock")
+    stock_id = Column(BigInteger, ForeignKey("stock.channel_id"))
+    stock = relationship("Stock", lazy="joined")
 
     #: The amount of stock this user owns.
     amount = Column(Integer, nullable=False, unique=False)
+
+    def __repr__(self):
+        return "<UserStock user_id={} stock_id={} amount={}>".format(self.user_id, self.stock_id, self.amount)
 
 
 class Stock(Base):
@@ -120,14 +123,12 @@ class Stock(Base):
     """
     __tablename__ = "stock"
 
-    #: The ID of the stock.
-    id = Column(Integer, primary_key=True, autoincrement=True)
-
     #: The guild ID this stokc is associated with.
     guild_id = Column(BigInteger, ForeignKey("guild.id"))
+    guild = relationship("Guild", lazy="joined")
 
     #: The channel ID this stock is associated with.
-    channel_id = Column(BigInteger, unique=True, nullable=False)
+    channel_id = Column(BigInteger, unique=True, nullable=False, primary_key=True)
 
     #: The current price of this stock.
     price = Column(Float, unique=False, nullable=False)
@@ -136,7 +137,10 @@ class Stock(Base):
     amount = Column(Integer, unique=False, nullable=False)
 
     #: A relationship between the stock and UserStock table.
-    users = relationship("UserStock", back_populates="stock")
+    users = relationship("UserStock", back_populates="stock", lazy="joined")
+
+    def __repr__(self):
+        return "<Stock channel_id={} amount={} price={}>".format(self.channel_id, self.amount, self.price)
 
 
 class Tag(Base):

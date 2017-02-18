@@ -7,14 +7,16 @@ import typing
 
 import discord
 from asyncio_extras import threadpool
-from sqlalchemy import Column
+from sqlalchemy import Column, func
 from sqlalchemy.engine import Engine, create_engine
 from sqlalchemy.orm import sessionmaker, Session
 
-from joku.db.tables import User, Setting, RoleState, Guild, UserColour, EventSetting, Tag, Reminder
+from joku.db.tables import User, Setting, RoleState, Guild, UserColour, EventSetting, Tag, Reminder, UserStock, Stock
 
 logger = logging.getLogger("Jokusoramame.DB")
-#logging.getLogger("sqlalchemy").setLevel(logging.INFO)
+
+
+# logging.getLogger("sqlalchemy").setLevel(logging.INFO)
 
 
 class DatabaseInterface(object):
@@ -69,9 +71,10 @@ class DatabaseInterface(object):
         return g
 
     # endregion
+
     # region User
 
-    async def get_or_create_user(self, member: discord.Member=None, id: int=None) -> User:
+    async def get_or_create_user(self, member: discord.Member = None, id: int = None) -> User:
         """
         Gets or creates a user object.
         """
@@ -145,6 +148,7 @@ class DatabaseInterface(object):
         return user
 
     # endregion
+
     # region Settings
 
     async def get_setting(self, guild: discord.Guild, setting_name: str, default: typing.Any = None) -> dict:
@@ -189,6 +193,7 @@ class DatabaseInterface(object):
         return setting
 
     # endregion
+
     # region Currency
     async def update_user_currency(self, member: discord.Member, currency_to_add: int) -> User:
         """
@@ -213,6 +218,7 @@ class DatabaseInterface(object):
         return user.money
 
     # endregion
+
     # region Rolestate
 
     async def save_rolestate(self, member: discord.Member) -> RoleState:
@@ -263,6 +269,7 @@ class DatabaseInterface(object):
         return self.get_rolestate_for_id(member.guild.id, member.id)
 
     # endregion
+
     # region Roleme
     async def get_roleme_roles(self, guild: discord.Guild) -> typing.List[discord.Role]:
         """
@@ -318,6 +325,7 @@ class DatabaseInterface(object):
         return g
 
     # endregion
+
     # region Colourme
     async def get_colourme_role(self, member: discord.Member) -> typing.Union[discord.Role, None]:
         """
@@ -425,6 +433,7 @@ class DatabaseInterface(object):
         return original
 
     # endregion
+
     # region Tags
     async def get_tag(self, guild: discord.Guild, name: str) -> typing.Union[None, Tag]:
         """
@@ -487,6 +496,7 @@ class DatabaseInterface(object):
         return tag
 
     # endregion
+
     # region Reminders
     async def scan_reminders(self, within: int = 300) -> typing.List[Reminder]:
         """
@@ -533,8 +543,8 @@ class DatabaseInterface(object):
         """
         async with threadpool():
             with self.get_session() as sess:
-                reminders = sess.query(Reminder)\
-                    .filter((Reminder.enabled == True) & (Reminder.user_id == member.id))\
+                reminders = sess.query(Reminder) \
+                    .filter((Reminder.enabled == True) & (Reminder.user_id == member.id)) \
                     .first()
 
                 return list(reminders)
@@ -558,3 +568,162 @@ class DatabaseInterface(object):
                 reminder.enabled = False
 
         return reminder
+
+    # endregion
+
+    # region Stocks
+    async def get_user_stocks(self, user: discord.Member, *,
+                              guild: discord.Guild = None) -> typing.Sequence[UserStock]:
+        """
+        Gets the stocks that a user owns.
+        
+        If guild is provided, this will only fetch stocks from that guild.
+        """
+        # always create if needed
+        user = await self.get_or_create_user(user)
+        if guild:
+            g_obb = await self.get_or_create_guild(guild)
+        else:
+            g_obb = None
+
+        async with threadpool():
+            with self.get_session() as sess:
+                assert isinstance(sess, Session)
+                # if guild was provided, we want to do a joined query on `stock`
+                if guild is not None:
+                    query = sess.query(UserStock) \
+                        .join(UserStock.stock) \
+                        .filter((UserStock.user_id == user.id) & (Stock.guild_id == guild.id))
+                else:
+                    query = sess.query(UserStock) \
+                        .filter(UserStock.user_id == user.id)
+
+                results = list(query.all())
+                return results
+
+    async def get_user_stock(self, user: discord.Member, channel: discord.TextChannel) -> UserStock:
+        """
+        Gets a UserStock for the specified user and channel.
+        """
+        user = await self.get_or_create_user(user)
+
+        async with threadpool():
+            with self.get_session() as sess:
+                assert isinstance(sess, Session)
+
+                query = sess.query(UserStock) \
+                    .join(Stock) \
+                    .filter((UserStock.user_id == user.id) & (Stock.channel_id == channel.id)) \
+                    .first()
+
+        return query
+
+    async def get_stocks_for(self, guild: discord.Guild) -> typing.Sequence[Stock]:
+        """
+        Gets the stocks for the specified guild.
+        """
+        g_obb = await self.get_or_create_guild(guild)
+
+        async with threadpool():
+            with self.get_session() as sess:
+                assert isinstance(sess, Session)
+                results = sess.query(Stock).filter(Stock.guild_id == guild.id).all()
+
+        return list(results)
+
+    async def get_stock(self, channel: discord.TextChannel) -> Stock:
+        """
+        Gets a stock for the specified channel.
+        """
+        g_obb = await self.get_or_create_guild(channel.guild)
+
+        async with threadpool():
+            with self.get_session() as sess:
+                assert isinstance(sess, Session)
+
+                stock = sess.query(Stock).filter(Stock.channel_id == channel.id).first()
+
+        return stock
+
+    async def get_remaining_stocks(self, channel: discord.TextChannel) -> int:
+        """
+        Gets the remaining amount of stocks for the stock associated w/ this channel. 
+        """
+        g_obb = await self.get_or_create_guild(channel.guild)
+
+        async with threadpool():
+            with self.get_session() as sess:
+                assert isinstance(sess, Session)
+                # use the `func.sum` function
+                stock = sess.query(Stock).filter(Stock.channel_id == channel.id).first()
+                if stock is None:
+                    return 0
+
+                # evil query ahead
+                total = sess.query(func.sum(UserStock.amount)) \
+                    .filter(UserStock.stock_id == stock.id) \
+                    .scalar()
+
+        return total - stock.amount
+
+    async def change_stock(self, channel: discord.TextChannel, *,
+                           amount: int = None, price: int = None) -> Stock:
+        """
+        Changes the stock for the specified channel.
+        
+        If the stock already exists, the properties are updated.
+        
+        :param amount: The amount of stocks to create.
+        :param price: The price of this stock.
+        """
+        guild = await self.get_or_create_guild(channel.guild)
+
+        async with threadpool():
+            with self.get_session() as sess:
+                assert isinstance(sess, Session)
+                stock = Stock()
+                # update the appropriate fields
+                stock.channel_id = channel.id
+                stock.guild = guild
+
+                if amount is not None:
+                    stock.amount = amount
+                if price is not None:
+                    stock.price = price
+
+                sess.merge(stock)
+
+        return stock
+
+    async def change_user_stock_amount(self, user: discord.Member, channel: discord.TextChannel, *,
+                                       amount: int):
+        """
+        Changes the amount of stock a user owns.
+        
+        This will update their currency as appropriate, but will NOT do any bounds checking.
+        """
+        user = await self.get_or_create_user(user)
+        ustock = await self.get_user_stock(user, channel)
+        if not ustock:
+            ustock = UserStock()
+            ustock.user_id = user.id  # will always exist
+            ustock.stock = await self.get_stock(channel)
+            # udpate manually
+            ustock.stock_id = ustock.stock.id
+
+        async with threadpool():
+            with self.get_session() as sess:
+                assert isinstance(sess, Session)
+                # allow the session to now load the stock object
+                # no autoflush required for sqlalchemy to not die when querying
+                with sess.no_autoflush:
+                    if ustock.amount is not None:
+                        ustock.amount += amount
+                    else:
+                        ustock.amount = amount
+                    user.money += int(amount * ustock.stock.price)
+
+                    sess.merge(ustock)
+                    sess.merge(user)
+
+        return ustock
