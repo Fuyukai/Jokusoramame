@@ -170,7 +170,7 @@ class Stocks(Cog):
         """
         stocks = await ctx.bot.database.get_user_stocks(ctx.author, guild=ctx.guild)
 
-        headers = ["Name", "Shares", "Total value"]
+        headers = ["Name", "Shares", "Total value", "%age of stock"]
         rows = []
 
         for userstock in stocks:
@@ -182,7 +182,8 @@ class Stocks(Cog):
                 continue
 
             rows.append([self._get_name(channel), userstock.amount,
-                         "{:.2f}".format(float(userstock.amount * userstock.stock.price))])
+                         "{:.2f}".format(float(userstock.amount * userstock.stock.price)),
+                         "{:.2f}".format((userstock.amount / userstock.stock.amount) * 100)])
 
         table = tabulate.tabulate(rows, headers=headers, tablefmt="orgtbl", disable_numparse=True)
         await ctx.send("```{}```".format(table))
