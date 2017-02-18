@@ -661,8 +661,11 @@ class DatabaseInterface(object):
 
                 # evil query ahead
                 total = sess.query(func.sum(UserStock.amount)) \
-                    .filter(UserStock.stock_id == stock.id) \
+                    .filter(UserStock.stock_id == stock.channel_id) \
                     .scalar()
+
+                if total is None:
+                    return stock.amount
 
         return total - stock.amount
 

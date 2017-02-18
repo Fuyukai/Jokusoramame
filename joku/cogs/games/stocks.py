@@ -3,6 +3,7 @@ Fake stock market system.
 """
 import discord
 import numpy as np
+import tabulate
 from asyncio_extras import threadpool
 from discord import ChannelType
 
@@ -17,6 +18,57 @@ class Stocks(Cog):
     """
     A fake stocks system.
     """
+
+    def _get_name(self, channel: discord.TextChannel):
+        """
+        Gets the stock name for this channel.
+        """
+        if "-" in channel.name:
+            sp = channel.name.split("-")
+        elif "_" in channel.name:
+            sp = channel.name.split("_")
+        else:
+            # fuck ur delim
+            sp = [channel.name]
+
+        name = ""
+        for part in sp:
+            if len(name) == 4:
+                break
+
+            if not part:
+                # bad channels
+                continue
+
+            name += part[0]
+        else:
+            name += sp[-1][1:5-len(name)]
+
+        return name.upper()
+
+    @commands.group()
+    async def stocks(self, ctx: Context):
+        """
+        Controls the stock market for this server.
+        """
+        stocks = await ctx.bot.database.get_stocks_for(ctx.guild)
+
+        # OH BOY IT'S TABLE O CLOCK
+        headers = ["Name", "Total shares", "Available shares", "Price/share"]
+        rows = []
+
+        async with ctx.channel.typing():
+            for stock in stocks:
+                channel = ctx.guild.get_channel(stock.channel_id)
+                if not channel:
+                    continue
+
+                name = self._get_name(channel)
+                total_available = await ctx.bot.database.get_remaining_stocks(channel)
+                rows.append([name, stock.amount, total_available, stock.price])
+
+        table = tabulate.tabulate(rows, headers=headers, tablefmt="orgtbl")
+        await ctx.send("```{}```".format(table))
 
     @stocks.command(name="setup")
     @has_permissions(manage_server=True)
