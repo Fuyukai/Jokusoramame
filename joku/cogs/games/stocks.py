@@ -125,7 +125,7 @@ class Stocks(Cog):
                         # edit the stock price
                         # run in a task so we don't wait for the task to finish
                         self.bot.loop.create_task(self.bot.database.change_stock(channel, price=new_price))
-                        await self.bot.redis.update_stock_prices(channel, new_price)
+                        self.bot.loop.create_task(self.bot.redis.update_stock_prices(channel, new_price))
                         self.logger.info("Stock {} gone from {} -> {}".format(channel.id, old_price, new_price))
 
         finally:
@@ -187,6 +187,78 @@ class Stocks(Cog):
 
         table = tabulate.tabulate(rows, headers=headers, tablefmt="orgtbl", disable_numparse=True)
         await ctx.send("```{}```".format(table))
+
+    @stocks.command()
+    async def view(self, ctx: Context, stock: str):
+        """
+        View the current status of a stock.
+        """
+        channel = self._identify_stock(ctx.guild.channels, stock.upper())
+        if channel is None:
+            await ctx.send(":x: That stock does not exist.")
+            return
+
+        stock = await ctx.bot.database.get_stock(channel)
+        remaining = await ctx.bot.database.get_remaining_stocks(channel)
+
+        last_hour = await ctx.bot.redis.get_historical_prices(channel)
+        last_hour_arr = np.array(last_hour)
+
+        em = discord.Embed(title="Viewing stock for **{}**".format(self._get_name(channel)))
+        em.description = "Average is taken over the last **hour**.\n" \
+                         "Minute running diff is difference from **last minute**.\n" \
+                         "Hourly running diff is difference from **the beginning of the hour**."
+
+        em.add_field(name="Price", value="**§{:.2f}**".format(stock.price))
+        em.add_field(name="Total amount", value="**{}**".format(stock.amount))
+
+        av_perc = round(((remaining / stock.amount) * 100), 2)
+
+        em.add_field(name="Available amount", value="**{}** *({}%)*".format(remaining, av_perc))
+
+        # calculate running averages
+        mean = np.mean(last_hour_arr)
+        mean = round(mean, 2)  # only use rounded mean
+
+        # used for colour calculations
+        hits = []
+
+        # pretty ugly
+        def _get_relative(val) -> typing.Tuple[str, float]:
+            nonlocal hits
+            relative = stock.price - val
+            if relative < 0:
+                sym = "⬇"
+                hits.append(False)
+                relative = np.abs(relative)
+            else:
+                hits.append(True)
+                sym = "⬆"
+
+            return sym, relative
+
+        em.add_field(name="Fluctuation from avg", value="{} §{:.2f}".format(*_get_relative(mean)))
+
+        # calculate difference from last 1m
+        em.add_field(name="Minute running diff", value="{} §{:.2f}".format(*_get_relative(last_hour[-1])))
+
+        # calculate difference from start of hour
+        em.add_field(name="Hourly running diff", value="{} §{:.2f}".format(*_get_relative(last_hour[0])))
+
+        # calculate colour
+        s = sum(hits)
+        if s == 0:
+            em.colour = discord.Colour.red()
+        elif s == 1:
+            em.colour = discord.Colour.dark_orange()
+        elif s == 2:
+            em.colour = discord.Colour.gold()
+        else:
+            em.colour = discord.Colour.red()
+
+        em.set_footer(text="1st Stock Market of Joku")
+        em.timestamp = datetime.datetime.now()
+        await ctx.send(embed=em)
 
     @stocks.command()
     async def buy(self, ctx: Context, stock: str, amount: int):
