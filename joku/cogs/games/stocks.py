@@ -254,7 +254,7 @@ class Stocks(Cog):
         elif s == 2:
             em.colour = discord.Colour.gold()
         else:
-            em.colour = discord.Colour.red()
+            em.colour = discord.Colour.green()
 
         em.set_footer(text="1st Stock Market of Joku")
         em.timestamp = datetime.datetime.now()
