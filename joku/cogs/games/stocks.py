@@ -240,7 +240,7 @@ class Stocks(Cog):
         em.add_field(name="Fluctuation from avg", value="{} §{:.2f}".format(*_get_relative(mean)))
 
         # calculate difference from last 1m
-        em.add_field(name="Minute running diff", value="{} §{:.2f}".format(*_get_relative(last_hour[-1])))
+        em.add_field(name="Minute running diff", value="{} §{:.2f}".format(*_get_relative(last_hour[-2])))
 
         # calculate difference from start of hour
         em.add_field(name="Hourly running diff", value="{} §{:.2f}".format(*_get_relative(last_hour[0])))
