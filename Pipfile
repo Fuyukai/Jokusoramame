@@ -5,7 +5,7 @@ verify_ssl = true
 [packages]
 numpy = "*"
 kyoukai = "==2.0.3"
-matplotlib = "==2.0.0"
+matplotlib = "*"
 seaborn = "*"
 tabulate = "*"
 psutil = "*"
@@ -25,6 +25,7 @@ arrow = "*"
 pytz = "*"
 wikipedia = "*"
 googlemaps = "*"
+"ruamel.yaml" = "*"
 
 [packages."discord.py"]
 git = "https://github.com/Rapptz/discord.py.git"
