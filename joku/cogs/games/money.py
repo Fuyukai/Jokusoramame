@@ -187,7 +187,7 @@ class Currency(Cog):
             em.add_field(name="Currency", value="§{}".format(currency))
             em.add_field(name="Next tax amount", value="§{}".format(get_next_decay(currency)))
 
-            stocks = await ctx.bot.database.get_user_stocks(ctx.author)
+            stocks = await ctx.bot.database.get_user_stocks(user)
             em.add_field(name="Shares held", value=sum(userstock.amount for userstock in stocks))
             em.add_field(name="Asset values", value="§{:.2f}".format(sum(userstock.amount * userstock.stock.price for
                                                                          userstock in stocks)))

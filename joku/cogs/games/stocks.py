@@ -175,10 +175,11 @@ class Stocks(Cog):
         await ctx.send("```{}```".format(table))
 
     @stocks.command()
-    async def portfolio(self, ctx: Context):
+    async def portfolio(self, ctx: Context, target: discord.Member=None):
         """
         Shows off your current stock portfolio for this guild.
         """
+        target = target or ctx.author
         stocks = await ctx.bot.database.get_user_stocks(ctx.author, guild=ctx.guild)
 
         headers = ["Name", "Shares", "Total value", "%age of stock"]
