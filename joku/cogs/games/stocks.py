@@ -180,7 +180,7 @@ class Stocks(Cog):
         Shows off your current stock portfolio for this guild.
         """
         target = target or ctx.author
-        stocks = await ctx.bot.database.get_user_stocks(ctx.author, guild=ctx.guild)
+        stocks = await ctx.bot.database.get_user_stocks(target, guild=ctx.guild)
 
         headers = ["Name", "Shares", "Total value", "%age of stock"]
         rows = []
