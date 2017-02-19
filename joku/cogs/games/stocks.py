@@ -16,6 +16,9 @@ import tabulate
 from asyncio_extras import threadpool
 from discord.ext import commands
 import matplotlib as mpl
+from sqlalchemy.orm import Session
+
+from joku.db.tables import Stock
 
 mpl.use('Agg')
 
@@ -95,6 +98,8 @@ class Stocks(Cog):
                 await asyncio.sleep(sleeptime)
 
                 # void warranty
+
+                mappings = []
                 for guild in collected:
                     guild = self.bot.connection._guilds.get(guild.id)  # type: discord.Guild
                     if not guild:
@@ -123,10 +128,16 @@ class Stocks(Cog):
                         new_price = min(70.0, max(2.00, round(old_price * mult, 2)))
 
                         # edit the stock price
-                        # run in a task so we don't wait for the task to finish
-                        self.bot.loop.create_task(self.bot.database.change_stock(channel, price=new_price))
-                        self.bot.loop.create_task(self.bot.redis.update_stock_prices(channel, new_price))
+                        mappings.append({
+                            "channel_id": stock.channel_id,
+                            "price": new_price
+                        })
                         self.logger.info("Stock {} gone from {} -> {}".format(channel.id, old_price, new_price))
+
+                async with threadpool():
+                    with self.bot.database.get_session() as sess:
+                        assert isinstance(sess, Session)
+                        sess.bulk_update_mappings(Stock, mappings)
 
         finally:
             self._running = False
