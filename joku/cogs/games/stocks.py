@@ -293,7 +293,9 @@ class Stocks(Cog):
             return
 
         stock = await ctx.bot.database.get_stock(channel)
-        if stock.amount * 0.4 < amount:
+        us = await ctx.bot.database.get_user_stock(ctx.author, channel)
+
+        if stock.amount * 0.4 < us.amount + amount:
             await ctx.send(":x: You cannot own more than 40% of a given stock.")
             return
 
