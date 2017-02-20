@@ -4,6 +4,7 @@ A redis adapter for the bot.
 import functools
 
 import aioredis
+import asyncio
 import discord
 import logbook
 import time
@@ -16,6 +17,10 @@ class RedisAdapter(object):
         self.bot = bot
         self.logger = bot.logger  # type: logbook.Logger
 
+        # A single connection used for the `eval` command.
+        self.repl = None  # type: aioredis.Redis
+        self._repl_conn = None
+
     async def connect(self, *args, **kwargs):
         """
         Connects the redis pool.
@@ -24,7 +29,14 @@ class RedisAdapter(object):
         kwargs.pop("loop", None)
 
         self.pool = await aioredis.create_pool(*args, **kwargs, loop=self.bot.loop)
+        self._repl_conn = self.pool.get()
+        self.repl = await self._repl_conn.__aenter__()
         return self.pool
+
+    def __del__(self):
+        loop = self.bot.loop  # type: asyncio.AbstractEventLoop
+        if loop.is_running():
+            loop.create_task(self._repl_conn.__aexit__())
 
     def get_redis(self) -> aioredis.Redis:
         """
