@@ -297,7 +297,6 @@ class Stocks(Cog):
             await ctx.send(":x: You cannot own more than 40% of a given stock.")
             return
 
-        stock = await ctx.bot.database.get_stock(channel)
         price = stock.price * amount
 
         user = await ctx.bot.database.get_or_create_user(ctx.author)
