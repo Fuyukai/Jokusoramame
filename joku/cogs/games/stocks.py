@@ -292,7 +292,8 @@ class Stocks(Cog):
             await ctx.send(":x: Cannot buy more shares than are in existence.")
             return
 
-        if total_available * 0.4 < amount:
+        stock = await ctx.bot.database.get_stock(channel)
+        if stock.amount * 0.4 < amount:
             await ctx.send(":x: You cannot own more than 40% of a given stock.")
             return
 
