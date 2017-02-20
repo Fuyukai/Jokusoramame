@@ -294,8 +294,11 @@ class Stocks(Cog):
 
         stock = await ctx.bot.database.get_stock(channel)
         us = await ctx.bot.database.get_user_stock(ctx.author, channel)
-
-        us_amount = us.amount or 0
+        
+        try:
+            us_amount = us.amount or 0
+        except AttributeError:  # us is None
+            us_amount = 0
 
         if stock.amount * 0.4 < us_amount + amount:
             await ctx.send(":x: You cannot own more than 40% of a given stock.")
