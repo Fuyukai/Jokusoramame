@@ -335,11 +335,12 @@ class Stocks(Cog):
         await ctx.send(":heavy_check_mark: Sold {} stocks for `§{:.2f}`.".format(amount, us.stock.price * amount))
 
     @stocks.command(aliases=["plot"])
-    async def graph(self, ctx: Context):
+    async def graph(self, ctx: Context, *, what: str="all"):
         """
         Graphs the stock trends for this channel.
         """
         stocks = await ctx.bot.database.get_stocks_for(ctx.guild)
+        user_stocks = await ctx.bot.database.get_user_stocks(ctx.author, guild=ctx.guild)
 
         tds = []
         for c in stocks:
@@ -349,6 +350,20 @@ class Stocks(Cog):
 
             name = self._get_name(channel)
             tds.append((name, await ctx.bot.redis.get_historical_prices(channel)))
+
+        # collect user stocks
+        uds = []
+        for u_s in user_stocks:
+            # if amount <= 0 dont add it as owned
+            if u_s.amount <= 0:
+                continue
+
+            channel = ctx.guild.get_channel(u_s.stock.channel_id)
+            if not channel:
+                continue
+
+            name = self._get_name(channel)
+            uds.append(name)
 
         async with ctx.channel.typing():
             async with self._plot_lock:
@@ -366,6 +381,19 @@ class Stocks(Cog):
 
                     # current line colour legend
                     legend = []
+
+                    # if plotting portfolio, only plot the ones the user owns
+                    if what == "portfolio":
+                        n = []
+
+                        for q in tds:
+                            # check if name in user stock names
+                            if q[0] in uds:
+                                # mark for plotting
+                                n.append(q)
+
+                        # overwrite tds
+                        tds = n
 
                     # rainbowify the lines
                     colours = cm.rainbow(np.linspace(0, 1, len(tds)))
