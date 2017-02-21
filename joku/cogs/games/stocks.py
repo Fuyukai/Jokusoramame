@@ -184,7 +184,7 @@ class Stocks(Cog):
         target = target or ctx.author
         stocks = await ctx.bot.database.get_user_stocks(target, guild=ctx.guild)
 
-        headers = ["Name", "Shares", "Total value", "%age of stock"]
+        headers = ["Name", "Shares", "Share price", "Total value", "%age of stock"]
         rows = []
 
         for userstock in stocks:
@@ -196,6 +196,7 @@ class Stocks(Cog):
                 continue
 
             rows.append([self._get_name(channel), userstock.amount,
+                         userstock.stock.price,
                          "{:.2f}".format(float(userstock.amount * userstock.stock.price)),
                          "{:.2f}".format((userstock.amount / userstock.stock.amount) * 100)])
 
