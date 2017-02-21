@@ -68,11 +68,13 @@ class Stocks(Cog):
 
         return name.upper()
 
-    def _identify_stock(self, channels: typing.Sequence[discord.TextChannel], name: str) -> discord.TextChannel:
+    def _identify_stock(self, channels: typing.Sequence[discord.abc.GuildChannel], name: str) -> discord.TextChannel:
         """
         Identifies a stock.
         """
         for channel in channels:
+            if not isinstance(channel, discord.TextChannel):
+                continue
             if self._get_name(channel) == name:
                 return channel
 
