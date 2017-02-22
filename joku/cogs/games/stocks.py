@@ -218,9 +218,10 @@ class Stocks(Cog):
         # calc market value
         stocks = await ctx.bot.database.get_stocks_for(ctx.guild)
         total = sum(stock.amount for stock in stocks)
+        val = sum(stock.amount * stock.price for stock in stocks)
 
         em.add_field(name="Stocks available", value=len(stocks))
-        em.add_field(name="Market value", value="§{:.2f}".format(total))
+        em.add_field(name="Market value", value="§{:.2f}".format(val))
         em.add_field(name="Individual share cap", value=total // 10)
 
         async with threadpool():
