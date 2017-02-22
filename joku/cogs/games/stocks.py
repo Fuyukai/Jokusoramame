@@ -139,15 +139,13 @@ class Stocks(Cog):
                             dilute = int(np.random.lognormal(mean=1.2, sigma=1.1))  # int truncates
                         if dilute != 0:
                             new_amount = stock.amount + dilute
-                            final_price = (((stock.amount * new_price) +  # (((stocks))) (this is satire)
-                                           (new_amount * 1.5)) /
-                                           (stock.amount + new_amount))
+                            final_price = new_price
                         else:
                             new_amount = stock.amount
                             final_price = new_price
 
                         # clamp to [1.5, 70]
-                        final_price = min(70, max(1.5, round(final_price, 2)))
+                        final_price = min(70, max(2, round(final_price, 2)))
 
                         # edit the stock price
                         mappings.append({
