@@ -140,14 +140,14 @@ class Stocks(Cog):
                         if dilute != 0:
                             new_amount = stock.amount + dilute
                             final_price = (((stock.amount * stock.price) +  # (((stocks))) (this is satire)
-                                           (new_amount * 0.5)) /
+                                           (new_amount * 2)) /
                                            (stock.amount + new_amount))
                         else:
                             new_amount = stock.amount
                             final_price = new_price
 
                         # clamp to [1.5, 70]
-                        final_price = min(70, max(1.5, round(final_price, 2)))
+                        final_price = min(70, max(2, round(final_price, 2)))
 
                         # edit the stock price
                         mappings.append({
