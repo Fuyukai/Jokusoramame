@@ -16,9 +16,10 @@ import tabulate
 from asyncio_extras import threadpool
 from discord.ext import commands
 import matplotlib as mpl
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from joku.db.tables import Stock
+from joku.db.tables import Stock, UserStock
 
 mpl.use('Agg')
 
@@ -200,7 +201,44 @@ class Stocks(Cog):
         await ctx.send("```{}```".format(table))
 
     @stocks.command()
-    async def portfolio(self, ctx: Context, target: discord.Member=None):
+    async def info(self, ctx: Context):
+        """
+        Shows the current stock info for this guild.
+        """
+        guild = await ctx.bot.database.get_or_create_guild(ctx.guild)
+        if not guild.stocks_enabled:
+            await ctx.send(":x: Stocks are not enabled for this server.")
+            return
+
+        em = discord.Embed(title="1st Stock Market of Joku")
+        em.description = "Displaying info about stocks for {.name}:\n\n" \
+                         "The **individual share cap** is the maximum number of shares one person can own.\n" \
+                         "The **market owned percentage** is what percentage is owned by users.".format(ctx.guild)
+
+        # calc market value
+        stocks = await ctx.bot.database.get_stocks_for(ctx.guild)
+        total = sum(stock.amount for stock in stocks)
+
+        em.add_field(name="Stocks available", value=len(stocks))
+        em.add_field(name="Market value", value="§{:.2f}".format(total))
+        em.add_field(name="Individual share cap", value=total // 10)
+
+        async with threadpool():
+            with self.bot.database.get_session() as sess:
+                r = sess.query(func.sum(UserStock.amount)).join(Stock).filter(Stock.guild_id == ctx.guild.id).scalar()
+
+        em.add_field(name="Total shares", value=int(total))
+
+        perc = (r / total) * 100
+
+        em.add_field(name="Market owned percentage", value="{:.2f}%".format(perc))
+        em.add_field(name="Remaining shares", value=(total - r))
+        em.colour = ctx.author.colour
+        em.timestamp = datetime.datetime.now()
+        await ctx.send(embed=em)
+
+    @stocks.command()
+    async def portfolio(self, ctx: Context, target: discord.Member = None):
         """
         Shows off your current stock portfolio for this guild.
         """
@@ -327,7 +365,7 @@ class Stocks(Cog):
 
         stock = await ctx.bot.database.get_stock(channel)
         us = await ctx.bot.database.get_user_stock(ctx.author, channel)
-        
+
         try:
             us_amount = us.amount or 0
         except AttributeError:  # us is None
@@ -375,7 +413,7 @@ class Stocks(Cog):
         await ctx.send(":heavy_check_mark: Sold {} stocks for `§{:.2f}`.".format(amount, us.stock.price * amount))
 
     @stocks.command(aliases=["plot"])
-    async def graph(self, ctx: Context, *, what: str="all"):
+    async def graph(self, ctx: Context, *, what: str = "all"):
         """
         Graphs the stock trends for this channel.
         """
