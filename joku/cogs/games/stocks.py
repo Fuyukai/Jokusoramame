@@ -155,6 +155,8 @@ class Stocks(Cog):
                             "price": final_price,
                             "amount": new_amount
                         })
+                        await self.bot.redis.update_stock_prices(channel, final_price)
+
                         self.logger.info("Stock {} gone from value {} -> {}, "
                                          "amount {} -> {}".format(channel.id, old_price, final_price,
                                                                   stock.amount, new_amount))
