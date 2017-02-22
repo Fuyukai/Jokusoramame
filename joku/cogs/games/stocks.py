@@ -310,9 +310,10 @@ class Stocks(Cog):
             return
 
         amnt = sum(us.amount for us in (await ctx.bot.database.get_user_stocks(ctx.author, ctx.guild)) if us)
-        if amnt > 1000:
+        total = sum(stock.amount for stock in (await ctx.bot.database.get_stocks_for(ctx.guild)))
+        if amnt > total // 10:
             await ctx.channel.send(":x: Monopolies do nothing but hurt the environment "
-                                   "(you need less than `{}` total shares to buy any more).")
+                                   "(you need less than `{}` total shares to buy any more).".format(total // 10))
             return
 
         total_available = await ctx.bot.database.get_remaining_stocks(channel)

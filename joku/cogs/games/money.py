@@ -117,6 +117,31 @@ class Currency(Cog):
         await ctx.bot.database.update_user_currency(ctx.message.author, amount)
         await ctx.channel.send(":money_with_wings: **You have earned `§{}` today.**".format(amount))
 
+    async def _fix_debt(self, ctx: Context, debt: int):
+        """
+        Fixes a user's debt by forcibly selling their shares, in order from most valuable to least valuable.
+        """
+        def _find_mul(a: float, b: float) -> int:
+            """
+            Finds the multiplier so that a * mul > b.
+            """
+            for x in range(0, 10000000):  # reasonably large big num
+                if a * x > b:
+                    return x
+
+        sold = 0
+        to_sell = []
+        stocks = await ctx.bot.database.get_user_stocks(ctx.author, ctx.guild)
+        stocks = sorted(stocks, key=lambda us: us.stock.price)  # sort by price so that we can sell the most valuable
+
+        for userstock in stocks:
+            total_value = userstock.amount * userstock.stock.price
+            if total_value < debt:
+                # sell all of it
+                sold += userstock.amount
+                to_sell
+
+
     @commands.command(pass_context=True)
     async def raffle(self, ctx: Context, *, price: int = 2):
         """
@@ -134,6 +159,8 @@ class Currency(Cog):
 
         currency = await ctx.bot.database.get_user_currency(ctx.message.author)
         if currency <= 0:
+            shares_sold = await self._fix_debt(ctx, abs(currency))
+
             await ctx.send(":dragon: A debt collector came and broke your {}. "
                            "You are now debt free.".format(self.rng.choice(BODY_PARTS)))
             await ctx.bot.database.update_user_currency(ctx.message.author, abs(currency) + 2)
