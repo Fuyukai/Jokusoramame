@@ -309,7 +309,7 @@ class Stocks(Cog):
             await ctx.send(":x: That stock does not exist.")
             return
 
-        amnt = sum(us.amount for us in (await ctx.bot.database.get_user_stocks(ctx.author, ctx.guild)) if us)
+        amnt = sum(us.amount for us in (await ctx.bot.database.get_user_stocks(ctx.author, guild=ctx.guild)) if us)
         total = sum(stock.amount for stock in (await ctx.bot.database.get_stocks_for(ctx.guild)))
         if amnt > total // 10:
             await ctx.channel.send(":x: Monopolies do nothing but hurt the environment "
