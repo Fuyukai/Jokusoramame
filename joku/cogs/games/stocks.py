@@ -126,15 +126,38 @@ class Stocks(Cog):
                         mult = 1 + mult
 
                         old_price = stock.price
-                        # clamp prices to [2, 70]
-                        new_price = min(70.0, max(2.00, round(old_price * mult, 2)))
+
+                        # multiply
+                        new_price = old_price * mult
+
+                        # slowly increase the amount of shares available and perform value dilution
+                        # ((o x op) + (n x ip)) / (o + n)
+                        # IP is issue price, and all new stocks are issued at a flat price of 0.5.
+                        if stock.amount >= 130000:  # HARD CAP at 130,000
+                            dilute = 0
+                        else:
+                            dilute = int(np.random.lognormal(mean=1.2, sigma=1.1))  # int truncates
+                        if dilute != 0:
+                            new_amount = stock.amount + dilute
+                            final_price = (((stock.amount * stock.price) +  # (((stocks))) (this is satire)
+                                           (new_amount * 0.5)) /
+                                           (stock.amount + new_amount))
+                        else:
+                            new_amount = stock.amount
+                            final_price = new_price
+
+                        # clamp to [1.5, 70]
+                        final_price = min(70, max(1.5, round(final_price, 2)))
 
                         # edit the stock price
                         mappings.append({
                             "channel_id": stock.channel_id,
-                            "price": new_price
+                            "price": final_price,
+                            "amount": new_amount
                         })
-                        self.logger.info("Stock {} gone from {} -> {}".format(channel.id, old_price, new_price))
+                        self.logger.info("Stock {} gone from value {} -> {}, "
+                                         "amount {} -> {}".format(channel.id, old_price, final_price,
+                                                                  stock.amount, new_amount))
 
                 async with threadpool():
                     with self.bot.database.get_session() as sess:
@@ -284,6 +307,12 @@ class Stocks(Cog):
         channel = self._identify_stock(ctx.guild.channels, stock.upper())
         if channel is None:
             await ctx.send(":x: That stock does not exist.")
+            return
+
+        amnt = sum(us.amount for us in (await ctx.bot.database.get_user_stocks(ctx.author, ctx.guild)) if us)
+        if amnt > 1000:
+            await ctx.channel.send(":x: Monopolies do nothing but hurt the environment "
+                                   "(you need less than `{}` total shares to buy any more).")
             return
 
         total_available = await ctx.bot.database.get_remaining_stocks(channel)
