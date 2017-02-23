@@ -5,9 +5,39 @@ import discord
 from discord.ext import commands
 
 from joku.cogs._common import Cog
+from joku.core.bot import Context
+from joku.core.checks import has_permissions, mod_command
 
 
 class InvisCop(Cog):
+    @commands.command(pass_context=True)
+    @has_permissions(manage_server=True, manage_messages=True)
+    @mod_command()
+    async def inviscop(self, ctx: Context, *, status: str = None):
+        """
+        Manages the Invisible cop
+
+        The Invisible Cop automatically deletes any messages of users with Invisible on.
+        """
+        if status is None:
+            # Check the status.
+            setting = await ctx.bot.database.get_setting(ctx.message.guild, "dndcop", {})
+            if setting.get("status") == 1:
+                await ctx.channel.send("Invis Cop is currently **on.**")
+            else:
+                await ctx.channel.send("Invis Cop is currently **off.**")
+        else:
+            if status.lower() == "on":
+                await ctx.bot.database.set_setting(ctx.message.guild, "dndcop", status=1)
+                await ctx.channel.send(":heavy_check_mark: Turned Invis Cop on.")
+                return
+            elif status.lower() == "off":
+                await ctx.bot.database.set_setting(ctx.message.guild, "dndcop", status=0)
+                await ctx.channel.send(":heavy_check_mark: Turned Invis Cop off.")
+                return
+            else:
+                await ctx.channel.send(":x: No.")
+
     async def on_message(self, message: discord.Message):
         """
         Checks for people on invisible, and deletes their message.
