@@ -19,7 +19,7 @@ BAD_RESPONSES = [
     ":fire: Your bank account went up in flames and you lost `§{}`.",
     ":grapes: You spend too much in the supermarket and you lost `§{}`.",
     ":spider: A spider arrives and you get so spooked you drop `§{}`.",
-    ":hammer_pick: The revolution comes and your wealth of `§{}` is redistributed.",
+    ":hammer_pick: The revolution comes and requires `§{}` to fund the new order.",
     ":dragon: Ryuu ga waga teki wo kurau! (You lost `§{}`.)"
 ]
 

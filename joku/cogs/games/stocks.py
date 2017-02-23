@@ -198,6 +198,104 @@ class Stocks(Cog):
 
         await self.bot.redis.increase_history_count(message.channel)
 
+    @commands.group(pass_context=True, invoke_without_command=True, aliases=["shares", "share", "asset"])
+    async def assets(self, ctx: Context, *, target: discord.Member = None):
+        """
+        Gets the current amount of § a user has in assets.
+
+        If no target is provided, it will show your worth in assets
+        """
+        user = target or ctx.message.author
+        if user.bot:
+            await ctx.channel.send(":x: Bots cannot own shares.")
+            return
+
+        guild = await ctx.bot.database.get_or_create_guild(ctx.guild)
+        if not guild.stocks_enabled:
+            await ctx.send(":x: Stocks are not enabled for this server.")
+            return
+
+        # Display only Assets the user owns (stolen from currency)
+        if ctx.channel.permissions_for(ctx.guild.me).embed_links:
+            day = self.rng.randint(1, 31)
+            hour, minute, second = self.rng.randint(0, 23), self.rng.randint(0, 59), self.rng.randint(0, 59)
+
+            ts = datetime.datetime(year=2008, month=7, day=day, hour=hour, minute=minute, second=second)
+
+            em = discord.Embed(title="1st Stock Market of Joku")
+            em.description = "Your asset value is based on best estimates from current market prices."
+            em.set_author(name=user.display_name)
+
+            stocks = await ctx.bot.database.get_user_stocks(user)
+            em.add_field(name="Shares held", value=sum(userstock.amount for userstock in stocks))
+            em.add_field(name="Asset values", value="§{:.2f}".format(sum(userstock.amount * userstock.stock.price
+                                                                         for userstock in stocks)))
+
+            em.set_thumbnail(url=user.avatar_url)
+            em.timestamp = ts
+            em.set_footer(text="Thanks capitalism!")
+            em.colour = user.colour
+            await ctx.send(embed=em)
+        else:
+            stocks = await ctx.bot.database.get_user_stocks(user)
+            await ctx.channel.send(
+                  "User **{}** has `§{}` assets worth `§{}`.".format(user, 
+                      sum(userstock.amount for userstock in stocks), 
+                      sum(userstock.amount * userstock.stock.price for userstock in stocks)))
+
+    @assets.command(pass_context=True, aliases=["top", "leaderboard"])
+    async def richest(self, ctx: Context, *, what: str = "value"):
+        """
+        Shows the top 10 stock holders in this guild by value of assets.
+        Adding amount or owned will rank by assets owned.
+        """
+        guild = await ctx.bot.database.get_or_create_guild(ctx.guild)
+        if not guild.stocks_enabled:
+            await ctx.send(":x: Stocks are not enabled for this server.")
+            return
+        
+        users = await ctx.bot.database.get_multiple_users(*ctx.message.guild.members)
+        
+        # Append a column to users holding asset total and asset worth
+        f_users = []
+        for user in users:        
+            stocks = await ctx.bot.database.get_user_stocks(user)
+            f_users.append([user, sum(userstock.amount for userstock in stocks), 
+                sum(userstock.amount * userstock.stock.price for userstock in stocks)])
+                
+        if (what == "amount") or (what == "owned"):  #order by stock amount
+            f_users = list(sorted(f_users, key=lambda user: user[1], reverse = True))
+        else: # what == default: order by asset worth
+            f_users = list(sorted(f_users, key=lambda user: user[2], reverse = True))
+        base = "**Top 10 users (in this server):**\n\n```{}```"
+
+        # Create a table using tabulate.
+        if (what == "amount") or (what == "owned"):
+            headers = ["POS", "User", "Assets Owned"]
+        else:  # what = default: order by value of stock worth
+            headers = ["POS", "User", "Total Value"]
+        table = []
+
+        for n, u in enumerate(f_users[:10]):
+            try:
+                member = ctx.message.guild.get_member(u[0].id).name
+                # Unicode and tables suck
+                member = member.encode("ascii", errors="replace").decode()
+            except AttributeError:
+                # Prevent race condition - member leaving between command invocation and here
+                continue
+            if (what == "owned") or (what == "amount"):
+                table.append([n + 1, member, u[1]])
+            else:
+                table.append([n + 1, member, "§{:.2f}".format(u[2])])
+
+        # Format the table.
+        table = tabulate.tabulate(table, headers=headers, tablefmt="orgtbl")
+
+        fmtted = base.format(table)
+
+        await ctx.channel.send(fmtted)
+
     @commands.group(invoke_without_command=True, aliases=["stock"])
     async def stocks(self, ctx: Context):
         """
