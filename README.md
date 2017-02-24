@@ -86,3 +86,9 @@ You will need:
 
     Once loaded, the bot will print the invite URL and automatically
     assign you as the bot owner.
+
+### Development
+
+Once following the above steps, you can enter the virtual environment
+created by Pipenv with `pipenv shell`, or run commands with
+`pipenv run`.
