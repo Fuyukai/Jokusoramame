@@ -134,7 +134,8 @@ class Stocks(Cog):
                         # slowly increase the amount of shares available and perform value dilution
                         # ((o x op) + (n x ip)) / (o + n)
                         # IP is issue price, and all new stocks are issued at a flat price of 0.5.
-                        if stock.amount >= 130000:  # HARD CAP at 130,000
+                        if stock.amount >= 13000:  # HARD CAP at 13,000
+                            stock.amount = 13000
                             dilute = 0
                         else:
                             dilute = int(np.random.lognormal(mean=1.2, sigma=1.1))  # int truncates
