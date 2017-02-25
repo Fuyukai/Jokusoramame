@@ -93,6 +93,9 @@ class Guild(Base):
     #: Are stocks enabled for this guild?
     stocks_enabled = Column(Boolean, default=False)
 
+    #: The stock announcement channel ID.
+    stock_announcement_id = Column(BigInteger, nullable=True)
+
 
 class UserStock(Base):
     """
@@ -112,6 +115,12 @@ class UserStock(Base):
 
     #: The amount of stock this user owns.
     amount = Column(Integer, nullable=False, unique=False)
+
+    #: Did this userstock crash?
+    crashed = Column(Boolean, nullable=False, default=False)
+
+    #: What did the stock crash at?
+    crashed_at = Column(Float, unique=False, nullable=False, default=0.0)
 
     def __repr__(self):
         return "<UserStock user_id={} stock_id={} amount={}>".format(self.user_id, self.stock_id, self.amount)
