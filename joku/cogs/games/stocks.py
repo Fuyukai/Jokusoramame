@@ -509,7 +509,7 @@ class Stocks(Cog):
         await ctx.channel.send(file=buf, filename="plot.png")
 
     @stocks.command(name="setup")
-    @has_permissions(manage_server=True)
+    @has_permissions(manage_guild=True)
     async def _setup(self, ctx: Context):
         """
         Enables stocks for this server.

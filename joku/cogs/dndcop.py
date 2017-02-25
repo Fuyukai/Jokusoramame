@@ -11,7 +11,7 @@ from joku.core.checks import has_permissions, mod_command
 
 class InvisCop(Cog):
     @commands.command(pass_context=True)
-    @has_permissions(manage_server=True, manage_messages=True)
+    @has_permissions(manage_guild=True, manage_messages=True)
     @mod_command()
     async def inviscop(self, ctx: Context, *, status: str = None):
         """

@@ -64,7 +64,7 @@ class Events(Cog):
         await channel.send(msg)
 
     @commands.group(invoke_without_command=True)
-    @has_permissions(manage_server=True)
+    @has_permissions(manage_guild=True)
     @mod_command()
     async def notifications(self, ctx: Context):
         """
@@ -73,7 +73,7 @@ class Events(Cog):
         You can either subscribe to notifications with `subscribe event`, unsubscribe with `unsubscribe event`,
         change the message with `msg event <msg>`, or move the channel with `move`.
 
-        All commands here require MANAGE_SERVER.
+        All commands here require manage_guild.
         """
         events = await ctx.bot.database.get_enabled_events(ctx.guild)
 
@@ -81,7 +81,7 @@ class Events(Cog):
         await ctx.send("**Currently enabled events for this guild:** {}".format(fmt))
 
     @notifications.command()
-    @has_permissions(manage_server=True)
+    @has_permissions(manage_guild=True)
     @mod_command()
     async def subscribe(self, ctx: Context, event: str):
         """
@@ -96,7 +96,7 @@ class Events(Cog):
         await ctx.send(":heavy_check_mark: Subscribed to event.")
 
     @notifications.command()
-    @has_permissions(manage_server=True)
+    @has_permissions(manage_guild=True)
     @mod_command()
     async def unsubscribe(self, ctx: Context, event: str):
         """
@@ -112,7 +112,7 @@ class Events(Cog):
         await ctx.send(":heavy_check_mark: Unsubscribed from event.")
 
     @notifications.command()
-    @has_permissions(manage_server=True)
+    @has_permissions(manage_guild=True)
     @mod_command()
     async def msg(self, ctx: Context, event: str, *, msg: str = None):
         """

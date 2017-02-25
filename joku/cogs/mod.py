@@ -143,7 +143,7 @@ class Moderation(Cog):
             await ctx.channel.send(":heavy_check_mark: Banned user {}.".format(user.name))
 
     @commands.group(pass_context=True, invoke_without_command=True)
-    @checks.has_permissions(manage_server=True, manage_roles=True)
+    @checks.has_permissions(manage_guild=True, manage_roles=True)
     @mod_command()
     async def rolestate(self, ctx: Context, *, status: str = None):
         """
@@ -171,7 +171,7 @@ class Moderation(Cog):
                 await ctx.channel.send(":x: No.")
 
     @rolestate.command()
-    @checks.has_permissions(manage_server=True, manage_roles=True)
+    @checks.has_permissions(manage_guild=True, manage_roles=True)
     @mod_command()
     async def view(self, ctx: Context, *, user_id: int = None):
         """
