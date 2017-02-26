@@ -402,7 +402,7 @@ class Stocks(Cog):
         stock = await ctx.bot.database.get_stock(channel)
         us = await ctx.bot.database.get_user_stock(ctx.author, channel)
 
-        if us and us.crashed is True:
+        if us and us.crashed is True and us.amount >= 1:
             await ctx.send(":x: This stock crashed. You must sell your remaining shares.")
             return
 
@@ -423,7 +423,7 @@ class Stocks(Cog):
             await ctx.send(":x: You need `§{:.2f}` to buy this.".format(price))
             return
 
-        await ctx.bot.database.change_user_stock_amount(ctx.author, channel, amount=amount)
+        await ctx.bot.database.change_user_stock_amount(ctx.author, channel, amount=amount, crashed=False)
         await ctx.send(":heavy_check_mark: Brought {} stocks for `§{:.2f}`. ".format(amount, price))
 
     @stocks.command()
@@ -450,15 +450,11 @@ class Stocks(Cog):
             absorbed = us.crashed_at * us.amount
             absorbed = absorbed / 4
 
-            async with threadpool():
-                with self.bot.database.get_session() as sess:
-                    us.crashed = False
-                    sess.merge(us)
-
             await ctx.send(":chart_with_downwards_trend: This stock crashed and you've been forced to absorb some "
                            "of the cost."
                            "You have lost `§{:.2f}`, and all your shares in this stock.".format(absorbed))
-            await ctx.bot.database.change_user_stock_amount(ctx.author, channel, amount=-us.amount, update_price=False)
+            await ctx.bot.database.change_user_stock_amount(ctx.author, channel, amount=-us.amount, update_price=False,
+                                                            crashed=False)
             await ctx.bot.database.update_user_currency(ctx.author, currency_to_add=-absorbed)
 
             return

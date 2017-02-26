@@ -713,7 +713,7 @@ class DatabaseInterface(object):
         return stock
 
     async def change_user_stock_amount(self, user: discord.Member, channel: discord.TextChannel, *,
-                                       amount: int, update_price: bool=True):
+                                       amount: int, crashed: bool=None, update_price: bool=True):
         """
         Changes the amount of stock a user owns.
         
@@ -741,6 +741,9 @@ class DatabaseInterface(object):
 
                     if update_price:
                         user.money += int(-amount * ustock.stock.price)
+
+                    if crashed is not None:
+                        ustock.crashed = crashed
 
                     sess.merge(ustock)
                     sess.merge(user)
