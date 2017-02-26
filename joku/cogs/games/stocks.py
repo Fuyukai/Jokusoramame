@@ -449,16 +449,17 @@ class Stocks(Cog):
         if us.crashed:
             absorbed = us.crashed_at * us.amount
             absorbed = absorbed / 4
-            await ctx.send(":chart_with_downwards_trend: This stock crashed and you've been forced to absorb some "
-                           "of the cost."
-                           "You have lost `§{:.2f}`, and all your shares in this stock.".format(absorbed))
-            await ctx.bot.database.change_user_stock_amount(ctx.author, channel, amount=-us.amount)
-            await ctx.bot.database.update_user_currency(ctx.author, -absorbed)
 
             async with threadpool():
                 with self.bot.database.get_session() as sess:
                     us.crashed = False
                     sess.merge(us)
+
+            await ctx.send(":chart_with_downwards_trend: This stock crashed and you've been forced to absorb some "
+                           "of the cost."
+                           "You have lost `§{:.2f}`, and all your shares in this stock.".format(absorbed))
+            await ctx.bot.database.change_user_stock_amount(ctx.author, channel, amount=-us.amount)
+            await ctx.bot.database.update_user_currency(ctx.author, -absorbed)
 
             return
 
