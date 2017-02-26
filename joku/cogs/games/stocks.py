@@ -79,6 +79,49 @@ class Stocks(Cog):
             if self._get_name(channel) == name:
                 return channel
 
+    async def flucutate_stock(self, stock: Stock):
+        """
+        Fluctuates a stock.
+        
+        Returns a 3 item tuple -> price, amount, crashed: bool
+        If crashed is True then price and amount are ignored
+        """
+        channel = self.bot.get_channel(stock.channel_id)
+
+        # 1/25 chance of crashing every minute
+        if self.rng.randint(0, 25) == 3:
+            return 2.0, stock.amount, True
+
+        # TODO: History multiplier, but properly this time?
+
+        # Initial multiplier is a random amount between 0.1 and 0.5.
+        # No lognormal here, F
+        mult = 0.5 * np.random.rand()
+        # Make it either positive or negative to make the price either decrease or increase.
+        mult = self.rng.choice([-1, 1]) * mult
+        # Add 1 to the mult to make sure it's always positive.
+        mult += 1
+        # Calculate the new final price for the stock.
+        new_price = round(max(2.0, stock.price * mult), 2)
+
+        # Amount calculation.
+        # Get the total amount remaining.
+        remaining = await self.bot.database.get_remaining_stocks(channel)
+        if remaining <= 0:
+            # Freeze the stock.
+            return new_price, stock.amount, False
+
+        # Calculate how much to go up or down.
+        dilute = int(np.random.laplace(scale=3))
+        if dilute < 0:
+            # Prevent it from going below the remaining shares.
+            dilute = max(-remaining, dilute)
+
+        # Add the amount on.
+        new_amount = min(13000, max(900, stock.amount + dilute))
+
+        return new_price, new_amount, False
+
     async def ready(self):
         """
         Begins fluctuating stock prices.
@@ -102,7 +145,8 @@ class Stocks(Cog):
 
                 # void warranty
 
-                mappings = []
+                stock_mappings = []
+                us_mappings = []
                 for guild in collected:
                     guild = self.bot.connection._guilds.get(guild.id)  # type: discord.Guild
                     if not guild:
@@ -115,42 +159,17 @@ class Stocks(Cog):
                         if channel is None:
                             continue
                         # update the price
-                        history = await self.bot.redis.get_and_pop_history_count(channel)
-                        if history != 0:
-                            mult = self.get_hist_mult(history)
-                        else:
-                            mult = 0
+                        final_price, new_amount, crashed = await self.flucutate_stock(stock)
 
-                        mult += np.random.lognormal(mean=-2)
-                        mult = self.rng.choice([-1, 1]) * mult
-                        mult = max(-0.9, min(mult, 0.9))  # clamp multiplier to 0.9 either way
-                        mult = 1 + mult
-
-                        old_price = stock.price
-
-                        # multiply
-                        new_price = old_price * mult
-
-                        # slowly increase the amount of shares available and perform value dilution
-                        # ((o x op) + (n x ip)) / (o + n)
-                        # IP is issue price, and all new stocks are issued at a flat price of 0.5.
-                        if stock.amount >= 13000:  # HARD CAP at 13,000
-                            stock.amount = 13000
-                            dilute = 0
-                        else:
-                            dilute = int(np.random.lognormal(mean=1.2, sigma=1.1))  # int truncates
-                        if dilute != 0:
-                            new_amount = stock.amount + dilute
-                            final_price = new_price
-                        else:
-                            new_amount = stock.amount
-                            final_price = new_price
-
-                        # clamp to [1.5, 70]
-                        final_price = min(70, max(2, round(final_price, 2)))
+                        if crashed:
+                            # should work :fingers_crossed:
+                            us_mappings.append({
+                                "stock_id": stock.channel_id,
+                                "crashed": crashed
+                            })
 
                         # edit the stock price
-                        mappings.append({
+                        stock_mappings.append({
                             "channel_id": stock.channel_id,
                             "price": final_price,
                             "amount": new_amount
@@ -158,13 +177,14 @@ class Stocks(Cog):
                         await self.bot.redis.update_stock_prices(channel, final_price)
 
                         self.logger.info("Stock {} gone from value {} -> {}, "
-                                         "amount {} -> {}".format(channel.id, old_price, final_price,
-                                                                  stock.amount, new_amount))
+                                         "amount {} -> {}, crashed: {}".format(channel.id, stock.price, final_price,
+                                                                               stock.amount, new_amount, crashed))
 
                 async with threadpool():
                     with self.bot.database.get_session() as sess:
                         assert isinstance(sess, Session)
-                        sess.bulk_update_mappings(Stock, mappings)
+                        sess.bulk_update_mappings(Stock, stock_mappings)
+
 
         finally:
             self._running = False
