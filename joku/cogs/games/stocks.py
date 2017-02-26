@@ -184,8 +184,6 @@ class Stocks(Cog):
                     with self.bot.database.get_session() as sess:
                         assert isinstance(sess, Session)
                         sess.bulk_update_mappings(Stock, stock_mappings)
-
-
         finally:
             self._running = False
 
@@ -278,9 +276,15 @@ class Stocks(Cog):
             if userstock.amount <= 0:
                 continue
 
+            if userstock.crashed:
+                share_price = "0.0"
+                total = "0.0"
+            else:
+                share_price = userstock.stock.price
+                total = "{:.2f}".format(float(userstock.amount * userstock.stock.price))
+
             rows.append([self._get_name(channel), userstock.amount,
-                         userstock.stock.price,
-                         "{:.2f}".format(float(userstock.amount * userstock.stock.price)),
+                         share_price, total,
                          "{:.2f}".format((userstock.amount / userstock.stock.amount) * 100)])
 
         table = tabulate.tabulate(rows, headers=headers, tablefmt="orgtbl", disable_numparse=True)
@@ -394,7 +398,8 @@ class Stocks(Cog):
             us_amount = 0
 
         if stock.amount * 0.4 < us_amount + amount:
-            await ctx.send(":x: You cannot own more than 40% of a given stock.")
+            await ctx.send(":x: You cannot own more than 40% (`{}` shares ) of this stock."
+                           .format(int(stock.amount * 0.4)))
             return
 
         price = stock.price * amount
@@ -405,7 +410,7 @@ class Stocks(Cog):
             return
 
         await ctx.bot.database.change_user_stock_amount(ctx.author, channel, amount=amount)
-        await ctx.send(":heavy_check_mark: Brought {} stocks for `§{:.2f}`.".format(amount, price))
+        await ctx.send(":heavy_check_mark: Brought {} stocks for `§{:.2f}`. ".format(amount, price))
 
     @stocks.command()
     async def sell(self, ctx: Context, stock: str, amount: int):
@@ -431,8 +436,21 @@ class Stocks(Cog):
             await ctx.send(":x: Cannot sell more shares than you have.")
             return
 
+        # calculate commission
+        if us.amount + amount <= us.stock.amount * 0.1:
+            tax = 0
+        elif us.amount + amount <= us.stock.amount * 0.25:
+            # 10%-25% of the stock is taxed at 30%
+            tax = amount * (us.stock.price * 0.3)
+        else:
+            # 25%-40% of the stock is taxed at 45%
+            tax = amount * (us.stock.price * 0.45)
+
+        tax = int(tax)
+
         await ctx.bot.database.change_user_stock_amount(ctx.author, channel, amount=-amount)
-        await ctx.send(":heavy_check_mark: Sold {} stocks for `§{:.2f}`.".format(amount, us.stock.price * amount))
+        await ctx.send(":heavy_check_mark: Sold {} stocks for `§{:.2f}`. "
+                       "Additionally, you paid `§{}` tax on this.".format(amount, us.stock.price * amount, tax))
 
     @stocks.command(aliases=["plot"])
     async def graph(self, ctx: Context, *, what: str = "all"):
