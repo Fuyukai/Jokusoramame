@@ -43,7 +43,7 @@ class Moderation(Cog):
         # Anti mention spam
 
         # Use a set here as we only want to ban unique mentions
-        mentions = len(set(message.mentions))
+        mentions = len(set(message.mentions) & set(message.role_mentions))
         if mentions < 3:
             # dont bother loading from DB
             return
