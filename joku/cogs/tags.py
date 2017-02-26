@@ -84,6 +84,7 @@ class Tags(Cog):
 
         # Set the tag.
         await ctx.bot.database.save_tag(ctx.message.guild, name, content, owner=owner)
+        name = name.replace("@everyone", "@\u200beveryone").replace("@here", "@\u200bhere")
         await ctx.channel.send(":heavy_check_mark: Tag **{}** saved.".format(name))
 
     @tag.command(pass_context=True, aliases=["remove"])
