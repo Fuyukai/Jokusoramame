@@ -458,8 +458,8 @@ class Stocks(Cog):
             await ctx.send(":chart_with_downwards_trend: This stock crashed and you've been forced to absorb some "
                            "of the cost."
                            "You have lost `§{:.2f}`, and all your shares in this stock.".format(absorbed))
-            await ctx.bot.database.change_user_stock_amount(ctx.author, channel, amount=-us.amount)
-            await ctx.bot.database.update_user_currency(ctx.author, -absorbed)
+            await ctx.bot.database.change_user_stock_amount(ctx.author, channel, amount=-us.amount, update_price=False)
+            await ctx.bot.database.update_user_currency(ctx.author, currency_to_add=-absorbed)
 
             return
 

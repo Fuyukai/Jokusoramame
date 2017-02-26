@@ -212,7 +212,9 @@ class DatabaseInterface(object):
         user = await self.get_or_create_user(member)
         async with threadpool():
             with self.get_session() as session:
+                print(user.money, currency_to_add)
                 user.money += currency_to_add
+                print(user.money)
                 user.last_modified = datetime.datetime.now()
 
                 session.add(user)
@@ -709,7 +711,7 @@ class DatabaseInterface(object):
         return stock
 
     async def change_user_stock_amount(self, user: discord.Member, channel: discord.TextChannel, *,
-                                       amount: int):
+                                       amount: int, update_price: bool=True):
         """
         Changes the amount of stock a user owns.
         
@@ -734,7 +736,9 @@ class DatabaseInterface(object):
                         ustock.amount += amount
                     else:
                         ustock.amount = amount
-                    user.money += int(-amount * ustock.stock.price)
+
+                    if update_price:
+                        user.money += int(-amount * ustock.stock.price)
 
                     sess.merge(ustock)
                     sess.merge(user)
