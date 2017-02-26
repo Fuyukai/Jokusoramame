@@ -189,8 +189,8 @@ class Currency(Cog):
 
             stocks = await ctx.bot.database.get_user_stocks(user)
             em.add_field(name="Shares held", value=sum(userstock.amount for userstock in stocks))
-            em.add_field(name="Asset values", value="§{:.2f}".format(sum(userstock.amount * userstock.stock.price for
-                                                                         userstock in stocks)))
+            em.add_field(name="Share values", value="§{:.2f}".format(sum(userstock.amount * userstock.stock.price for
+                                                                         userstock in stocks if not userstock.crashed)))
 
             em.set_thumbnail(url=user.avatar_url)
             em.timestamp = ts
