@@ -163,11 +163,12 @@ class Stocks(Cog):
 
                         if crashed:
                             # should work :fingers_crossed:
-                            us_mappings.append({
-                                "stock_id": stock.channel_id,
-                                "crashed": crashed,
-                                "crashed_at": stock.price
-                            })
+                            for us in stock.users:
+                                us_mappings.append({
+                                    "id": us.id,
+                                    "crashed": True,
+                                    "crashed_at": stock.price
+                                })
 
                         # edit the stock price
                         stock_mappings.append({
@@ -186,6 +187,7 @@ class Stocks(Cog):
                         assert isinstance(sess, Session)
                         sess.bulk_update_mappings(Stock, stock_mappings)
                         sess.bulk_update_mappings(UserStock, us_mappings)
+
         finally:
             self._running = False
 
