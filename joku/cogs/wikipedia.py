@@ -50,6 +50,7 @@ class Wikipedia(Cog):
         else:
             assert isinstance(result, wikipedia.WikipediaPage)
             em = discord.Embed(title=result.title)
+            em.colour = discord.Colour.green()
             em.description = _wp_truncate(result.summary)
             em.url = result.url
             # only set thumbnail if the article has one
