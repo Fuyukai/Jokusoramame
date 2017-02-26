@@ -109,7 +109,7 @@ class Tags(Cog):
 
         # Now, delete the tag.
         await ctx.bot.database.delete_tag(ctx.message.guild, name)
-        await ctx.channel.send(":skull_and_crossbones: Tag  **{}** deleted.".format(self._sanitize_name(name)))
+        await ctx.channel.send(":put_litter_in_its_place: Tag **{}** deleted.".format(self._sanitize_name(name)))
 
     # Unlike other bots, tags are registered like full commands.
     # So, they're entirely handled inside on_command_error.
