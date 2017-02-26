@@ -165,7 +165,8 @@ class Stocks(Cog):
                             # should work :fingers_crossed:
                             us_mappings.append({
                                 "stock_id": stock.channel_id,
-                                "crashed": crashed
+                                "crashed": crashed,
+                                "crashed_at": stock.price
                             })
 
                         # edit the stock price
@@ -218,6 +219,12 @@ class Stocks(Cog):
 
         table = tabulate.tabulate(rows, headers=headers, tablefmt="orgtbl", disable_numparse=True)
         await ctx.send("```{}```".format(table))
+
+    @stocks.command(hidden=True)
+    async def taxes(self, ctx: Context):
+        em = discord.Embed()
+        em.description = "<:ancap:282526484004995072>"
+        await ctx.send(embed=em)
 
     @stocks.command()
     async def info(self, ctx: Context):
