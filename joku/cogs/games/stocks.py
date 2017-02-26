@@ -185,6 +185,7 @@ class Stocks(Cog):
                     with self.bot.database.get_session() as sess:
                         assert isinstance(sess, Session)
                         sess.bulk_update_mappings(Stock, stock_mappings)
+                        sess.bulk_update_mappings(UserStock, us_mappings)
         finally:
             self._running = False
 
@@ -399,6 +400,9 @@ class Stocks(Cog):
         stock = await ctx.bot.database.get_stock(channel)
         us = await ctx.bot.database.get_user_stock(ctx.author, channel)
 
+        if us.crashed is True:
+            await ctx.send(":x: This stock crashed. You must sell your remaining shares.")
+
         try:
             us_amount = us.amount or 0
         except AttributeError:  # us is None
@@ -439,6 +443,14 @@ class Stocks(Cog):
             await ctx.send(":x: You do not own any of this stock.")
             return
 
+        if us.crashed:
+            absorbed = us.crashed_at * us.amount
+            await ctx.send(":chart_with_downwards_trend: This stock crashed and you've been forced to absorb the cost."
+                           "You have lost `§{:.2f}`, and all your shares in this stock.".format(absorbed))
+            await ctx.bot.database.change_user_stock_amount(ctx.author, channel, amount=-us.amount)
+            await ctx.bot.database.update_user_currency(ctx.author, -absorbed)
+            return
+
         if us.amount < amount:
             await ctx.send(":x: Cannot sell more shares than you have.")
             return
@@ -456,6 +468,7 @@ class Stocks(Cog):
         tax = int(tax)
 
         await ctx.bot.database.change_user_stock_amount(ctx.author, channel, amount=-amount)
+        await ctx.bot.database.update_user_currency(ctx.author, -tax)
         await ctx.send(":heavy_check_mark: Sold {} stocks for `§{:.2f}`. "
                        "Additionally, you paid `§{}` tax on this.".format(amount, us.stock.price * amount, tax))
 
