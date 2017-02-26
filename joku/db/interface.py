@@ -212,9 +212,7 @@ class DatabaseInterface(object):
         user = await self.get_or_create_user(member)
         async with threadpool():
             with self.get_session() as session:
-                print(user.money, currency_to_add)
                 user.money += currency_to_add
-                print(user.money)
                 user.last_modified = datetime.datetime.now()
 
                 session.add(user)
