@@ -287,8 +287,8 @@ class Stocks(Cog):
                 continue
 
             if userstock.crashed:
-                share_price = "0.0"
-                total = "0.0"
+                share_price = "0.0 (Crashed)"
+                total = "0.0 (Crashed)"
             else:
                 share_price = userstock.stock.price
                 total = "{:.2f}".format(float(userstock.amount * userstock.stock.price))
