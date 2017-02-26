@@ -21,6 +21,9 @@ class Tags(Cog):
 
         self.engine = TagEngine(self.bot)
 
+    def _sanitize_name(self, name: str) -> str:
+        return name.replace("@everyone", "@\u200beveryone").replace("@here", "@\u200bhere")
+
     @commands.group(pass_context=True, invoke_without_command=True,
                     aliases=["tags"])
     async def tag(self, ctx: Context, *, name: str):
@@ -49,13 +52,12 @@ class Tags(Cog):
         """
         Shows all the tags for the current server
         """
-        # looks kinda bleak but i try my best *shrug*
         server_tags = await ctx.bot.database.get_all_tags_for_guild(ctx.message.guild)
         if not server_tags:
             await ctx.channel.send(":x: This server has no tags.")
             return
 
-        await ctx.channel.send("Tags: " + ", ".join([x.name for x in server_tags]))
+        await ctx.channel.send("Tags: " + ", ".join([self._sanitize_name(x.name) for x in server_tags]))
 
     @tag.command(pass_context=True, aliases=["edit"])
     async def create(self, ctx: Context, name: str, *, content: str):
@@ -84,8 +86,7 @@ class Tags(Cog):
 
         # Set the tag.
         await ctx.bot.database.save_tag(ctx.message.guild, name, content, owner=owner)
-        name = name.replace("@everyone", "@\u200beveryone").replace("@here", "@\u200bhere")
-        await ctx.channel.send(":heavy_check_mark: Tag **{}** saved.".format(name))
+        await ctx.channel.send(":heavy_check_mark: Tag **{}** saved.".format(self._sanitize_name(name)))
 
     @tag.command(pass_context=True, aliases=["remove"])
     async def delete(self, ctx: Context, *, name: str):
@@ -108,7 +109,7 @@ class Tags(Cog):
 
         # Now, delete the tag.
         await ctx.bot.database.delete_tag(ctx.message.guild, name)
-        await ctx.channel.send(":skull_and_crossbones: Tag  **{}** deleted.".format(name))
+        await ctx.channel.send(":skull_and_crossbones: Tag  **{}** deleted.".format(self._sanitize_name(name)))
 
     # Unlike other bots, tags are registered like full commands.
     # So, they're entirely handled inside on_command_error.
