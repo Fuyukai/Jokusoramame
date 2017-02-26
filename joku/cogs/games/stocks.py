@@ -88,8 +88,8 @@ class Stocks(Cog):
         """
         channel = self.bot.get_channel(stock.channel_id)
 
-        # 1/25 chance of crashing every minute
-        if self.rng.randint(0, 25) == 3:
+        # 1 crash per 6 hours
+        if self.rng.randint(0, 360) == 3:
             return 2.0, stock.amount, True
 
         # TODO: History multiplier, but properly this time?
@@ -404,6 +404,7 @@ class Stocks(Cog):
 
         if us.crashed is True:
             await ctx.send(":x: This stock crashed. You must sell your remaining shares.")
+            return
 
         try:
             us_amount = us.amount or 0
@@ -447,10 +448,18 @@ class Stocks(Cog):
 
         if us.crashed:
             absorbed = us.crashed_at * us.amount
-            await ctx.send(":chart_with_downwards_trend: This stock crashed and you've been forced to absorb the cost."
+            absorbed = absorbed / 4
+            await ctx.send(":chart_with_downwards_trend: This stock crashed and you've been forced to absorb some "
+                           "of the cost."
                            "You have lost `§{:.2f}`, and all your shares in this stock.".format(absorbed))
             await ctx.bot.database.change_user_stock_amount(ctx.author, channel, amount=-us.amount)
             await ctx.bot.database.update_user_currency(ctx.author, -absorbed)
+
+            async with threadpool():
+                with self.bot.database.get_session() as sess:
+                    us.crashed = False
+                    sess.merge(us)
+
             return
 
         if us.amount < amount:

@@ -130,6 +130,15 @@ class RedisAdapter(object):
             await redis.hmset_dict("presence:{}".format(member.id),
                                    last_message=time.time())
 
+            await redis.incr("presence:{}:msgs".format(member.id))
+
+    async def get_message_count(self, member: discord.Member):
+        """
+        Gets the message 
+        :param member: 
+        :return: 
+        """
+
     async def get_presence_data(self, member: discord.Member):
         """
         Gets presence data for the specified member.
