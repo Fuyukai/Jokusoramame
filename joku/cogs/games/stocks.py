@@ -402,7 +402,7 @@ class Stocks(Cog):
         stock = await ctx.bot.database.get_stock(channel)
         us = await ctx.bot.database.get_user_stock(ctx.author, channel)
 
-        if us.crashed is True:
+        if us and us.crashed is True:
             await ctx.send(":x: This stock crashed. You must sell your remaining shares.")
             return
 
