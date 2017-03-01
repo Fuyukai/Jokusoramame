@@ -153,18 +153,14 @@ class Stocks(Cog):
                         continue
 
                     stocks = await self.bot.database.get_stocks_for(guild)
-                    remaining = await self.bot.database.bulk_get_remaining_stocks(*stocks)
-                    for stock in stocks:
-                        channel = guild.get_channel(stock.channel_id)
+                    remain = await self.bot.database.bulk_get_remaining_stocks(*stocks)
+                    for s in stocks:
+                        channel = guild.get_channel(s.channel_id)
                         if channel is None:
                             continue
 
-                        if stock.channel_id not in remaining:
-                            # why
-                            continue
-
                         # update the price
-                        async def _terrible(stock):
+                        async def _terrible(stock, remaining):
                             final_price, \
                             new_amount, \
                             crashed = await self.flucutate_stock(stock, remaining[stock.channel_id])
@@ -187,10 +183,11 @@ class Stocks(Cog):
                             await self.bot.redis.update_stock_prices(channel, final_price)
 
                             self.logger.info("Stock {} gone from value {} -> {}, "
-                                             "amount {} -> {}, crashed: {}".format(channel.id, stock.price, final_price,
+                                             "amount {} -> {}, crashed: {}".format(stock.channel_id, stock.price,
+                                                                                   final_price,
                                                                                    stock.amount, new_amount, crashed))
 
-                        coros.append(_terrible(stock))
+                        coros.append(_terrible(s, remain))
 
                 await asyncio.gather(*coros, return_exceptions=True)
 
