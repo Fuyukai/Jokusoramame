@@ -242,6 +242,16 @@ class Jokusoramame(AutoShardedBot):
         except Exception as e:
             self.logger.exception("Failed to load Kyoukai!")
 
+        self.apply_checks()
+
+        new_time = time.time() - self.startup_time
+
+        self.logger.info("Bot ready in {} seconds.".format(new_time))
+
+    def apply_checks(self):
+        """
+        Applies certain global checks to commands.
+        """
         from joku.core.checks import md_check, non_md_check
         n = 0
         for command in self.walk_commands():
@@ -254,10 +264,6 @@ class Jokusoramame(AutoShardedBot):
                 n += 1
 
         self.logger.info("Applied {} new checks to commands.".format(n))
-
-        new_time = time.time() - self.startup_time
-
-        self.logger.info("Bot ready in {} seconds.".format(new_time))
 
     async def on_message(self, message: Message):
         self.logger.info("Recieved message: {message.content} "
