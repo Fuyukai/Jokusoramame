@@ -237,7 +237,7 @@ class Core(Cog):
                                                          firstlineno + len(lines) - 1)
         await ctx.channel.send(final_url)
 
-    @commands.command(pass_context=True)
+    @commands.command(pass_context=True, hidden=True)
     async def pong(self, ctx: Context):
         await ctx.channel.send("Fuck you")
 
@@ -275,7 +275,8 @@ class Core(Cog):
                         # Check if the author can run the command.
                         try:
                             if await m.can_run(ctx):
-                                cmds.append("`" + new_name + "`")
+                                if not m.hidden:
+                                    cmds.append("`" + new_name + "`")
                         except (CheckFailure, DoNotRun):
                             pass
 
