@@ -79,7 +79,7 @@ class Stocks(Cog):
             if self._get_name(channel) == name:
                 return channel
 
-    async def flucutate_stock(self, stock: Stock):
+    async def flucutate_stock(self, stock: Stock, remaining: int):
         """
         Fluctuates a stock.
         
@@ -106,7 +106,6 @@ class Stocks(Cog):
 
         # Amount calculation.
         # Get the total amount remaining.
-        remaining = await self.bot.database.get_remaining_stocks(channel)
         if remaining <= 0:
             # Freeze the stock.
             return new_price, stock.amount, False
@@ -154,13 +153,21 @@ class Stocks(Cog):
                         continue
 
                     stocks = await self.bot.database.get_stocks_for(guild)
+                    remaining = await self.bot.database.bulk_get_remaining_stocks(*stocks)
                     for stock in stocks:
                         channel = guild.get_channel(stock.channel_id)
                         if channel is None:
                             continue
+
+                        if stock.channel_id not in remaining:
+                            # why
+                            continue
+
                         # update the price
                         async def _terrible(stock):
-                            final_price, new_amount, crashed = await self.flucutate_stock(stock)
+                            final_price, \
+                            new_amount, \
+                            crashed = await self.flucutate_stock(stock, remaining[stock.channel_id])
 
                             if crashed:
                                 # should work :fingers_crossed:
@@ -244,9 +251,10 @@ class Stocks(Cog):
         else:
             stocks = await ctx.bot.database.get_user_stocks(user)
             await ctx.channel.send(
-                  "User **{}** has `§{}` assets worth `§{}`.".format(user, 
-                      sum(userstock.amount for userstock in stocks), 
-                      sum(userstock.amount * userstock.stock.price for userstock in stocks)))
+                "User **{}** has `§{}` assets worth `§{}`.".format(user,
+                                                                   sum(userstock.amount for userstock in stocks),
+                                                                   sum(userstock.amount * userstock.stock.price for
+                                                                       userstock in stocks)))
 
     @assets.command(pass_context=True, aliases=["top", "leaderboard"])
     async def richest(self, ctx: Context, *, what: str = "value"):
@@ -258,20 +266,20 @@ class Stocks(Cog):
         if not guild.stocks_enabled:
             await ctx.send(":x: Stocks are not enabled for this server.")
             return
-        
+
         users = await ctx.bot.database.get_multiple_users(*ctx.message.guild.members)
-        
+
         # Append a column to users holding asset total and asset worth
         f_users = []
-        for user in users:        
+        for user in users:
             stocks = await ctx.bot.database.get_user_stocks(user)
-            f_users.append([user, sum(userstock.amount for userstock in stocks), 
-                sum(userstock.amount * userstock.stock.price for userstock in stocks)])
-                
-        if (what == "amount") or (what == "owned"):  #order by stock amount
-            f_users = list(sorted(f_users, key=lambda user: user[1], reverse = True))
-        else: # what == default: order by asset worth
-            f_users = list(sorted(f_users, key=lambda user: user[2], reverse = True))
+            f_users.append([user, sum(userstock.amount for userstock in stocks),
+                            sum(userstock.amount * userstock.stock.price for userstock in stocks)])
+
+        if (what == "amount") or (what == "owned"):  # order by stock amount
+            f_users = list(sorted(f_users, key=lambda user: user[1], reverse=True))
+        else:  # what == default: order by asset worth
+            f_users = list(sorted(f_users, key=lambda user: user[2], reverse=True))
         base = "**Top 10 users (in this server):**\n\n```{}```"
 
         # Create a table using tabulate.

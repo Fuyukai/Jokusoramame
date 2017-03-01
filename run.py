@@ -23,7 +23,10 @@ def main():
 
     bot = Jokusoramame(config_file=config)
     bot.logger.info("Launching Jokusoramame in autosharded mode...")
-    bot.run()
+    try:
+        bot.run()
+    except (KeyboardInterrupt, EOFError):
+        pass
 
     # fuck off forever
     bot.loop.set_exception_handler(lambda *args, **kwargs: None)

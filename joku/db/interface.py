@@ -683,6 +683,25 @@ class DatabaseInterface(object):
 
         return stock.amount - total
 
+    async def bulk_get_remaining_stocks(self, *stocks: typing.Iterable[Stock]):
+        """
+        Bulk gets the remaining stocks for a series of stocks.
+        
+        This is faster than calling the amount of stocks repeatedly.
+        """
+        async with threadpool():
+            with self.get_session() as sess:
+                sql = ("SELECT user__stock.stock_id, sum(user__stock.amount) "
+                       "FROM user__stock "
+                       "WHERE user__stock.stock_id IN :values "
+                       "GROUP BY user__stock.stock_id")
+                cursor = sess.execute(sql, {"values": tuple(stock.channel_id for stock in stocks)})
+                rows = cursor.fetchall()
+
+        return {
+            stock_id: sum for (stock_id, sum) in rows
+        }
+
     async def change_stock(self, channel: discord.TextChannel, *,
                            amount: int = None, price: int = None) -> Stock:
         """
@@ -713,7 +732,7 @@ class DatabaseInterface(object):
         return stock
 
     async def change_user_stock_amount(self, user: discord.Member, channel: discord.TextChannel, *,
-                                       amount: int, crashed: bool=None, update_price: bool=True):
+                                       amount: int, crashed: bool = None, update_price: bool = True):
         """
         Changes the amount of stock a user owns.
         
