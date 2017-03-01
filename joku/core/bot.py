@@ -213,7 +213,11 @@ class Jokusoramame(AutoShardedBot):
             await self.logout()
             return
 
-        for cog in self.config.get("autoload", []):
+        autoload = self.config.get("autoload", [])
+        if "joku.cogs.core" not in autoload:
+            autoload.append("joku.cogs.core")
+
+        for cog in autoload:
             try:
                 self.load_extension(cog)
             except Exception as e:
