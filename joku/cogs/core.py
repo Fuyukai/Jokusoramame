@@ -239,7 +239,7 @@ class Core(Cog):
 
     @commands.command(pass_context=True, hidden=True)
     async def pong(self, ctx: Context):
-        await ctx.channel.send("Fuck you")
+        await ctx.channel.send(":ping_pong: Ping! | Heck ms")
 
     @commands.command(pass_context=True)
     async def invite(self, ctx: Context):
