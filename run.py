@@ -21,10 +21,7 @@ def main():
     if not os.path.exists(config):
         shutil.copy("config.example.yml", config)
 
-    with open(config) as f:
-        config_data = yaml.load(f, Loader=yaml.Loader)
-
-    bot = Jokusoramame(config=config_data)
+    bot = Jokusoramame(config_file=config)
     bot.logger.info("Launching Jokusoramame in autosharded mode...")
     bot.run()
 

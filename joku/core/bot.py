@@ -35,13 +35,17 @@ StreamHandler(sys.stderr).push_application()
 
 
 class Jokusoramame(AutoShardedBot):
-    def __init__(self, config: dict, *args, **kwargs):
+    def __init__(self, config_file: str, *args, **kwargs):
         """
         Creates a new instance of the bot.
 
         :param config: The config to create this with.
         """
-        self.config = config
+        self.config_file = config_file
+        self.config = {}
+
+        with open(self.config_file) as f:
+            self.config = yaml.load(f, Loader=yaml.Loader)
 
         # Logging stuff
         self.logger = logbook.Logger("Jokusoramame")
@@ -137,9 +141,9 @@ class Jokusoramame(AutoShardedBot):
                 self.logger.error("Could not find error channel!")
             else:
                 fmt = "Server: {}\nChannel: {}\nCommand: {}\n\n```{}```".format(context.message.guild.name,
-                                                                          context.message.channel.name,
-                                                                          context.invoked_with,
-                                                                          ''.join(lines))
+                                                                                context.message.channel.name,
+                                                                                context.invoked_with,
+                                                                                ''.join(lines))
                 await error_channel.send(fmt)
             return
 
@@ -160,6 +164,13 @@ class Jokusoramame(AutoShardedBot):
 
         elif isinstance(exception, DoNotRun):
             pass
+
+    def reload_config_file(self):
+        """
+        Reloads the current config file.
+        """
+        with open(self.config_file) as f:
+            self.config = yaml.load(f, Loader=yaml.Loader)
 
     async def on_connect(self):
         await self.change_presence(game=discord.Game(name="Type j!help for help!"))
