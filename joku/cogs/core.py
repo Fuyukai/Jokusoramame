@@ -109,7 +109,7 @@ class Core(Cog):
         """
         Reloads all the modules for every shard.
         """
-        #ctx.bot.manager.reload_config_file()
+        ctx.bot.reload_config_file()
 
         for extension in ctx.bot.extensions.copy():
             ctx.bot.unload_extension(extension)
@@ -119,6 +119,8 @@ class Core(Cog):
                 ctx.bot.logger.exception()
             else:
                 ctx.bot.logger.info("Reloaded {}.".format(extension))
+
+        ctx.bot.apply_checks()
 
         await ctx.channel.send(":heavy_check_mark: Reloaded bot.")
 
