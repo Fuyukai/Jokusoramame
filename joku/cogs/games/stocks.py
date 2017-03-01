@@ -155,12 +155,12 @@ class Stocks(Cog):
                     stocks = await self.bot.database.get_stocks_for(guild)
                     remain = await self.bot.database.bulk_get_remaining_stocks(*stocks)
                     for s in stocks:
-                        channel = guild.get_channel(s.channel_id)
-                        if channel is None:
-                            continue
-
                         # update the price
                         async def _terrible(stock, remaining):
+                            channel = guild.get_channel(stock.channel_id)
+                            if channel is None:
+                                return
+
                             final_price, \
                             new_amount, \
                             crashed = await self.flucutate_stock(stock, remaining[stock.channel_id])
