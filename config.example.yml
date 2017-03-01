@@ -13,7 +13,6 @@ dbots_token: dniewudbyuewbdfuewvfueqwh89defbewyfbuewhf
 # The cogs to load.
 autoload:
   # Core cogs. It is recommended not to change these.
-  - joku.cogs.core
   - joku.cogs.debug
   - joku.cogs.tracking
   - joku.cogs.misc
