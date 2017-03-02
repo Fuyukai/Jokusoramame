@@ -153,43 +153,38 @@ class Stocks(Cog):
                         continue
 
                     stocks = await self.bot.database.get_stocks_for(guild)
-                    remain = await self.bot.database.bulk_get_remaining_stocks(*stocks)
-                    for s in stocks:
+                    remaining = await self.bot.database.bulk_get_remaining_stocks(*stocks)
+                    for stock in stocks:
                         # update the price
-                        async def _terrible(stock, remaining):
-                            channel = guild.get_channel(stock.channel_id)
-                            if channel is None:
-                                return
+                        channel = guild.get_channel(stock.channel_id)
+                        if channel is None:
+                            return
 
-                            final_price, \
-                            new_amount, \
-                            crashed = await self.flucutate_stock(stock, remaining[stock.channel_id])
+                        final_price, \
+                        new_amount, \
+                        crashed = await self.flucutate_stock(stock, remaining[stock.channel_id])
 
-                            if crashed:
-                                # should work :fingers_crossed:
-                                for us in stock.users:
-                                    us_mappings.append({
-                                        "id": us.id,
-                                        "crashed": True,
-                                        "crashed_at": stock.price
-                                    })
+                        if crashed:
+                            # should work :fingers_crossed:
+                            for us in stock.users:
+                                us_mappings.append({
+                                    "id": us.id,
+                                    "crashed": True,
+                                    "crashed_at": stock.price
+                                })
 
-                            # edit the stock price
-                            stock_mappings.append({
-                                "channel_id": stock.channel_id,
-                                "price": final_price,
-                                "amount": new_amount
-                            })
-                            await self.bot.redis.update_stock_prices(channel, final_price)
+                        # edit the stock price
+                        stock_mappings.append({
+                            "channel_id": stock.channel_id,
+                            "price": final_price,
+                            "amount": new_amount
+                        })
+                        await self.bot.redis.update_stock_prices(channel, final_price)
 
-                            self.logger.info("Stock {} gone from value {} -> {}, "
-                                             "amount {} -> {}, crashed: {}".format(stock.channel_id, stock.price,
-                                                                                   final_price,
-                                                                                   stock.amount, new_amount, crashed))
-
-                        coros.append(_terrible(s, remain))
-
-                await asyncio.gather(*coros, return_exceptions=True)
+                        self.logger.info("Stock {} gone from value {} -> {}, "
+                                         "amount {} -> {}, crashed: {}".format(stock.channel_id, stock.price,
+                                                                               final_price,
+                                                                               stock.amount, new_amount, crashed))
 
                 async with threadpool():
                     with self.bot.database.get_session() as sess:
