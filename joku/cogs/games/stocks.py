@@ -158,7 +158,7 @@ class Stocks(Cog):
                         # update the price
                         channel = guild.get_channel(stock.channel_id)
                         if channel is None:
-                            return
+                            continue
 
                         final_price, \
                         new_amount, \
