@@ -26,6 +26,7 @@ pytz = "*"
 wikipedia = "*"
 googlemaps = "*"
 "ruamel.yaml" = "*"
+pillow = "*"
 
 [packages."discord.py"]
 git = "https://github.com/Rapptz/discord.py.git"

@@ -3,8 +3,11 @@ Misc cog.
 """
 import asyncio
 import time
+from io import BytesIO
 
 import discord
+from PIL import Image, ImageDraw
+from asyncio_extras import threadpool
 from discord.ext import commands
 
 from joku.cogs._common import Cog
@@ -13,6 +16,24 @@ from joku.core.checks import has_permissions, mod_command
 
 
 class Misc(Cog):
+    @commands.command(aliases=["showcolor"])
+    async def showcolour(self, ctx: Context, colour: discord.Colour):
+        """
+        Shows an image for the specified colour.
+        """
+        async with ctx.channel.typing():
+            async with threadpool():
+                image = Image.new("RGB", (200, 200))
+                d = ImageDraw.Draw(image)
+                # create a filled rectangle of size 200, 200
+                d.rectangle(((0, 0), (200, 200)), fill=colour.to_tuple())
+                b = BytesIO()
+                image.save(b, format="png")
+                b.seek(0)
+
+        # upload straight from the bytesio
+        await ctx.send(file=b, filename="colour.png")
+
     @commands.command()
     async def ping(self, ctx: Context):
         """
