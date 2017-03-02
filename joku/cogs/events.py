@@ -1,6 +1,8 @@
 """
 Cog that handles event listeners.
 """
+import typing
+
 import discord
 from discord.ext import commands
 
@@ -13,7 +15,8 @@ from joku.vendor.safefmt import safe_format
 class Events(Cog):
     VALID_EVENTS = (
         "joins",
-        "leaves"
+        "leaves",
+        "emojis"
     )
 
     async def on_member_join(self, member: discord.Member):
@@ -61,6 +64,30 @@ class Events(Cog):
             "channel": channel
         }
         msg = safe_format(event.message or "Bye {member.name}!", **fmt)
+        await channel.send(msg)
+
+    async def on_guild_emojis_update(self, before: typing.Sequence[discord.Emoji],
+                                     after: typing.Sequence[discord.Emoji]):
+
+        emoji = (before + after)[0]
+        event = await self.bot.database.get_event_setting(emoji.guild, "emojis")
+        if event is None:
+            return
+
+        # check if enabled
+        if not event.enabled:
+            return
+
+        channel = emoji.guild.get_channel(event.channel_id)
+        if not channel:
+            # bad guild admins
+            return
+
+        fmt = {
+            "server": emoji.guild,
+            "channel": channel
+        }
+        msg = safe_format(event.message or "the emojis were updated")
         await channel.send(msg)
 
     @commands.group(invoke_without_command=True)
