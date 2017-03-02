@@ -239,7 +239,13 @@ class Core(Cog):
 
     @commands.command(pass_context=True, hidden=True)
     async def pong(self, ctx: Context):
-        await ctx.channel.send(":ping_pong: Ping! | Heck ms")
+        s = await asyncio.create_subprocess_exec("ping", *("8.8.8.8 -c 4".split()), stdout=asyncio.subprocess.PIPE)
+
+        async with ctx.channel.typing():
+            stdout, _ = await s.communicate()
+
+        fmt = "```{}```".format(stdout.decode())
+        await ctx.send(fmt)
 
     @commands.command(pass_context=True)
     async def invite(self, ctx: Context):
