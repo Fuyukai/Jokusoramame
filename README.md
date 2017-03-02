@@ -1,13 +1,10 @@
 # Jokusoramame (Juck Fava)
 
 [![Join the Discord!](https://discordapp.com/api/guilds/237980238536114176/widget.png)](https://discord.gg/uQwVat8)
+
 [Add the bot to your server!](https://discordapp.com/oauth2/authorize?client_id=235114171270823936&scope=bot)
  
-Jokusoramame is another terrible bot.
-
-## Usage
-
-TODO
+Jokusoramame is Yet Another General Purpose Bot (TM)
 
 ## Setting up the bot environment
 
@@ -61,6 +58,15 @@ You will need:
      ```
 
     This will create a new database that the bot can modify.
+
+    You will also want to switch to the database and create the `hstore`
+    extension.
+
+    ```sql
+    CREATE EXTENSION hstore;
+    ```
+
+    This cannot be automatically created as it requires a superuser.
 
 6. **Run the migrations.**
 
