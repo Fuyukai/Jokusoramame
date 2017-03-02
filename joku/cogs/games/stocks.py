@@ -162,7 +162,7 @@ class Stocks(Cog):
 
                         final_price, \
                         new_amount, \
-                        crashed = await self.flucutate_stock(stock, remaining[stock.channel_id])
+                        crashed = await self.flucutate_stock(stock, remaining.get(stock.channel_id, stock.amount))
 
                         if crashed:
                             # should work :fingers_crossed:
