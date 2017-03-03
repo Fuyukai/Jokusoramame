@@ -239,7 +239,8 @@ class Core(Cog):
 
     @commands.command(pass_context=True, hidden=True)
     async def pong(self, ctx: Context):
-        s = await asyncio.create_subprocess_exec("ping", *("8.8.8.8 -c 4".split()), stdout=asyncio.subprocess.PIPE)
+        s = await asyncio.create_subprocess_exec("ping", *("8.8.8.8 -i 0.2 -c 4".split()),
+                                                 stdout=asyncio.subprocess.PIPE)
 
         async with ctx.channel.typing():
             stdout, _ = await s.communicate()
