@@ -13,9 +13,9 @@ class NASAException(Exception):
     pass
 
 
-class NASA(Cog):
+class World(Cog):
     """
-    Cog for interacting with NASA data.
+    Cog for interacting with data about the real world.
     """
 
     async def make_nasa_request(self, url: str, params: dict = None) -> dict:
@@ -33,6 +33,42 @@ class NASA(Cog):
                 raise NASAException(text)
 
             return await r.json()
+
+    @commands.command()
+    async def earthquakes(self, ctx: Context):
+        """
+        Shows recent earthquakes.
+        """
+        async with self.session.get("http://earthquake-report.com/feeds/recent-eq?json") as r:
+            data = await r.json()
+
+        data = data[0]
+
+        em = discord.Embed()
+        em.title = "Earthquakes"
+        em.description = data["title"].split("-")[0]
+
+        # Hack to make the embed 2 columns wide
+        em.set_thumbnail(url="https://upload.wikimedia.org/wikipedia/commons/5/59/Empty.png")
+
+        em.add_field(name="Location", value=data["location"].strip(), inline=False)
+        em.add_field(name="Magnitude", value="{:.2f}".format(float(data["magnitude"])))
+        em.add_field(name="Depth", value="{} km".format(data["depth"]))
+
+        em.add_field(name="Latitude", value=data["latitude"])
+        em.add_field(name="Longitude", value=data["longitude"])
+
+        em.url = data["link"]
+
+        class _ts:
+            _ = arrow.get(data["date_time"]).datetime.astimezone(pytz.UTC)
+
+            def isoformat(self):
+                return self._.strftime("%Y-%m-%dT%H:%M:%S.%f")
+
+        em._timestamp = _ts()
+        em.set_footer(text="Powered by http://earthquake-report.com")
+        await ctx.send(embed=em)
 
     @commands.group(name="nasa")
     async def nasa(self, ctx: Context):
@@ -151,4 +187,4 @@ class NASA(Cog):
         await ctx.send(embed=em)
 
 
-setup = NASA.setup
+setup = World.setup

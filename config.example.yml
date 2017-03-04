@@ -25,7 +25,7 @@ autoload:
 
   # Special cogs for interacting with various services.
   - joku.cogs.images
-  - joku.cogs.nasa
+  - joku.cogs.world
   - joku.cogs.wikipedia
   - joku.cogs.location
 
