@@ -238,14 +238,17 @@ class Core(Cog):
         await ctx.channel.send(final_url)
 
     @commands.command(pass_context=True, hidden=True)
-    async def pong(self, ctx: Context):
-        s = await asyncio.create_subprocess_exec("ping", *("8.8.8.8 -i 0.2 -c 4".split()),
-                                                 stdout=asyncio.subprocess.PIPE)
+    async def pong(self, ctx: Context, *, ip: str="8.8.8.8"):
+        s = await asyncio.create_subprocess_exec("ping", *("{} -D -s 16 -i 0.2 -c 4".format(ip).split()),
+                                                 stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
 
         async with ctx.channel.typing():
-            stdout, _ = await s.communicate()
+            stdout, stderr = await s.communicate()
 
-        fmt = "```{}```".format(stdout.decode())
+        if stderr:
+            fmt = "```{}```".format(stderr.decode())
+        else:
+            fmt = "```{}```".format(stdout.decode())
         await ctx.send(fmt)
 
     @commands.command(pass_context=True)
