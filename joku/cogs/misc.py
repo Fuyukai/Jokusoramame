@@ -74,6 +74,10 @@ class Misc(Cog):
         To get a message ID you should right click on the on a message and then click "Copy ID". You must have Developer
         Mode enabled to get that functionality.
         """
+        if not channel.permissions_for(ctx.guild.me).send_messages:
+            await ctx.send(":x: I don't have perms to send in {.mention}.".format(channel))
+            return
+
         o_chan = ctx.channel  # type: discord.TextChannel
         try:
             msg = await o_chan.get_message(message)
