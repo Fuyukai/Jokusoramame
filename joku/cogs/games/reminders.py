@@ -101,6 +101,8 @@ class Reminders(Cog):
 
         dt, seconds = _
 
+        content = content.replace("`", "´").replace("@everyone", "@\u200beveryone").replace("@here", "@\u200bhere")
+
         reminder = await ctx.bot.database.create_reminder(ctx.channel, ctx.author, content, remind_at=dt)
         if seconds < 300:
             # make the reminder immediately.
