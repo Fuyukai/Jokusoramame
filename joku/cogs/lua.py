@@ -77,7 +77,7 @@ def exec_lua(code: str):
 
     try:
         pickle.dumps(result)
-    except TypeError:
+    except:
         return str(result)
 
     return result
