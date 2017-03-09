@@ -28,6 +28,8 @@ googlemaps = "*"
 "ruamel.yaml" = "*"
 Pillow = "*"
 bingmaps = "*"
+lupa = "*"
+multiprocessing_on_dill = "*"
 
 [packages."discord.py"]
 git = "https://github.com/Rapptz/discord.py.git"
