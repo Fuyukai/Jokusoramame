@@ -64,7 +64,12 @@ def exec_lua(code: str):
 
     # call sandbox.run with `glob.sandbox, code`
     # and unpack the variables
-    called, result = sandbox.run(code)
+    _ = sandbox.run(code)
+    if isinstance(_, bool):
+        # idk
+        return NO_RESULT
+
+    called, result = _
 
     if lupa.lua_type(result) == 'table':
         # dictify
