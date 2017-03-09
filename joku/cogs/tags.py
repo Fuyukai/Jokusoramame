@@ -147,6 +147,8 @@ class Tags(Cog):
                 return
 
         try:
+            rendered = rendered.replace("@everyone", "@\u200beveryone")
+            rendered = rendered.replace("@here", "@\u200bhere")
             await ctx.message.channel.send(rendered)
         except Exception as e:
             # Panic, and dispatch on_command_error.
