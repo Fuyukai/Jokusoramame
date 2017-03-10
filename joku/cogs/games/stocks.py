@@ -90,7 +90,7 @@ class Stocks(Cog):
 
         # 1 crash per 6 hours
         if self.rng.randint(0, 2880) == 3:
-            return 2.0, stock.amount, True
+            return 2.0, stock.amount, False
 
         # TODO: History multiplier, but properly this time?
 
