@@ -256,7 +256,7 @@ class DatabaseInterface(object):
 
                 # Add role IDs directly as an array.
                 current_rolestate.nick = member.nick
-                current_rolestate.roles = [r.id for r in member.roles]
+                current_rolestate.roles = [r.id for r in member.roles if not r == member.guild.default_role]
                 session.merge(user)
                 session.add(current_rolestate)
 
