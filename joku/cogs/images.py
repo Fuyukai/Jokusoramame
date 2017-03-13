@@ -163,14 +163,7 @@ class Images(Cog):
         # add the author again anyway
         em.set_author(name=req["user"]["name"], url=req["user"]["links"]["html"])
 
-        # there has got to be a better way
-        class _ts:
-            _ = arrow.get(req["created_at"]).datetime.astimezone(pytz.UTC)
-
-            def isoformat(self):
-                return self._.strftime("%Y-%m-%dT%H:%M:%S.%f")
-
-        em._timestamp = _ts()
+        em._timestamp = arrow.get(req["created_at"])
 
         return em
 
