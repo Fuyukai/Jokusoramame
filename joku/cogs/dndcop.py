@@ -56,7 +56,8 @@ class InvisCop(Cog):
             if message.author.status is discord.Status.offline:
                 # Check if they have Manage Messages for this channel.
                 # If they do, don't delete their message.
-                if message.author.permissions_in(message.channel).manage_messages:
+                if message.author.permissions_in(message.channel).manage_messages \
+                        and message.guild.id != 196103719975124992:
                     return
 
                 # Delete their message.
