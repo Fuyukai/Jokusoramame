@@ -85,6 +85,9 @@ class Levelling(Cog):
         if message.guild.id == 110373943822540800:
             return
 
+        if message.channel.id in [202549694658904065, 200118555105165313]:
+            return
+
         # Check the spam quotient.
         if not await self.bot.redis.prevent_spam(message.author):
             # The user said more than 15 messages in the last 60 seconds, so don't add XP.
