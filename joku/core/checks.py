@@ -32,7 +32,7 @@ def has_permissions(**perms):
 
 def md_check(ctx):
     if ctx.prefix not in ["j::", "J::", "jd::"]:
-        raise DoNotRun
+        raise DoNotRun(":x: This command requires the mod prefix (`j::`).")
 
     return True
 
@@ -40,7 +40,7 @@ def md_check(ctx):
 def non_md_check(ctx):
     # never directly added to a class
     if ctx.prefix in ["j::", "J::", "jd::"]:
-        raise DoNotRun
+        raise DoNotRun(":x: This command requires the normal prefix (`j!`).")
 
     return True
 

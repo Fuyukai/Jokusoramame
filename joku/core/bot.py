@@ -163,7 +163,7 @@ class Jokusoramame(AutoShardedBot):
             await context.channel.send("\U0001f6ab Error: {}".format(' '.join(exception.args)))
 
         elif isinstance(exception, DoNotRun):
-            pass
+            await context.channel.send(" ".join(exception.args))
 
     def reload_config_file(self):
         """

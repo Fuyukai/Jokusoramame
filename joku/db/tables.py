@@ -93,8 +93,14 @@ class Guild(Base):
     #: Are stocks enabled for this guild?
     stocks_enabled = Column(Boolean, default=False)
 
+    #: The bulletin message channel.
+    bulletin_channel = Column(BigInteger, nullable=True)
+
     #: The bulletin message ID.
     bulletin_message = Column(BigInteger, nullable=True)
+
+    #: The announcements channel.
+    announcement_channel = Column(BigInteger, nullable=True)
 
 
 class UserStock(Base):

@@ -80,6 +80,24 @@ class DatabaseInterface(object):
 
         return list(g)
 
+    async def modify_bulletin_message(self, guild: discord.Guild, channel: discord.TextChannel,
+                                      message_id: int):
+        """
+        Modifies the bulletin message ID for a guild.
+        """
+        guild = await self.get_or_create_guild(guild)
+
+        async with threadpool():
+            with self.get_session() as sess:
+                if channel is None:
+                    guild.bulletin_channel = None
+                else:
+                    guild.bulletin_channel = channel.id
+                guild.bulletin_message = message_id
+                sess.add(guild)
+
+        return guild
+
     # endregion
 
     # region User
