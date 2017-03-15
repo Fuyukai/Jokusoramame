@@ -34,6 +34,10 @@ class Announcements(Cog):
 
             await ctx.bot.database.modify_bulletin_message(ctx.guild, channel, msg.id)
 
+        if not channel.permissions_for(ctx.guild.me).send_messages:
+            await ctx.send(":x: I need Send Messages in that channel.")
+            return
+
         if guild.bulletin_message is None:
             # make the new bulletin message
             await _make_message()
