@@ -44,6 +44,37 @@ class RedisAdapter(object):
         """
         return self.pool.get()
 
+    async def level_notifs_disabled(self, channel: discord.TextChannel):
+        """
+        Checks if level up notifs are disabled here.
+        """
+        async with self.get_redis() as redis:
+            assert isinstance(redis, aioredis.Redis)
+
+            built_key = "notifs:{}".format(channel)
+            got = await redis.get(built_key)
+
+            if got is not None:
+                return True
+
+        return False
+
+    async def set_notifs_state(self, channel: discord.TextChannel, state: bool=True):
+        """
+        Sets the notifs state for a channel.
+        """
+        async with self.get_redis() as redis:
+            assert isinstance(redis, aioredis.Redis)
+
+            built_key = "notifs:{}".format(channel)
+
+            if state is True:
+                await redis.delete(built_key)
+            else:
+                await redis.set(built_key, "heck!")
+
+        return state
+
     async def clean_stuck_antispam(self):
         """
         Cleans stuck antispam keys.
@@ -53,7 +84,7 @@ class RedisAdapter(object):
             to_delete = []
 
             async for key in redis.iscan(match="antispam:*"):
-                ttl = await self.ttl(key)
+                ttl = await redis.ttl(key)
                 if ttl == -1:
                     to_delete.append(key)
 

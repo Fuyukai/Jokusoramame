@@ -11,6 +11,9 @@ import matplotlib as mpl
 from asyncio_extras import threadpool
 from discord.ext import commands
 
+from joku.core import checks
+from joku.core.checks import mod_command
+
 mpl.use('Agg')
 
 import matplotlib.pyplot as plt
@@ -107,6 +110,10 @@ class Levelling(Cog):
             all_users = await self.bot.database.get_multiple_users(*message.guild.members, order_by=User.xp.desc())
             index, u = next(filter(lambda j: j[1].id == message.author.id, enumerate(all_users)))
 
+            # check if level up notifs are disabled here
+            if await self.bot.redis.level_notifs_disabled(message.channel):
+                return
+
             if message.channel.permissions_for(message.guild.me).embed_links:
                 em = discord.Embed(title="Level up!")
                 em.description = ":tada: **{} is now level {}!** " \
@@ -158,6 +165,30 @@ class Levelling(Cog):
         embed.colour = user.colour
 
         await ctx.channel.send(embed=embed)
+
+    @level.command()
+    @checks.has_permissions(manage_guild=True)
+    @mod_command()
+    async def disable(self, ctx: Context, *, channel: discord.TextChannel = None):
+        """
+        Disables level up notifications in the specified channel.
+        If no channel is provided, the current channel is used.
+        """
+        channel = channel or ctx.channel
+        await self.bot.redis.set_notifs_state(channel, False)
+        await ctx.send(":heavy_check_mark: Disabled notifs.")
+
+    @level.command()
+    @checks.has_permissions(manage_guild=True)
+    @mod_command()
+    async def enable(self, ctx: Context, *, channel: discord.TextChannel = None):
+        """
+        Enables level up notifications in the specified channel.
+        If no channel is provided, the current channel is used.
+        """
+        channel = channel or ctx.channel
+        await self.bot.redis.set_notifs_state(channel, True)
+        await ctx.send(":heavy_check_mark: Enabled notifs.")
 
     @level.command(pass_context=True, aliases=["top"])
     async def leaderboard(self, ctx: Context, *, num: int = 10):
