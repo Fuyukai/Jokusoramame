@@ -1,4 +1,6 @@
 import re
+
+import discord
 from discord import TextChannel, HTTPException
 from discord.ext import commands
 
@@ -32,7 +34,7 @@ class Announcements(Cog):
                                      "Use `j::bulletin edit` to edit the content of this new message."
                                      .format(ctx.author))
 
-            await ctx.bot.database.modify_bulletin_message(ctx.guild, channel, msg.id)
+            await ctx.bot.database.update_bulletin_message(ctx.guild, channel, msg.id)
 
         if not channel.permissions_for(ctx.guild.me).send_messages:
             await ctx.send(":x: I need Send Messages in that channel.")
@@ -134,7 +136,7 @@ class Announcements(Cog):
             except:
                 pass
 
-        await ctx.bot.database.modify_bulletin_message(guild, None, message_id=None)
+        await ctx.bot.database.update_bulletin_message(guild, None, message_id=None)
         await ctx.send(":heavy_check_mark: Bulletin deleted.")
 
 

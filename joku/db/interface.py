@@ -80,7 +80,7 @@ class DatabaseInterface(object):
 
         return list(g)
 
-    async def modify_bulletin_message(self, guild: discord.Guild, channel: discord.TextChannel,
+    async def update_bulletin_message(self, guild: discord.Guild, channel: discord.TextChannel,
                                       message_id: int):
         """
         Modifies the bulletin message ID for a guild.

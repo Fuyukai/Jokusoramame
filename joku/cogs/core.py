@@ -268,6 +268,8 @@ class Core(Cog):
 
             if prefix.endswith("::"):
                 base += "**This will only show moderation related commands.**\n\n"
+            else:
+                base += "**Use j::help to show moderation related commands.**\n\n"
 
             counter = 1
             for (name, cls) in ctx.bot.cogs.items():

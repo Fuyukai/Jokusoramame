@@ -173,7 +173,10 @@ class Jokusoramame(AutoShardedBot):
             self.config = yaml.load(f, Loader=yaml.Loader)
 
     async def on_connect(self):
-        await self.change_presence(game=discord.Game(name="Type j!help for help!"))
+        if not self.config.get("developer_mode", False):
+            await self.change_presence(game=discord.Game(name="Type j!help or j::help for help!"))
+        else:
+            await self.rotate_game_text()
 
     async def on_ready(self):
         # Only ever load once.
