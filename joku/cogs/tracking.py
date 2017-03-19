@@ -46,19 +46,19 @@ class Tracking(Cog):
             if int(data["last_seen"]) == 0:
                 if member.status == Status.online:
                     await ctx.bot.redis.update_last_seen(member)
-                    last_seen = datetime.datetime.fromtimestamp(time.time())
+                    last_seen = datetime.datetime.fromtimestamp(time.time()).isoformat()
                 else:
                     last_seen = "Unknown"
             else:
-                last_seen = datetime.datetime.fromtimestamp(data["last_seen"])
+                last_seen = datetime.datetime.fromtimestamp(data["last_seen"]).isoformat()
 
             if int(data["last_message"]) == 0:
                 last_message = "Unknown"
             else:
-                last_message = datetime.datetime.fromtimestamp(data["last_message"])
+                last_message = datetime.datetime.fromtimestamp(data["last_message"]).isoformat()
 
-            em.add_field(name="Last seen", value=last_seen.isoformat(), inline=False)
-            em.add_field(name="Last message", value=last_message.isoformat(), inline=False)
+            em.add_field(name="Last seen", value=last_seen, inline=False)
+            em.add_field(name="Last message", value=last_message, inline=False)
 
         await ctx.send(embed=em)
 
