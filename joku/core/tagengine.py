@@ -75,10 +75,7 @@ class TagEngine(object):
         new = {}
         # HECK
         for key, val in kwargs.items():
-            if isinstance(val, dict):
-                new[key] = lua.table_from(val)
-            else:
-                new[key] = val
+            new[key] = lua.table_from(val)
 
         _ = sandbox.run(luastr, lua.table_from(new))
         if isinstance(_, bool):

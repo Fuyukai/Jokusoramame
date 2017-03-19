@@ -43,12 +43,8 @@ def dictify_table_recursively(t):
         print(k, v, typ)
         if lupa.lua_type(v) == "table":
             d[k] = dictify_table_recursively(v)
-        elif typ in ['function', 'userdata']:
-            continue
-        elif lupa.lua_type(v) is not None:
-            raise ValueError("Cannot dictify {}: {}".format(k, v))
         else:
-            d[k] = v
+            d[k] = str(v)
 
     return d
 
@@ -64,7 +60,7 @@ def exec_lua(code: str):
 
     # call sandbox.run with `glob.sandbox, code`
     # and unpack the variables
-    _ = sandbox.run(code)
+    _ = sandbox.run(code, lua.table_from({}))
     if isinstance(_, bool):
         # idk
         return NO_RESULT

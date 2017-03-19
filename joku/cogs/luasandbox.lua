@@ -250,7 +250,6 @@ function sandbox.run(untrusted_code, l)
 
   -- copy locals into sandbox env
   for k,v in pairs(l) do sandbox.env[k] = v end
-  print(type(sandbox.env.author))
 
   local untrusted_function, message = load(untrusted_code, nil, 't',
                                           sandbox.env)
