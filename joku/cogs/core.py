@@ -105,27 +105,6 @@ class Core(Cog):
 
     @commands.command(pass_context=True)
     @commands.check(is_owner)
-    async def reloadall(self, ctx: Context):
-        """
-        Reloads all the modules for every shard.
-        """
-        ctx.bot.reload_config_file()
-
-        for extension in ctx.bot.extensions.copy():
-            ctx.bot.unload_extension(extension)
-            try:
-                ctx.bot.load_extension(extension)
-            except BaseException as e:
-                ctx.bot.logger.exception()
-            else:
-                ctx.bot.logger.info("Reloaded {}.".format(extension))
-
-        ctx.bot.apply_checks()
-
-        await ctx.channel.send(":heavy_check_mark: Reloaded bot.")
-
-    @commands.command(pass_context=True)
-    @commands.check(is_owner)
     async def changename(self, ctx: Context, *, name: str):
         """
         Changes the current username of the bot.

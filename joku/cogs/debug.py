@@ -18,8 +18,22 @@ class Debug(Cog):
     @commands.command(pass_context=True)
     @commands.check(is_owner)
     async def load(self, ctx, *, cog):
-        ctx.bot.load_extension(cog)
-        await ctx.channel.send(":heavy_check_mark: Loaded extension.")
+        try:
+            ctx.bot.load_extension(cog)
+        except Exception as e:
+            await ctx.channel.send(e)
+        else:
+            await ctx.channel.send(":heavy_check_mark: Loaded extension `{}`.".format(cog))
+
+    @commands.command(pass_context=True)
+    @commands.check(is_owner)
+    async def load(self, ctx, *, cog):
+        try:
+            ctx.bot.unload_extension(cog)
+        except Exception as e:
+            await ctx.channel.send(e)
+        else:
+            await ctx.channel.send(":heavy_check_mark: Unloaded extension.".format(cog))
 
     @commands.command(pass_context=True)
     @commands.check(is_owner)
@@ -40,6 +54,38 @@ class Debug(Cog):
             return
 
         await ctx.channel.send("`" + repr(d) + "`")
+
+    @commands.command()
+    @commands.check(is_owner)
+    async def reload(self, ctx, module: str):
+        try:
+            ctx.bot.unload_extension(module)
+            ctx.bot.load_extension(module)
+        except Exception as e:
+            await ctx.channel.send(e)
+        else:
+            await ctx.channel.send("Reloaded `{}`.".format(module))
+
+    @commands.command(pass_context=True)
+    @commands.check(is_owner)
+    async def reloadall(self, ctx: Context):
+        """
+        Reloads all the modules for every shard.
+        """
+        ctx.bot.reload_config_file()
+
+        for extension in ctx.bot.extensions.copy():
+            ctx.bot.unload_extension(extension)
+            try:
+                ctx.bot.load_extension(extension)
+            except BaseException as e:
+                ctx.bot.logger.exception()
+            else:
+                ctx.bot.logger.info("Reloaded {}.".format(extension))
+
+        ctx.bot.apply_checks()
+
+        await ctx.channel.send(":heavy_check_mark: Reloaded bot.")
 
     @commands.group(pass_context=False)
     @commands.check(is_owner)
@@ -78,16 +124,6 @@ class Debug(Cog):
         if stderr:
             rem = discord.Embed(title="stderr", description="```\n" + stderr.decode() + "\n```")
             await ctx.channel.send(embed=rem)
-
-    @debug.command(pass_context=True)
-    async def reload(self, ctx, module: str):
-        try:
-            ctx.bot.unload_extension(module)
-            ctx.bot.load_extension(module)
-        except Exception as e:
-            await ctx.channel.send(e)
-        else:
-            await ctx.channel.send("Reloaded `{}`.".format(module))
 
     @debug.command(pass_context=True)
     async def punish(self, ctx: Context, user: discord.Member):
