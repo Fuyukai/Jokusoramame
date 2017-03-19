@@ -144,8 +144,11 @@ sandbox.env = {
   --
   -- Disabled.
 
-  -- Specific shit
-  result = nil,
+  -- Custom stuff
+  author = nil,
+  message = nil,
+  server = nil,
+  channel = nil,
 }
 
 -------------------------------------------------------------
@@ -240,11 +243,17 @@ end
 -- call the runtime becomes restricted in CPU and memory, and
 -- "string":methods() like "foo":upper() stop working.
 --
-function sandbox.run(untrusted_code)
+function sandbox.run(untrusted_code, l)
   sandbox.fix_metatables()
   sandbox.enable_memory_limit()
   sandbox.enable_per_instruction_limits()
-  local untrusted_function, message = load(untrusted_code, nil, 't', sandbox.env)
+
+  -- copy locals into sandbox env
+  for k,v in pairs(l) do sandbox.env[k] = v end
+  print(type(sandbox.env.author))
+
+  local untrusted_function, message = load(untrusted_code, nil, 't',
+                                          sandbox.env)
   if not untrusted_function then return nil, message end
   return pcall(untrusted_function)
 end

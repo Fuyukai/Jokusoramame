@@ -187,6 +187,9 @@ class Tag(Base):
     #: The last modified date for this tag.
     last_modified = Column(DateTime, default=func.now())
 
+    #: Is this tag lua-based?
+    lua = Column(Boolean, default=False)
+
 
 class UserColour(Base):
     """

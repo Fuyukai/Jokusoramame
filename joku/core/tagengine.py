@@ -2,15 +2,23 @@
 A Jinja2-based tag engine for tags.
 """
 import asyncio
+import inspect
 import random
 import string
 from concurrent.futures import ThreadPoolExecutor
 
 import discord
+import functools
+
+import lupa
+from discord.abc import GuildChannel
 from jinja2 import Template
 from jinja2.sandbox import SandboxedEnvironment
+from lupa._lupa import LuaRuntime
 
+from joku.cogs.lua import sandbox_preamble, dictify_table_recursively, NO_RESULT
 from joku.core.bot import Context, Jokusoramame
+from joku.core.mp2 import ProcessPoolExecutor
 from joku.db.tables import Tag
 
 
@@ -20,9 +28,8 @@ class TagEngine(object):
         # This is a SandboxedEnvironment for security purposes.
         self.tmpl_env = SandboxedEnvironment()
 
-        # The Thread thing used.
-        # TODO: Hack this to allow cancelling the threads.
-        self.executor = ThreadPoolExecutor()
+        # The process pool used.
+        self.executor = ProcessPoolExecutor()
 
         # The bot instance.
         # We use this for getting the tag instance.
@@ -38,6 +45,53 @@ class TagEngine(object):
                 "tuple": tuple,
             }
         )
+
+    @staticmethod
+    def _lua_render_template(luastr: str, kwargs=None):
+        """
+        Renders a Lua template.
+        """
+
+        def getter(obj, attr_name):
+            if attr_name.startswith("_"):
+                raise AttributeError("Not allowed to access attribute `{}` of `{}`"
+                                     .format(attr_name, type(obj).__name__))
+
+            return attr_name
+
+        def setter(obj, attr_name, value):
+            raise AttributeError("Python object attribute setting is forbidden")
+
+        # the attribute_handlers are probably enough to prevent access eval otherwise
+        lua = LuaRuntime(register_eval=False,
+                         unpack_returned_tuples=True,
+                         attribute_handlers=(getter, setter))
+
+        # execute the sandbox preamble
+        sandbox = lua.execute(sandbox_preamble)
+
+        # call sandbox.run with `glob.sandbox, code`
+        # and unpack the variables
+        new = {}
+        # HECK
+        for key, val in kwargs.items():
+            if isinstance(val, dict):
+                new[key] = lua.table_from(val)
+            else:
+                new[key] = val
+
+        _ = sandbox.run(luastr, lua.table_from(new))
+        if isinstance(_, bool):
+            # idk
+            return NO_RESULT
+
+        called, result = _
+
+        if lupa.lua_type(result) == 'table':
+            # dictify
+            result = dictify_table_recursively(result)
+
+        return str(result)
 
     @staticmethod
     def _pp_render_template(tmpl_env: SandboxedEnvironment, tag: Tag, kwargs=None):
@@ -66,12 +120,12 @@ class TagEngine(object):
         """
         Renders the template in a process pool.
         """
-        coro = self.bot.loop.run_in_executor(self.executor,
-                                             self._pp_render_template, self.tmpl_env, tag, kwargs)
+        if tag.lua:
+            partial = functools.partial(self._lua_render_template, tag.content, kwargs)
+        else:
+            partial = functools.partial(self._pp_render_template, self.tmpl_env, tag, kwargs)
 
-        coro = asyncio.wait_for(coro, 5, loop=self.bot.loop)
-
-        rendered = await coro
+        rendered = await asyncio.wait_for(self.bot.loop.run_in_executor(self.executor, partial), 5, loop=self.bot.loop)
 
         return rendered
 

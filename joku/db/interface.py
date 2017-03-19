@@ -488,7 +488,7 @@ class DatabaseInterface(object):
                 return list(sess.query(Tag).filter(Tag.guild_id == guild.id).all())
 
     async def save_tag(self, guild: discord.Guild, name: str, content: str, *,
-                       owner: discord.Member = None) -> Tag:
+                       owner: discord.Member = None, lua: bool = False) -> Tag:
         """
         Saves a tag to the database.
         """
@@ -509,6 +509,7 @@ class DatabaseInterface(object):
                     tag.user_id = owner.id
 
                 tag.guild_id = guild.id
+                tag.lua = lua
 
         return tag
 

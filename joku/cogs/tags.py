@@ -64,7 +64,10 @@ class Tags(Cog):
         """
         Creates a new tag.
 
-        This will overwrite other tags with the same name, if you are the owner or an administrator.
+        This will overwrite other tags with the same name, 
+        if you are the owner or an administrator.
+        
+        Tags use Lua scripting to generate the final output.
         """
         existing_tag = await ctx.bot.database.get_tag(ctx.message.guild, name)
 
@@ -85,7 +88,7 @@ class Tags(Cog):
         content = content.replace("@everyone", "@\u200beveryone").replace("@here", "@\u200bhere")
 
         # Set the tag.
-        await ctx.bot.database.save_tag(ctx.message.guild, name, content, owner=owner)
+        await ctx.bot.database.save_tag(ctx.message.guild, name, content, owner=owner, lua=True)
         await ctx.channel.send(":heavy_check_mark: Tag **{}** saved.".format(self._sanitize_name(name)))
 
     @tag.command(pass_context=True, aliases=["remove"])
@@ -124,13 +127,32 @@ class Tags(Cog):
         cmd = cmd.split(" ")[0]
 
         # Create the arguments for the template.
+
+        guild = {"name": ctx.message.guild.name, "icon_url": ctx.message.guild.icon_url,
+                 "id": ctx.message.guild.id, "member_count": ctx.message.guild.member_count,
+                 "created_at": ctx.message.guild.created_at}
+
+        author = {"name": ctx.message.author.name, "nick": ctx.message.author.nick,
+                  "discriminator": ctx.message.author.discriminator, "id": ctx.message.author.id,
+                  "colour": ctx.message.author.colour, "mention": ctx.message.author.mention,
+                  "permissions": ctx.message.channel.permissions_for(ctx.message.author),
+                  "guild_permissions": ctx.message.author.guild_permissions,
+                  "joined_at": ctx.message.author.joined_at, "created_at": ctx.message.author.created_at,
+                  "guild": guild}
+
+        channel = {"name": ctx.message.channel.name, "id": ctx.message.channel.id,
+                   "mention": ctx.message.channel.mention, "guild": guild}
+
+        message = {"id": ctx.message.id, "content": ctx.message.content, "clean_content": ctx.message.clean_content,
+                   "channel": channel, "guild": guild, "author": author}
+
         args = {
             "args": shlex.split(ctx.message.content[len(ctx.prefix):])[1:],
             "clean_args": shlex.split(ctx.message.clean_content[len(ctx.prefix):])[1:],
-            "message": copy.copy(ctx.message),
-            "channel": copy.copy(ctx.message.channel),
-            "author": copy.copy(ctx.message.author),
-            "server": copy.copy(ctx.message.guild)
+            "message": message,
+            "channel": channel,
+            "author": author,
+            "server": guild
         }
 
         # Render the template, using the args.
@@ -141,7 +163,7 @@ class Tags(Cog):
             rendered = "**Timed out waiting for template to render.**"
         except Exception as e:
             traceback.print_exception(type(e), e, e.__traceback__)
-            rendered = "**Error when compiling template:**\n`{}`".format(e)
+            rendered = "**Error when compiling template:**\n`{}`".format(repr(e))
         else:
             if not rendered:
                 return
