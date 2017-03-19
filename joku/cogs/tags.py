@@ -47,6 +47,32 @@ class Tags(Cog):
         # Display the tag info.
         await ctx.channel.send(embed=em)
 
+    @tag.command()
+    async def copy(self, ctx: Context, guild_id: int, *, tag_name: str):
+        """
+        Copies a tag from another guild.
+        
+        This requires the guild ID of the guild to copy.
+        To get this, enable Developer Mode and Copy ID.
+        """
+        guild = self.bot.get_guild(guild_id)
+        if not guild:
+            await ctx.send(":x: I am not in that guild.")
+            return
+
+        server_tags = await ctx.bot.database.get_all_tags_for_guild(ctx.message.guild)
+        other_tags = await ctx.bot.database.get_all_tags_for_guild(guild)
+
+        if tag_name not in [tag.name for tag in other_tags]:
+            await ctx.send(":x: That tag does not exist in the other server.")
+        elif tag_name in [tag.name for tag in server_tags]:
+            await ctx.send(":x: That tag already exists in this server.")
+        else:
+            tag_object = next(filter(lambda tag: tag.name == tag_name, other_tags))
+            await ctx.bot.database.save_tag(ctx.guild, tag_object.name, tag_object.content,
+                                            owner=ctx.author, lua=tag_object.lua)
+            await ctx.send(":heavy_check_mark: Copied tag `{}`.".format(tag_name))
+
     @tag.command(pass_context=True, aliases=["list"])
     async def all(self, ctx: Context):
         """

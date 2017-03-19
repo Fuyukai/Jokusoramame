@@ -483,6 +483,8 @@ class DatabaseInterface(object):
         """
         Gets all tags for this guild.
         """
+        await self.get_or_create_guild(guild)
+
         async with threadpool():
             with self.get_session() as sess:
                 return list(sess.query(Tag).filter(Tag.guild_id == guild.id).all())
@@ -492,6 +494,7 @@ class DatabaseInterface(object):
         """
         Saves a tag to the database.
         """
+        guild = await self.get_or_create_guild(guild)
         tag = await self.get_tag(guild, name)
 
         async with threadpool():
