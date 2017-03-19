@@ -11,7 +11,8 @@ from sqlalchemy import Column, func
 from sqlalchemy.engine import Engine, create_engine
 from sqlalchemy.orm import sessionmaker, Session
 
-from joku.db.tables import User, Setting, RoleState, Guild, UserColour, EventSetting, Tag, Reminder, UserStock, Stock
+from joku.db.tables import User, Setting, RoleState, Guild, UserColour, EventSetting, Tag, Reminder, UserStock, Stock, \
+    TagAlias
 
 logger = logging.getLogger("Jokusoramame.DB")
 
@@ -467,7 +468,8 @@ class DatabaseInterface(object):
     # endregion
 
     # region Tags
-    async def get_tag(self, guild: discord.Guild, name: str) -> typing.Union[None, Tag]:
+    async def get_tag(self, guild: discord.Guild, name: str,
+                      return_alias: bool = False) -> typing.Union[Tag, typing.Tuple[Tag, TagAlias]]:
         """
         Gets a tag from the database.
         """
@@ -477,7 +479,18 @@ class DatabaseInterface(object):
                     .filter((Tag.name == name) & (Tag.guild_id == guild.id)) \
                     .first()
 
-                return tag
+                alias = None
+
+                if tag is None:
+                    alias = sess.query(TagAlias) \
+                        .filter((TagAlias.alias_name == name) & (TagAlias.guild_id == guild.id)) \
+                        .first()
+                    if alias is not None:
+                        tag = alias.tag
+        if return_alias:
+            return tag, alias
+        else:
+            return tag
 
     async def get_all_tags_for_guild(self, guild: discord.Guild) -> typing.Sequence[Tag]:
         """
@@ -488,6 +501,37 @@ class DatabaseInterface(object):
         async with threadpool():
             with self.get_session() as sess:
                 return list(sess.query(Tag).filter(Tag.guild_id == guild.id).all())
+
+    async def create_tag_alias(self, guild: discord.Guild, to_alias: Tag, alias_name: str,
+                               owner: discord.Member) -> TagAlias:
+        """
+        Creates a tag alias.
+        """
+        await self.get_or_create_guild(guild)
+        await self.get_or_create_user(owner)
+
+        async with threadpool():
+            with self.get_session() as sess:
+                alias = TagAlias()
+                alias.tag_id = to_alias.id
+                alias.guild_id = guild.id
+                alias.user_id = owner.id
+                alias.alias_name = alias_name
+
+                sess.add(alias)
+
+        return alias
+
+    async def remove_tag_alias(self, guild: discord.Guild, alias: TagAlias):
+        """
+        Removes a tag alias.
+        """
+        await self.get_or_create_guild(guild)
+        async with threadpool():
+            with self.get_session() as sess:
+                sess.delete(alias)
+
+        return alias
 
     async def save_tag(self, guild: discord.Guild, name: str, content: str, *,
                        owner: discord.Member = None, lua: bool = False) -> Tag:
@@ -528,6 +572,11 @@ class DatabaseInterface(object):
         async with threadpool():
             with self.get_session() as sess:
                 sess.delete(tag)
+
+                # find aliases that refer to this tag
+                aliases = sess.query(TagAlias).filter(TagAlias.tag_id == tag.id).all()
+                for alias in aliases:
+                    sess.delete(alias)
 
         return tag
 

@@ -33,14 +33,18 @@ class Tags(Cog):
         They are made with `tag create`, and deleted with `tag delete`.
         To be accessed, they are simply called like commands are.
         """
-        tag = await ctx.bot.database.get_tag(ctx.message.guild, name)
+        tag, alias = await ctx.bot.database.get_tag(ctx.message.guild, name, return_alias=True)
         if not tag:
             await ctx.channel.send(":x: Tag not found.")
             return
 
-        owner = ctx.bot.get_member(tag.user_id)
+        if alias is not None:
+            em = discord.Embed(title=alias.alias_name, description="Alias for `{}`".format(tag.name))
+            owner = ctx.bot.get_member(alias.user_id)
+        else:
+            em = discord.Embed(title=tag.name, description="```{}```".format(tag.content))
+            owner = ctx.bot.get_member(tag.user_id)
 
-        em = discord.Embed(title=tag.name, description="```{}```".format(tag.content))
         em.add_field(name="Owner", value=owner.mention if owner else "<Unknown>")
         em.add_field(name="Last Modified", value=tag.last_modified.isoformat())
 
@@ -72,6 +76,45 @@ class Tags(Cog):
             await ctx.bot.database.save_tag(ctx.guild, tag_object.name, tag_object.content,
                                             owner=ctx.author, lua=tag_object.lua)
             await ctx.send(":heavy_check_mark: Copied tag `{}`.".format(tag_name))
+
+    @tag.command()
+    async def alias(self, ctx: Context, tag_name: str, *, alias_name: str):
+        """
+        Creates an alias to a tag. 
+        """
+        tag, alias = await ctx.bot.database.get_tag(ctx.guild, alias_name, return_alias=True)
+
+        if alias is not None:
+            await ctx.send(":x: That tag already has an alias by that name.")
+            return
+
+        tag = await ctx.bot.database.get_tag(ctx.guild, tag_name)
+        if tag is None:
+            await ctx.send(":x: That tag does not exist.")
+            return
+
+        await ctx.bot.database.create_tag_alias(ctx.guild, tag, alias_name, ctx.author)
+        await ctx.send(":heavy_check_mark: Created alias `{}` for `{}`.".format(alias_name, tag.name))
+
+    @tag.command()
+    async def unalias(self, ctx: Context, alias_name: str):
+        """
+        Removes an alias to a tag.
+        
+        You must be the owner of this alias.
+        """
+        tag, alias = await ctx.bot.database.get_tag(ctx.guild, alias_name, return_alias=True)
+
+        if alias is None:
+            await ctx.send(":x: That alias does not exist.")
+            return
+
+        if alias.user_id != ctx.author.id and not ctx.message.author.guild_permissions.administrator:
+            await ctx.send(":x: Cannot remove somebody else's alias.")
+            return
+
+        await ctx.bot.database.remove_tag_alias(ctx.guild, alias)
+        await ctx.send(":heavy_check_mark: Removed tag alias.")
 
     @tag.command(pass_context=True, aliases=["list"])
     async def all(self, ctx: Context):

@@ -191,6 +191,32 @@ class Tag(Base):
     lua = Column(Boolean, default=False)
 
 
+class TagAlias(Base):
+    """
+    Represents a tag alias.
+    """
+    __tablename__ = "tag_alias"
+
+    #: The ID of the tag alias.
+    id = Column(Integer, primary_key=True, autoincrement=True, nullable=False,
+                unique=True)
+
+    #: The name of the alias.
+    alias_name = Column(String, nullable=False)
+
+    #: The ID of the tag being referred to.
+    tag_id = Column(Integer, ForeignKey("tag.id"))
+    tag = relationship("Tag", backref="aliases")
+
+    #: The guild ID this alias is in.
+    guild_id = Column(BigInteger, ForeignKey("guild.id"))
+    guild = relationship("Guild", backref="tag_aliases")
+
+    #: The owner of this alias.
+    user_id = Column(BigInteger, ForeignKey("user.id"))
+    user = relationship("User", backref="aliases")
+
+
 class UserColour(Base):
     """
     Stores the colour state for a user.
