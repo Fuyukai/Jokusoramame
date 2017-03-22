@@ -68,9 +68,12 @@ class Jokusoramame(AutoShardedBot):
         self.redis = RedisAdapter(self)
 
         # Re-assign commands and extensions.
-        self.commands = OrderedDict()
+        self.all_commands = OrderedDict()
         self.extensions = OrderedDict()
         self.cogs = OrderedDict()
+
+        # Add the required check
+        self.add_check(self._global_check)
 
         # Web related things.
         kyk = Kyoukai("Jokusoramame")
@@ -172,6 +175,14 @@ class Jokusoramame(AutoShardedBot):
         with open(self.config_file) as f:
             self.config = yaml.load(f, Loader=yaml.Loader)
 
+    def _global_check(self, ctx: 'Context'):
+        from joku.core.checks import md_check
+        if ctx.prefix.endswith("::"):
+            if md_check not in ctx.command.checks:
+                raise DoNotRun(":x: This command requires the normal prefix (`j!`).")
+
+        return True
+
     async def on_connect(self):
         if not self.config.get("developer_mode", False):
             await self.change_presence(game=discord.Game(name="Type j!help or j::help for help!"))
@@ -249,28 +260,9 @@ class Jokusoramame(AutoShardedBot):
         except Exception as e:
             self.logger.exception("Failed to load Kyoukai!")
 
-        self.apply_checks()
-
         new_time = time.time() - self.startup_time
 
         self.logger.info("Bot ready in {} seconds.".format(new_time))
-
-    def apply_checks(self):
-        """
-        Applies certain global checks to commands.
-        """
-        from joku.core.checks import md_check, non_md_check
-        n = 0
-        for command in self.walk_commands():
-            if command.name == "help":
-                continue
-
-            # add `not_md_check` only if `md_check` is not in the command's checks
-            if md_check not in command.checks and non_md_check not in command.checks:
-                command.checks.append(non_md_check)
-                n += 1
-
-        self.logger.info("Applied {} new checks to commands.".format(n))
 
     async def on_message(self, message: Message):
         self.logger.info("Recieved message: {message.content} "
