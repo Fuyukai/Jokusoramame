@@ -14,7 +14,8 @@ import itsdangerous
 import logbook
 from discord import Message
 from discord.ext import commands
-from discord.ext.commands import AutoShardedBot, CheckFailure, CommandInvokeError, CommandOnCooldown, \
+from discord.ext.commands import AutoShardedBot, CheckFailure, CommandInvokeError, \
+    CommandOnCooldown, \
     MissingRequiredArgument, UserInputError, Command, Group
 from kyoukai import Kyoukai
 from logbook import StreamHandler
@@ -126,7 +127,8 @@ class Jokusoramame(AutoShardedBot):
             # Regular error.
 
             lines = traceback.format_exception(type(exception),
-                                               exception.__cause__, exception.__cause__.__traceback__)
+                                               exception.__cause__,
+                                               exception.__cause__.__traceback__)
             self.logger.error(''.join(lines))
 
             if self.config.get("developer_mode", False) is False:
@@ -143,17 +145,21 @@ class Jokusoramame(AutoShardedBot):
             if not error_channel:
                 self.logger.error("Could not find error channel!")
             else:
-                fmt = "Server: {}\nChannel: {}\nCommand: {}\n\n```{}```".format(context.message.guild.name,
-                                                                                context.message.channel.name,
-                                                                                context.invoked_with,
-                                                                                ''.join(lines))
+                fmt = "Server: {}\n" \
+                      "Channel: {}\n" \
+                      "Command: {}\n\n" \
+                      "```{}```".format(context.message.guild.name,
+                                        context.message.channel.name,
+                                        context.invoked_with,
+                                        ''.join(lines))
                 await error_channel.send(fmt)
             return
 
         # Switch based on isinstance.
         if isinstance(exception, CheckFailure):
             channel = context.message.channel
-            await context.channel.send("\U0001f6ab Check failed: {}".format(' '.join(exception.args)))
+            await context.channel.send(
+                "\U0001f6ab Check failed: {}".format(' '.join(exception.args)))
 
         elif isinstance(exception, MissingRequiredArgument):
             await context.channel.send("\U0001f6ab Error: {}".format(' '.join(exception.args)))
@@ -177,7 +183,7 @@ class Jokusoramame(AutoShardedBot):
 
     def _global_check(self, ctx: 'Context'):
         from joku.core.checks import md_check
-        if ctx.prefix.endswith("::"):
+        if ctx.prefix.endswith("::") and ctx.command.name != "help":
             if md_check not in ctx.command.checks:
                 raise DoNotRun(":x: This command requires the normal prefix (`j!`).")
 
@@ -196,7 +202,8 @@ class Jokusoramame(AutoShardedBot):
 
         self.loaded = False
 
-        self.logger.info("Loaded Jokusoramame, logged in as {}#{}.".format(self.user.name, self.user.discriminator))
+        self.logger.info("Loaded Jokusoramame, logged in as {}#{}.".format(self.user.name,
+                                                                           self.user.discriminator))
         self.logger.info("Guilds: {}".format(len(self.guilds)))
         self.logger.info("Users: {}".format(len(set(self.get_all_members()))))
 
@@ -204,8 +211,9 @@ class Jokusoramame(AutoShardedBot):
         self.app_id = app_info.id
         self.owner_id = app_info.owner.id
 
-        self.logger.info("I am owned by {}#{} ({}).".format(app_info.owner.name, app_info.owner.discriminator,
-                                                            self.owner_id))
+        self.logger.info(
+            "I am owned by {}#{} ({}).".format(app_info.owner.name, app_info.owner.discriminator,
+                                               self.owner_id))
 
         self.invite_url = discord.utils.oauth_url(self.app_id)
 
@@ -256,7 +264,8 @@ class Jokusoramame(AutoShardedBot):
         self.webserver.finalize()
         ws_cfg = self.config.get("webserver", {})
         try:
-            await self.webserver.start(ip=ws_cfg.get("ip", "127.0.0.1"), port=ws_cfg.get("port", 4444))
+            await self.webserver.start(ip=ws_cfg.get("ip", "127.0.0.1"),
+                                       port=ws_cfg.get("port", 4444))
         except Exception as e:
             self.logger.exception("Failed to load Kyoukai!")
 
