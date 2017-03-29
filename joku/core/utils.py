@@ -18,7 +18,7 @@ def parse_time(time_str: str, seconds: int=True) -> typing.Union[None, int, typi
     :return: The total number of seconds between now and then.
     """
     calendar = Calendar()
-    t_struct, parse_status = calendar.parse(time_str)
+    t_struct, parse_status = calendar.parse(time_str, sourceTime=datetime.datetime.utcnow())
 
     if parse_status == 0:
         return None
