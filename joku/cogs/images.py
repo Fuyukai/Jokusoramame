@@ -100,8 +100,8 @@ class Images(Cog):
                 except discord.HTTPException:
                     await ctx.channel.send(":frowning: Discord didn't like our embed.")
 
-    @_pixiv.command(pass_context=True)
-    async def search(self, ctx: Context, *, tag: str):
+    @_pixiv.command(pass_context=True, name="search")
+    async def _heck_you_beta(self, ctx: Context, *, tag: str):
         """
         Searches Pixiv using the specified tag.
         """
