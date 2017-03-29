@@ -103,7 +103,12 @@ class Roleme(Cog):
         """
         Sets your custom colour.
         """
-        enabled = await ctx.bot.database.get_setting(ctx.guild, "colourme_enabled", {"enabled": False})
+        if len(ctx.guild.roles) >= 200:
+            await ctx.send(":x: This server has too many roles (>= 200).")
+            return
+
+        enabled = await ctx.bot.database.get_setting(ctx.guild, "colourme_enabled",
+                                                     {"enabled": False})
         if not enabled["enabled"] is True:
             await ctx.send(":x: Colourme is not enabled on this server.")
             return
@@ -123,18 +128,23 @@ class Roleme(Cog):
 
         role_name = "Colour for {}".format(ctx.author.name[:15])
 
+        msg = ":heavy_check_mark: Updated your colour role to `{}`."
         if not role:
             role = await guild.create_role(name=role_name,
                                            permissions=discord.Permissions.none(),
                                            colour=colour)
             await ctx.author.add_roles(role)
         else:
-            await role.edit(colour=colour)
+            if colour.value == 0:
+                await role.delete()
+                msg = ":heavy_check_mark: Deleted your colour role."
+            else:
+                await role.edit(colour=colour)
 
         await ctx.bot.database.set_colourme_role(ctx.author, role)
 
         # Add the role anyway.
-        await ctx.send(":heavy_check_mark: Updated your colour role to `{}`.".format(str(colour)))
+        await ctx.send(msg.format(str(colour)))
 
     @colourme.command()
     @has_permissions(manage_roles=True)
