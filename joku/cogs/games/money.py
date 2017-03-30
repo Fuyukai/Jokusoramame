@@ -181,7 +181,7 @@ class Currency(Cog):
 
             em = discord.Embed(title="First National Bank of Joku")
             em.description = "Your tax is the amount of money you gain or lose **every hour**.\n" \
-                             "You do not lose money if you are you below the Basic Tax Bracket of §1343."
+                             "You do not lose money if you are at or below the Basic Tax Bracket of §1343."
             em.set_author(name=user.display_name)
 
             em.add_field(name="Currency", value="§{}".format(currency))
