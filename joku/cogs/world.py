@@ -59,14 +59,8 @@ class World(Cog):
         em.add_field(name="Longitude", value=data["longitude"])
 
         em.url = data["link"]
-
-        class _ts:
-            _ = arrow.get(data["date_time"]).datetime.astimezone(pytz.UTC)
-
-            def isoformat(self):
-                return self._.strftime("%Y-%m-%dT%H:%M:%S.%f")
-
-        em._timestamp = _ts()
+        ts = arrow.get(data["date_time"]).datetime.astimezone(pytz.UTC)
+        em.timestamp = ts
         em.set_footer(text="Powered by http://earthquake-report.com")
         await ctx.send(embed=em)
 
