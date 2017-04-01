@@ -134,6 +134,8 @@ class Currency(Cog):
             return
 
         currency = await ctx.bot.database.get_user_currency(ctx.message.author)
+        if currency is None:
+            currency = 1
         if currency <= 0:
             await ctx.send(":dragon: A debt collector came and broke your {}. "
                            "You are now debt free.".format(self.rng.choice(BODY_PARTS)))
