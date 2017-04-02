@@ -588,6 +588,10 @@ class Stocks(Cog):
         """
         Graphs the stock trends for this channel.
         """
+        if not ctx.channel.permissions_for(ctx.author).attach_files:
+            await ctx.send(":x: I need Attach Files permissions.")
+            return
+
         stocks = await ctx.bot.database.get_stocks_for(ctx.guild)
         user_stocks = await ctx.bot.database.get_user_stocks(ctx.author, guild=ctx.guild)
 
