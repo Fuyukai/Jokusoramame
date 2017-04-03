@@ -20,7 +20,7 @@ from discord.ext.commands.bot import _default_help_command
 from joku import VERSION
 from joku.cogs._common import Cog
 from joku.core.bot import Context, Jokusoramame
-from joku.core.checks import is_owner
+from joku.core.checks import is_owner, md_check
 from joku.core.commands import DoNotRun
 
 
@@ -243,7 +243,8 @@ class Core(Cog):
 
         if command is None:
             # List the commands.
-            base = "**Commands:**\nUse `{}help <command>` for more information about each command.\n\n".format(prefix)
+            base = "**Commands:**\nUse `{}help <command>` " \
+                   "for more information about each command.\n\n".format(prefix)
 
             if prefix.endswith("::"):
                 base += "**This will only show moderation related commands.**\n\n"
@@ -254,7 +255,8 @@ class Core(Cog):
             for (name, cls) in ctx.bot.cogs.items():
                 cmds = []
 
-                # Get a list of commands on the cog, by inspecting the members for any Command instances.
+                # Get a list of commands on the cog, by inspecting the members for any Command
+                #  instances.
                 members = inspect.getmembers(cls)
                 for cname, m in members:
                     if isinstance(m, Command):
@@ -265,9 +267,10 @@ class Core(Cog):
                             new_name = m.name
                         # Check if the author can run the command.
                         try:
-                            if await m.can_run(ctx):
-                                if not m.hidden:
-                                    cmds.append("`" + new_name + "`")
+                            if prefix.endswith("::") and md_check in m.checks:
+                                if await m.can_run(ctx):
+                                    if not m.hidden:
+                                        cmds.append("`" + new_name + "`")
                         except (CheckFailure, DoNotRun):
                             pass
 
@@ -277,7 +280,6 @@ class Core(Cog):
                     # Increment the counter here.
                     # Why? We don't want to increment it if the user can't use that cog.
                     counter += 1
-
             await ctx.channel.send(base)
         else:
             # Use the default help command.
