@@ -11,7 +11,7 @@ from discord.ext import commands
 from joku.cogs._common import Cog
 from joku.core import checks
 from joku.core.bot import Context
-from joku.core.checks import mod_command
+from joku.core.checks import mod_command, bot_has_permissions
 from joku.core.utils import get_role
 
 
@@ -122,7 +122,7 @@ class Moderation(Cog):
 
     @commands.command(pass_context=True)
     @checks.has_permissions(ban_members=True)
-    @commands.bot_has_permissions(ban_members=True)
+    @bot_has_permissions(ban_members=True)
     @mod_command()
     async def xban(self, ctx: Context, user_id: int):
         """

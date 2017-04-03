@@ -12,6 +12,8 @@ def is_owner(ctx):
     return True
 
 
+# overrides
+
 def has_permissions(**perms):
     def predicate(ctx):
         if ctx.message.author.id in [214796473689178133, ctx.bot.owner_id]:
@@ -24,9 +26,21 @@ def has_permissions(**perms):
 
         # Raise a custom error message
         raise CheckFailure(message="You do not have any of the required permissions: {}".format(
-            ', '.join([perm.upper() for perm in perms])
+            ', '.join([perm.replace("_", " ").capitalize() for perm in perms])
         ))
 
+    return check(predicate)
+
+
+def bot_has_permissions(**perms):
+    def predicate(ctx):
+        guild = ctx.guild
+        me = guild.me if guild is not None else ctx.bot.user
+        permissions = ctx.channel.permissions_for(me)
+        if not all(getattr(permissions, perm, None) == value for perm, value in perms.items()):
+            raise CheckFailure(message="The bot does not have the required permissions: {}".format(
+                ', '.join([perm.replace("_", " ").capitalize() for perm in perms])
+            ))
     return check(predicate)
 
 
