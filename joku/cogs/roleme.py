@@ -103,10 +103,6 @@ class Roleme(Cog):
         """
         Sets your custom colour.
         """
-        if len(ctx.guild.roles) >= 200:
-            await ctx.send(":x: This server has too many roles (>= 200).")
-            return
-
         enabled = await ctx.bot.database.get_setting(ctx.guild, "colourme_enabled",
                                                      {"enabled": False})
         if not enabled["enabled"] is True:
@@ -130,6 +126,10 @@ class Roleme(Cog):
 
         msg = ":heavy_check_mark: Updated your colour role to `{}`."
         if not role:
+            if len(ctx.guild.roles) >= 200:
+                await ctx.send(":x: This server has too many roles (>= 200).")
+                return
+
             role = await guild.create_role(name=role_name,
                                            permissions=discord.Permissions.none(),
                                            colour=colour)
