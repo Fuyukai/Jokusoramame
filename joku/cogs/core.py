@@ -267,10 +267,13 @@ class Core(Cog):
                             new_name = m.name
                         # Check if the author can run the command.
                         try:
-                            if prefix.endswith("::") and md_check in m.checks:
-                                if await m.can_run(ctx):
-                                    if not m.hidden:
-                                        cmds.append("`" + new_name + "`")
+                            if prefix.endswith("::"):
+                                if md_check not in m.checks:
+                                    return
+
+                            if await m.can_run(ctx):
+                                if not m.hidden:
+                                    cmds.append("`" + new_name + "`")
                         except (CheckFailure, DoNotRun):
                             pass
 
