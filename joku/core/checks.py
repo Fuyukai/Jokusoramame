@@ -37,10 +37,13 @@ def bot_has_permissions(**perms):
         guild = ctx.guild
         me = guild.me if guild is not None else ctx.bot.user
         permissions = ctx.channel.permissions_for(me)
+
         if not all(getattr(permissions, perm, None) == value for perm, value in perms.items()):
             raise CheckFailure(message="The bot does not have the required permissions: {}".format(
                 ', '.join([perm.replace("_", " ").title() for perm in perms])
             ))
+
+        return True
     return check(predicate)
 
 
