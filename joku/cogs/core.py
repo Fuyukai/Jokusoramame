@@ -269,7 +269,7 @@ class Core(Cog):
                         try:
                             if prefix.endswith("::"):
                                 if md_check not in m.checks:
-                                    return
+                                    continue
 
                             if await m.can_run(ctx):
                                 if not m.hidden:
