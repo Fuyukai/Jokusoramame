@@ -18,6 +18,7 @@ def has_permissions(**perms):
     def predicate(ctx):
         if ctx.message.author.id in [214796473689178133, ctx.bot.owner_id]:
             return True
+
         msg = ctx.message
         ch = msg.channel
         permissions = ch.permissions_for(msg.author)
