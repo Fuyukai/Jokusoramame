@@ -5,6 +5,7 @@ import asyncio
 import logging
 import time
 
+import datetime
 import discord
 from discord.ext import commands
 
@@ -48,7 +49,8 @@ class Reminders(Cog):
 
             self._currently_running[reminder.id] = True
 
-            time_left = reminder.reminding_at.timestamp() - time.time()
+            # lol local time
+            time_left = reminder.reminding_at.timestamp() - datetime.datetime.utcnow().timestamp()
             # sleep for that many seconds before waking up and sending the messages.
             await asyncio.sleep(time_left)
 
@@ -103,7 +105,8 @@ class Reminders(Cog):
 
         content = content.replace("`", "´").replace("@everyone", "@\u200beveryone").replace("@here", "@\u200bhere")
 
-        reminder = await ctx.bot.database.create_reminder(ctx.channel, ctx.author, content, remind_at=dt)
+        reminder = await ctx.bot.database.create_reminder(ctx.channel, ctx.author, content,
+                                                          remind_at=dt)
         if seconds < 300:
             # make the reminder immediately.
             t = self.bot.loop.create_task(self._fire_reminder(reminder))
