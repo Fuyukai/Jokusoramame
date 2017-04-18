@@ -3,10 +3,12 @@ Bot launcher.
 
 This class is responsible for bootstrapping the bot.
 """
+import gyukutai
+gyukutai.apply()
+
 import os
 import shutil
 import sys
-from ruamel import yaml
 
 from joku.core.bot import Jokusoramame
 

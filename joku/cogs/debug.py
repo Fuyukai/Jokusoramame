@@ -7,11 +7,16 @@ import sys
 import traceback
 
 import discord
+from asyncio_extras import threadpool
 from discord.ext import commands
+from sqlalchemy import text
+from sqlalchemy.engine import ResultProxy
+from sqlalchemy.exc import ProgrammingError, DatabaseError
 
 from joku.cogs._common import Cog
 from joku.core.bot import Context
 from joku.core.checks import is_owner
+from joku.core.utils import paginate_table
 
 
 class Debug(Cog):
@@ -45,7 +50,7 @@ class Debug(Cog):
                 "guild": ctx.message.guild, "channel": ctx.message.channel,
                 "bot": ctx.bot, "self": self, "ctx": ctx,
                 **sys.modules
-                })
+            })
             if inspect.isawaitable(d):
                 d = await d
         except Exception:
@@ -83,8 +88,6 @@ class Debug(Cog):
             else:
                 ctx.bot.logger.info("Reloaded {}.".format(extension))
 
-        ctx.bot.apply_checks()
-
         await ctx.channel.send(":heavy_check_mark: Reloaded bot.")
 
     @commands.group(pass_context=False)
@@ -113,7 +116,8 @@ class Debug(Cog):
         """
         await ctx.channel.send("Pulling from Git...")
 
-        process = await asyncio.create_subprocess_exec("git", "pull", stdout=asyncio.subprocess.PIPE,
+        process = await asyncio.create_subprocess_exec("git", "pull",
+                                                       stdout=asyncio.subprocess.PIPE,
                                                        stderr=asyncio.subprocess.PIPE)
         (stdout, stderr) = await process.communicate()
 
@@ -144,15 +148,53 @@ class Debug(Cog):
 
         to_add = 0 - user_xp
         await ctx.bot.database.update_user_xp(user, xp=to_add)
-        await ctx.channel.send(":put_litter_in_its_place: User **{}** has had their XP set to 0.".format(user))
+        await ctx.channel.send(
+            ":put_litter_in_its_place: User **{}** has had their XP set to 0.".format(user))
 
     @debug.command(pass_context=True)
-    async def resetlvl(self, ctx: Context, *, user: discord.Member=None):
+    async def resetlvl(self, ctx: Context, *, user: discord.Member = None):
         """
         Resets a user's level to 0.
         """
         user = await ctx.bot.database.set_user_level(user or ctx.author, 0)
         await ctx.channel.send(":put_litter_in_its_place:")
+
+    @debug.command(pass_context=True)
+    async def sql(self, ctx: Context, *, s: str):
+        """
+        Executes some raw SQL.
+        """
+        # strip the graves
+        if s.startswith("```"):
+            s = s[3:]
+
+        if s.endswith("```"):
+            s = s[:-3]
+
+        # wrpa the query in text
+        t = text(s)
+        # needs more indentation
+        try:
+            async with ctx.channel.typing():
+                async with threadpool():
+                    with ctx.bot.database.get_session() as sess:
+                        results = sess.execute(t)  # type: ResultProxy
+                        headers = results.keys()
+                        all_values = results.fetchall()
+
+                        sess.commit()
+
+        except DatabaseError as e:
+            await ctx.send("```sql\n{}```".format(e.args[0]))
+            return
+
+        if not all_values:
+            await ctx.send("Query executed without results.")
+            return
+
+        tables = paginate_table(all_values, headers)
+        for tbl in tables:
+            await ctx.send(tbl)
 
 
 def setup(bot):

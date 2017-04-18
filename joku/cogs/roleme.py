@@ -2,10 +2,15 @@
 Role-me cog.
 """
 import discord
+from asyncio_extras import threadpool
+from discord import Guild
 from discord.ext import commands
+from sqlalchemy.orm import Session
+
 from joku.cogs._common import Cog
 from joku.core.bot import Context
 from joku.core.checks import has_permissions, mod_command, bot_has_permissions
+from joku.db.tables import UserColour
 
 
 class Roleme(Cog):
@@ -143,6 +148,28 @@ class Roleme(Cog):
 
         # Add the role anyway.
         await ctx.send(msg.format(str(colour)))
+
+    @colourme.command()
+    @has_permissions(manage_roles=True)
+    @mod_command()
+    async def clean(self, ctx: Context):
+        async with threadpool():
+            with ctx.bot.database.get_session() as sess:
+                assert isinstance(sess, Session)
+                roles = sess.query(UserColour).filter(UserColour.guild_id == ctx.guild.id).all()
+
+        removed = []
+        for usercolour in roles:
+            member = ctx.guild.get_member(usercolour.user_id)
+            if member is None:
+                role = ctx.guild.roles.find | (lambda r: r.id == usercolour.role_id)
+                if not role:
+                    continue
+
+                # await role.delete()
+                removed.append(role)
+
+        await ctx.send(":heavy_check_mark: Deleted `{}` roles.".format(removed))
 
     @colourme.command()
     @has_permissions(manage_roles=True)
