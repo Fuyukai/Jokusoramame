@@ -166,7 +166,7 @@ class Roleme(Cog):
                 if not role:
                     continue
 
-                # await role.delete()
+                await role.delete()
                 removed.append(role)
 
         await ctx.send(":heavy_check_mark: Deleted `{}` roles.".format(len(removed)))
