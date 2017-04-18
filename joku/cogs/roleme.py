@@ -169,7 +169,7 @@ class Roleme(Cog):
                 # await role.delete()
                 removed.append(role)
 
-        await ctx.send(":heavy_check_mark: Deleted `{}` roles.".format(removed))
+        await ctx.send(":heavy_check_mark: Deleted `{}` roles.".format(len(removed)))
 
     @colourme.command()
     @has_permissions(manage_roles=True)
