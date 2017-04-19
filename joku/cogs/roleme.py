@@ -3,7 +3,6 @@ Role-me cog.
 """
 import discord
 from asyncio_extras import threadpool
-from discord import Guild
 from discord.ext import commands
 from sqlalchemy.orm import Session
 
