@@ -196,6 +196,26 @@ class Debug(Cog):
         for tbl in tables:
             await ctx.send(tbl)
 
+    @debug.command()
+    async def subprocess(self, ctx: Context, prog: str, *, s: str):
+        """
+        Runs a command in a subprocess.
+        """
+        results = await asyncio.create_subprocess_exec(prog, *s.split(" "),
+                                                       stdin=asyncio.subprocess.PIPE,
+                                                       stdout=asyncio.subprocess.PIPE,
+                                                       stderr=asyncio.subprocess.STDOUT)
+
+        # feed some junk stdin
+        async with ctx.channel.typing():
+            try:
+                stdout, _ = await asyncio.wait_for(results.communicate(b""), timeout=10)
+            except TimeoutError:
+                stdout = "Timed out waiting for process."
+
+        stdout = stdout.decode()
+        await ctx.send("```{}```".format(stdout))
+
 
 def setup(bot):
     bot.add_cog(Debug(bot))
