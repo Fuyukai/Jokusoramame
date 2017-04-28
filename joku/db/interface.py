@@ -11,7 +11,7 @@ from sqlalchemy import Column, func
 from sqlalchemy.engine import Engine, create_engine
 from sqlalchemy.orm import sessionmaker, Session
 
-from joku.db.tables import User, Setting, RoleState, Guild, UserColour, EventSetting, Tag, Reminder, UserStock, Stock, \
+from joku.db.tables import User, RoleState, Guild, UserColour, EventSetting, Tag, Reminder, UserStock, Stock, \
     TagAlias
 
 logger = logging.getLogger("Jokusoramame.DB")
@@ -180,44 +180,48 @@ class DatabaseInterface(object):
 
     # region Settings
 
+#    async def get_setting(self, guild: discord.Guild, setting_name: str, default: typing.Any = None) -> dict:
+#        """
+#        Gets a setting.
+#        """
+#        async with threadpool():
+#            with self.get_session() as session:
+#                setting = session.query(Setting) \
+#                    .filter((Setting.guild_id == guild.id) & (Setting.name == setting_name)) \
+#                    .first()
+
+#                if setting:
+#                    return setting.value
+#                else:
+#                    return default
+
     async def get_setting(self, guild: discord.Guild, setting_name: str, default: typing.Any = None) -> dict:
         """
         Gets a setting.
         """
         async with threadpool():
             with self.get_session() as session:
-                setting = session.query(Setting) \
-                    .filter((Setting.guild_id == guild.id) & (Setting.name == setting_name)) \
+                setting = session.query(Guild) \
+                    .filter((Guild.id == guild.id) & (Guild.settings[setting_name] == 'True')) \
                     .first()
 
                 if setting:
-                    return setting.value
+                    return setting.settings[setting_name]
                 else:
                     return default
 
-    async def set_setting(self, guild: discord.Guild, setting_name: str, value: dict = None, **kwargs) -> Setting:
+    async def set_setting(self, guild: discord.Guild, setting_name: str, value: str) -> Guild:
         """
-        Sets a setting value.
+        Sets a setting Value.
         """
-        g = await self.get_or_create_guild(guild)
-
         async with threadpool():
             with self.get_session() as session:
-                setting = session.query(Setting) \
-                    .filter((Setting.guild_id == guild.id) & (Setting.name == setting_name)) \
-                    .first()
+                setting = session.query(Guild) \
+                    .filter(Guild.id == guild.id) \
+                    .one()
 
-                if setting is None:
-                    setting = Setting(name=setting_name)
-                    setting.guild = g
-
-                if value is None:
-                    value = {}
-
-                value = {**value, **kwargs}
-
-                setting.value = value
-                session.add(setting)
+                setting.settings[setting_name] = value
+                session.commit()
 
         return setting
 
@@ -360,6 +364,60 @@ class DatabaseInterface(object):
     # endregion
 
     # region Colourme
+    async def get_colourme_roles(self, guild: discord.Guild) -> typing.List[discord.Role]:
+        """
+        Gets all the colourme roles set on the server.
+        """
+
+        g = await self.get_or_create_guild(guild)
+
+        # load the role objects
+        roles = [discord.utils.get(guild.roles, id=r_id) for r_id in g.colourme_roles]
+        roles = [_ for _ in roles if _ is not None]
+
+        return roles
+
+    async def add_colourme_role(self, role: discord.Role) -> Guild:
+        """
+        Adds a colourme to the list of colourme roles.
+        """
+        g = await self.get_or_create_guild(role.guild)
+
+        async with threadpool():
+            with self.get_session() as session:
+                if role.id not in g.colourme_roles:
+                    # sqlalchemy won't track our append (w/o some arcane magic)
+                    # so we copy the list
+                    # then replace it
+                    roles = g.colourme_roles.copy()
+                    roles.append(role.id)
+                    g.colourme_roles = roles
+
+                session.add(g)
+
+        return g
+
+    async def remove_colourme_role(self, role: discord.Role) -> Guild:
+        """
+        Removes a colour from the list of colourme roles.
+        """
+        g = await self.get_or_create_guild(role.guild)
+
+        async with threadpool():
+            with self.get_session() as session:
+                if role.id not in g.colourme_roles:
+                    # no-op
+                    return g
+
+                # copy it because sqlalchemy is f i c k l e
+                roles = g.colourme_roles.copy()  # type: list
+                roles.remove(role.id)
+                g.colourme_roles = roles
+
+                session.add(g)
+
+        return g
+
     async def get_colourme_role(self, member: discord.Member) -> typing.Union[discord.Role, None]:
         """
         Gets the colourme role for a member.

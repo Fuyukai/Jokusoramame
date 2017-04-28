@@ -101,57 +101,94 @@ class Roleme(Cog):
 
     @commands.group(invoke_without_command=True, aliases=["colorme"])
     @bot_has_permissions(manage_roles=True)
-    async def colourme(self, ctx: Context, *, colour: discord.Colour=None):
+    async def colourme(self, ctx: Context, colour: discord.Colour=None, *, role: discord.Role=None):
         """
         Sets your custom colour.
         """
-        enabled = await ctx.bot.database.get_setting(ctx.guild, "colourme_enabled",
-                                                     {"enabled": False})
-        if not enabled["enabled"] is True:
-            await ctx.send(":x: Colourme is not enabled on this server.")
-            return
+        modchoice_enabled = await ctx.bot.database.get_setting(ctx.guild, "colourme_modchoice_enabled")
 
-        if colour is None:
-            role = await ctx.bot.database.get_colourme_role(ctx.author)
-            if role:
-                await ctx.send("Your colour is **`{}`**.".format(str(role.colour)))
-            else:
-                await ctx.send(":x: You have no colour role.")
+        userchoice_enabled = await ctx.bot.database.get_setting(ctx.guild, "colourme_userchoice_enabled")
 
-            return
 
-        guild = ctx.guild  # type: discord.Guild
+        if (userchoice_enabled == 'True'):
+        # Regular colorme functionality
+            if colour is None:
+                role = await ctx.bot.database.get_colourme_role(ctx.author)
+                if role:
+                    await ctx.send("Your colour is **`{}`**.".format(str(role.colour)))
+                else:
+                    await ctx.send(":x: You have no colour role.")
 
-        role = await ctx.bot.database.get_colourme_role(ctx.author)
-
-        role_name = "Colour for {}".format(ctx.author.name[:15])
-
-        msg = ":heavy_check_mark: Updated your colour role to `{}`."
-        if not role:
-            if len(ctx.guild.roles) >= 200:
-                await ctx.send(":x: This server has too many roles (>= 200).")
                 return
 
-            role = await guild.create_role(name=role_name,
-                                           permissions=discord.Permissions.none(),
-                                           colour=colour)
-            await ctx.author.add_roles(role)
-        else:
-            if colour.value == 0:
-                await role.delete()
-                msg = ":heavy_check_mark: Deleted your colour role."
+            guild = ctx.guild  # type: discord.Guild
+
+            role = await ctx.bot.database.get_colourme_role(ctx.author)
+
+            role_name = "Colour for {}".format(ctx.author.name[:15])
+
+            msg = ":heavy_check_mark: Updated your colour role to `{}`."
+            if not role:
+                if len(ctx.guild.roles) >= 200:
+                    await ctx.send(":x: This server has too many roles (>= 200).")
+                    return
+
+                role = await guild.create_role(name=role_name,
+                                               permissions=discord.Permissions.none(),
+                                               colour=colour)
+                await ctx.author.add_roles(role)
             else:
-                await role.edit(colour=colour)
+                if colour.value == 0:
+                    await role.delete()
+                    msg = ":heavy_check_mark: Deleted your colour role."
+                else:
+                    await role.edit(colour=colour)
 
-        await ctx.bot.database.set_colourme_role(ctx.author, role)
+            await ctx.bot.database.set_colourme_role(ctx.author, role)
 
-        # Add the role anyway.
-        await ctx.send(msg.format(str(colour)))
+            # Add the role anyway.
+            await ctx.send(msg.format(str(colour)))
+            return
+
+        if (modchoice_enabled == 'True'):
+        # New modchoice colourme functionality... yes it is just the roleme stuff.
+            roles = await ctx.bot.database.get_colourme_roles(ctx.guild)
+
+            if (role is None) & (colour is None):
+                msg = "**Roles you can give yourself**:\n\n"
+                for role in roles:
+                    msg += "- `{}`\n".format(role.name)
+
+                await ctx.send(msg)
+                return
+
+            if (role is None) & (colour is not None):
+                await ctx.send(":x: Mod choice enabled, use `j!colourme` to list colour roles.")
+                return
+
+            if role not in roles:
+                await ctx.send(":x: You cannot be assigned this role.")
+                return
+
+            member = ctx.author  # type: discord.Member
+
+            if role in member.roles:
+                await ctx.send(":x: You already have this role.")
+                return
+
+            await member.add_roles(role)
+            await ctx.send(":heavy_check_mark: Given you the `{}` role.".format(role.name))
+            return
+
+        await ctx.send(":x: Colourme is not enabled on this server.")
 
     @colourme.command()
     @has_permissions(manage_roles=True)
     @mod_command()
     async def clean(self, ctx: Context):
+        """
+        Cleans out old colourme roles for users no longer in the server.
+        """
         async with threadpool():
             with ctx.bot.database.get_session() as sess:
                 assert isinstance(sess, Session)
@@ -170,15 +207,134 @@ class Roleme(Cog):
 
         await ctx.send(":heavy_check_mark: Deleted `{}` roles.".format(len(removed)))
 
+
+    @colourme.command(aliases=['addcolour', 'add'])
+    @has_permissions(manage_roles=True)
+    @mod_command()
+    async def addColour(self, ctx: Context, colour: discord.Colour, *, colour_alias: str):
+        """
+        Adds a new colour role for users to pick from
+        """
+
+        enabled = await ctx.bot.database.get_setting(ctx.guild, "colourme_modchoice_enabled")
+
+        if not (enabled == 'True'):
+            await ctx.send(":x: Colourme mod choice is not enabled on this server.")
+            return
+
+        if colour is None:
+            await ctx.send(":x: You have not provided a colour.")
+            return
+
+        if colour_alias is None:
+            await ctx.send(":x: You have not provided a name for the colour.")
+            return
+
+        guild = ctx.guild  # type: discord.Guild
+
+        colours = await ctx.bot.database.get_colourme_roles(guild)
+
+        role_name = colour_alias
+
+        role = await ctx.bot.database.get_colourme_role(ctx.author)
+
+        msg = ":heavy_check_mark: Added colour role: `{}`."
+        # Check if any colour alias already exists in the role list
+        if not any(str(c)[9:] == colour_alias for c in colours):
+            if len(ctx.guild.roles) >= 200:
+                await ctx.send(":x: This server has too many roles (>= 200).")
+                return
+
+            role = await guild.create_role(name=role_name,
+                                           permissions=discord.Permissions.none(),
+                                           colour=colour)
+            await ctx.bot.database.add_colourme_role(role)
+
+        # Add the role anyway.
+        await ctx.send(msg.format(str(colour_alias)))
+
+    @colourme.command(aliases=['removecolour','rmColour','rmcolour','remove'])
+    @has_permissions(manage_roles=True)
+    @mod_command()
+    async def removeColour(self, ctx: Context, *, colour_alias: str):
+        """
+        Removes a colour from the colour choice
+        """
+
+        enabled = await ctx.bot.database.get_setting(ctx.guild, "colourme_modchoice_enabled")
+
+        if (enabled == 'True'):
+            await ctx.send(":x: Colourme mod choice is not enabled on this server.")
+            return
+
+        colours = await ctx.bot.database.get_colourme_roles(ctx.guild)
+
+        role_name = "Colourme {}".format(colour_alias)
+
+        role = await ctx.bot.database.get_colourme_role(ctx.author)
+
+        msg = ":heavy_check_mark: Removed colour role: `{}`."
+        if any(str(c) == role_name for c in colours):
+            await ctx.bot.database.remove_colourme_role(role)
+            await role.delete()
+        else:
+            msg = ":x: Did not find role: `{}`."
+
+        # Add the role anyway.
+        await ctx.send(msg.format(str(role_name)))
+
+
     @colourme.command()
     @has_permissions(manage_roles=True)
     @mod_command()
-    async def enable(self, ctx: Context):
+    async def enable(self, ctx: Context, *, opt: str="modchoice"):
         """
         Enables colourme for this server.
+
+        By default, enables modchoice. Adding userchoice on the end allows users to specify colours.
         """
-        await ctx.bot.database.set_setting(ctx.guild, "colourme_enabled", enabled=True)
-        await ctx.send(":heavy_check_mark: Enabled colourme.")
+        modchoice_enabled = await ctx.bot.database.get_setting(ctx.guild, "colourme_modchoice_enabled")
+        userchoice_enabled = await ctx.bot.database.get_setting(ctx.guild, "colourme_userchoice_enabled")
+
+        # Ensure userchoice and modchoice cannot be enabled at the same time.
+        if (modchoice_enabled is not None) or (userchoice_enabled is not None):
+            await ctx.send(":x: Colourme already enabled. Use `j!colourme switch` to change colourme mode")
+            return
+
+        if opt == "userchoice":
+            await ctx.bot.database.set_setting(ctx.guild, "colourme_userchoice_enabled", 'True')
+            await ctx.send(":heavy_check_mark: Enabled colourme with user choice.")
+            return
+        await ctx.bot.database.set_setting(ctx.guild, "colourme_modchoice_enabled", 'True')
+        await ctx.send(":heavy_check_mark: Enabled colourme with mod choice.")
+
+    @colourme.command()
+    @has_permissions(manage_roles=True)
+    @mod_command()
+    async def switch(self, ctx: Context):
+        """
+        Switches colorme mode from one mode to another.
+
+        Make sure a responsible mod cleans up roles between switches
+        """
+        modchoice_enabled = await ctx.bot.database.get_setting(ctx.guild, "colourme_modchoice_enabled")
+        userchoice_enabled = await ctx.bot.database.get_setting(ctx.guild, "colourme_userchoice_enabled")
+
+        if (userchoice_enabled == 'True'):
+            # Userchoice was enabled
+            await ctx.bot.database.set_setting(ctx.guild, "colourme_userchoice_enabled", 'False')
+            await ctx.bot.database.set_setting(ctx.guild, "colourme_modchoice_enabled", 'True')
+            await ctx.send(":heavy_check_mark: Switched to mod choice mode.")
+            return
+
+        if (modchoice_enabled == 'True'):
+            # Modchoice was enabled
+            await ctx.bot.database.set_setting(ctx.guild, "colourme_modchoice_enabled", 'False')
+            await ctx.bot.database.set_setting(ctx.guild, "colourme_userchoice_enabled", 'True')
+            await ctx.send(":heavy_check_mark: switched to user choice mode.")
+            return
+
+        await ctx.send(":x: Colourme is not enabled on this server.")
 
     @colourme.command()
     @has_permissions(manage_roles=True)
@@ -187,8 +343,22 @@ class Roleme(Cog):
         """
         Disables colourme for this server.
         """
-        await ctx.bot.database.set_setting(ctx.guild, "colourme_enabled", enabled=False)
-        await ctx.send(":heavy_check_mark: Disabled colourme.")
+        modchoice_enabled = await ctx.bot.database.get_setting(ctx.guild, "colourme_modchoice_enabled")
+        userchoice_enabled = await ctx.bot.database.get_setting(ctx.guild, "colourme_userchoice_enabled")
+
+        if (userchoice_enabled == 'True'):
+            #userchoice was enabled
+            await ctx.bot.database.set_setting(ctx.guild, "colourme_userchoice_enabled", 'False')
+            await ctx.send(":heavy_check_mark: Disabled colourme.")
+            return
+
+        if (modchoice_enabled == 'True'):
+            #modchoice was enabled
+            await ctx.bot.database.set_setting(ctx.guild, "colourme_modchoice_enabled", 'False')
+            await ctx.send(":heavy_check_mark: Disabled colourme.")
+            return
+
+        await ctx.send(":x: Colourme is not enabled on this server.")
 
 
 setup = Roleme.setup

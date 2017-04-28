@@ -4,7 +4,6 @@ verify_ssl = true
 
 [packages]
 numpy = "*"
-matplotlib = "==2.0.0"
 seaborn = "*"
 tabulate = "*"
 psutil = "*"
@@ -23,6 +22,8 @@ googlemaps = "*"
 "ruamel.yaml" = "*"
 bingmaps = "*"
 lupa = "*"
+aiohttp = "*"
+gyukutai = "*"
 Kyoukai = "==2.0.3"
 SQLAlchemy = ">=1.1.0"
 Jinja2 = "*"
@@ -30,8 +31,6 @@ GitPython = "*"
 Logbook = "*"
 Pillow = "*"
 multiprocessing_on_dill = "*"
-aiohttp = "*"
-gyukutai = "*"
 
 [packages."discord.py"]
 git = "https://github.com/Rapptz/discord.py.git"

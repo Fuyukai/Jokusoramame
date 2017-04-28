@@ -26,8 +26,8 @@ class Moderation(Cog):
 
     async def on_member_join(self, member: discord.Member):
         # Rolestate
-        setting = await self.bot.database.get_setting(member.guild, "rolestate", {})
-        if setting.get("status") == 1:
+        setting = await self.bot.database.get_setting(member.guild, "rolestate")
+        if self.str_to_bool(setting):
             rolestate = await self.bot.database.get_rolestate_for_member(member)
             if rolestate is None:
                 return
@@ -55,15 +55,15 @@ class Moderation(Cog):
             # can't ban anyway
             return
 
-        c = await self.bot.database.get_setting(message.guild, "mention_spam", {
-            "enabled": False,
-            "threshold": 5
-        })
-        if c["enabled"] is True:
-            if mentions == c["threshold"]:
+        enabled = await self.bot.database.get_setting(message.guild, "mention_spam_enabled")
+        threshold = await self.bot.database.get_setting(message.guild, "mention_spam_threshold")
+
+        if self.str_to_bool(enabled):
+            if mentions == int(threshold):
                 guild = message.guild  # type: discord.Guild
                 await guild.ban(message.author)
-                await message.channel.send("Member **{}** was automatically banned for going over the mention spam "
+                await message.channel.send("Member **{}** was automatically banned for going over "
+                                           "the mention spam "
                                            "limit.".format(message.author))
 
     # anti mention spam
@@ -74,32 +74,24 @@ class Moderation(Cog):
         """
         Toggles the antimention status in this server.
         """
-        previous = await ctx.bot.database.get_setting(ctx.guild, "mention_spam", {
-            "enabled": False,
-            "threshold": 5
-        })
+        enabled = await self.bot.database.get_setting(ctx.message.guild, "mention_spam_enabled")
+        threshold = await self.bot.database.get_setting(ctx.message.guild, "mention_spam_threshold")
+
         if status is None or status not in ["on", "off"]:
-            current_status = previous.get("enabled", False)
+            current_status = self.str_to_bool(enabled)
             if current_status:
                 await ctx.send("Anti-mention spam is currently **on**.")
             else:
                 await ctx.send("Anti-mention spam is currently **off**.")
-
             return
 
         if status == "on":
-            await ctx.bot.database.set_setting(ctx.guild, "mention_spam",
-                                               **{
-                                                    "enabled": True,
-                                                    "threshold": previous["threshold"]
-                                                })
+            await ctx.bot.database.set_setting(ctx.guild, "mention_spam_enabled", 'True')
+            await ctx.bot.database.set_setting(ctx.guild, "mention_spam_threshold", threshold)
             await ctx.send(":heavy_check_mark: Enabled anti-mention spam.")
         elif status == "off":
-            await ctx.bot.database.set_setting(ctx.guild, "mention_spam",
-                                               **{
-                                                    "enabled": False,
-                                                    "threshold": previous["threshold"]
-                                                })
+            await ctx.bot.database.set_setting(ctx.guild, "mention_spam_enabled", 'False')
+            await ctx.bot.database.set_setting(ctx.guild, "mention_spam_threshold", threshold)
             await ctx.send(":heavy_check_mark: Disabled anti-mention spam.")
 
     @antimention.command()
@@ -113,11 +105,10 @@ class Moderation(Cog):
             await ctx.send(":x: Cannot set a threshold lower than 3.")
             return
 
-        previous = await ctx.bot.database.get_setting(ctx.guild, "mention_spam", {
-            "enabled": False,
-            "threshold": 5
-        })
-        await ctx.bot.database.set_setting(ctx.guild, "mention_spam", enabled=previous["enabled"], threshold=threshold)
+        enabled = await ctx.bot.database.get_setting(ctx.guild, "mention_spam_enabled")
+
+        await ctx.bot.database.set_setting(ctx.guild, "mention_spam_enabled", enabled)
+        await ctx.bot.database.set_setting(ctx.guild, "mention_spam_threshold", str(threshold))
         await ctx.send(":heavy_check_mark: Set anti-mention spam threshold to {}.".format(threshold))
 
     @commands.command(pass_context=True)
@@ -153,18 +144,18 @@ class Moderation(Cog):
         """
         if status is None:
             # Check the status.
-            setting = await ctx.bot.database.get_setting(ctx.message.guild, "rolestate", {})
-            if setting.get("status") == 1:
+            setting = await ctx.bot.database.get_setting(ctx.message.guild, "rolestate")
+            if setting == 'True':
                 await ctx.channel.send("Rolestate is currently **on.**")
             else:
                 await ctx.channel.send("Rolestate is currently **off.**")
         else:
             if status.lower() == "on":
-                await ctx.bot.database.set_setting(ctx.message.guild, "rolestate", status=1)
+                await ctx.bot.database.set_setting(ctx.message.guild, "rolestate", 'True')
                 await ctx.channel.send(":heavy_check_mark: Turned Rolestate on.")
                 return
             elif status.lower() == "off":
-                await ctx.bot.database.set_setting(ctx.message.guild, "rolestate", status=0)
+                await ctx.bot.database.set_setting(ctx.message.guild, "rolestate", 'False')
                 await ctx.channel.send(":heavy_check_mark: Turned Rolestate off.")
                 return
             else:
@@ -348,5 +339,12 @@ class Moderation(Cog):
             "(`{}` forbidden, `{}` too long/other)".format(count, failed, forbidden, httperror)
         )
 
+    def str_to_bool(s):
+        if s.lower() == 'true':
+            return True
+        elif s.lower() == 'false':
+            return False
+        else:
+            raise ValueError # evil ValueError that doesn't tell you what the wrong value was
 
 setup = Moderation.setup

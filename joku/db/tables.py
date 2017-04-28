@@ -1,6 +1,7 @@
 from sqlalchemy import Column, BigInteger, Integer, DateTime, func, String, ForeignKey, Boolean, Float
-from sqlalchemy.dialects.postgresql import JSONB, ARRAY
+from sqlalchemy.dialects.postgresql import JSONB, ARRAY, HSTORE
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.ext.mutable import MutableDict
 from sqlalchemy.orm import relationship
 
 Base = declarative_base()
@@ -78,8 +79,8 @@ class Guild(Base):
     #: A relationship to the rolestates.
     rolestates = relationship("RoleState", backref="guild")
 
-    #: A relationship to the settings.
-    settings = relationship("Setting", backref="guild")
+    #: An HSTORE of all settings.
+    settings = Column(MutableDict.as_mutable(HSTORE), nullable=False, default={}, server_default='')
 
     #: A relationship to the event settings.
     event_settings = relationship("EventSetting", backref="guild")
@@ -89,6 +90,9 @@ class Guild(Base):
 
     #: An array of roleme role IDs this guild can have.
     roleme_roles = Column(ARRAY(BigInteger), nullable=True, default=[])
+
+    #: An array of colourme role IDs this guild can have.
+    colourme_roles = Column(ARRAY(BigInteger), nullable=True, default=[])
 
     #: Are stocks enabled for this guild?
     stocks_enabled = Column(Boolean, default=False)
@@ -102,6 +106,9 @@ class Guild(Base):
     #: The announcements channel.
     announcement_channel = Column(BigInteger, nullable=True)
 
+    def __init__(self, **kwargs):
+        kwargs.setdefault('settings', {})
+        super(Guild, self).__init__(**kwargs)
 
 class UserStock(Base):
     """
@@ -290,25 +297,6 @@ class RoleState(Base):
                                                                               self.nick, self.roles)
 
     __str__ = __repr__
-
-
-class Setting(Base):
-    """
-    A setting object in the database.
-    """
-    __tablename__ = "setting"
-
-    #: The ID of the setting.
-    id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
-
-    #: The name of the setting.
-    name = Column(String, nullable=False, unique=False)
-
-    #: The value of the setting.
-    value = Column(JSONB, nullable=False)
-
-    #: The guild ID this setting is in.
-    guild_id = Column(BigInteger, ForeignKey("guild.id"), unique=False, nullable=False)
 
 
 class EventSetting(Base):

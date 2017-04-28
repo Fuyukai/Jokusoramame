@@ -96,3 +96,5 @@ rethinkdb_data/
 
 .atom-build.yml
 alembic.ini
+
+Pipfile.lock
