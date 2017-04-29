@@ -164,7 +164,7 @@ class Roleme(Cog):
             c.prepare(ctx, choice)
             try:
                 role = c.convert()
-            except BadArgument:
+            except (TypeError, BadArgument):
                 role = None
 
             if role is None:
@@ -190,6 +190,24 @@ class Roleme(Cog):
             return
 
         await ctx.send(":x: Colourme is not enabled on this server.")
+
+    @commands.command()
+    @bot_has_permissions(manage_roles=True)
+    async def uncolourme(self, ctx: Context, *, role: discord.Role):
+        """
+        Removes a previously assigned role.
+        """
+        roles = await ctx.bot.database.get_colourme_roles(ctx.guild)
+        if role not in roles:
+            await ctx.send(":x: Cannot remove this role.")
+            return
+
+        if role not in ctx.author.roles:
+            await ctx.send(":x: You do not have this role.")
+            return
+
+        await ctx.author.remove_roles(role)
+        await ctx.send(":heavy_check_mark: Removed `{}` from your roles.".format(role.name))
 
     @colourme.command()
     @has_permissions(manage_roles=True)
@@ -261,6 +279,24 @@ class Roleme(Cog):
         # Add the role anyway.
         await ctx.send(msg.format(str(colour_alias)))
 
+    @colourme.command()
+    @has_permissions(manage_roles=True)
+    async def mode(self, ctx: Context):
+        """
+        Displays current Colourme mode
+        """
+        modchoice_enabled = await ctx.bot.database.get_setting(ctx.guild,
+                                                               "colourme_modchoice_enabled")
+        userchoice_enabled = await ctx.bot.database.get_setting(ctx.guild,
+                                                                "colourme_userchoice_enabled")
+
+        if userchoice_enabled == 'True':
+            await ctx.send(":warning: Users may pick their own colours.")
+        elif modchoice_enabled == 'True':
+            await ctx.send(":warning: Mods pick the colours.")
+        else:
+            await ctx.send(":x: Colourme is not enabled on this server.")
+
     @colourme.command(aliases=['rmcolour', 'remove'])
     @has_permissions(manage_roles=True)
     @mod_command()
@@ -308,7 +344,7 @@ class Roleme(Cog):
         # Ensure userchoice and modchoice cannot be enabled at the same time.
         if (modchoice_enabled is not None) or (userchoice_enabled is not None):
             await ctx.send(
-                ":x: Colourme already enabled. Use `j!colourme switch` to change colourme mode")
+                ":x: Colourme already enabled. Use `j::colourme switch` to change colourme mode")
             return
 
         if opt == "userchoice":
@@ -323,7 +359,7 @@ class Roleme(Cog):
     @mod_command()
     async def switch(self, ctx: Context):
         """
-        Switches colorme mode from one mode to another.
+        Switches colourme mode from one mode to another.
 
         Make sure a responsible mod cleans up roles between switches
         """
@@ -373,6 +409,5 @@ class Roleme(Cog):
             return
 
         await ctx.send(":x: Colourme is not enabled on this server.")
-
 
 setup = Roleme.setup
