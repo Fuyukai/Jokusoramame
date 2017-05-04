@@ -185,7 +185,9 @@ class Roleme(Cog):
                 await ctx.send(":x: You already have this role.")
                 return
 
-            await member.add_roles(role)
+            new_roles = [r for r in member.roles if r not in roles] + [role]
+
+            await member.edit(roles=new_roles)
             await ctx.send(":heavy_check_mark: Given you the `{}` role.".format(role.name))
             return
 
