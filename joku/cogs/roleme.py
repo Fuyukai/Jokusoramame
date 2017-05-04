@@ -319,7 +319,7 @@ class Roleme(Cog):
 
         enabled = await ctx.bot.database.get_setting(ctx.guild, "colourme_modchoice_enabled")
 
-        if enabled == 'True':
+        if enabled != 'True':
             await ctx.send(":x: Colourme mod choice is not enabled on this server.")
             return
 
