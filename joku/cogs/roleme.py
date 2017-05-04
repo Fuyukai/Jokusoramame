@@ -324,20 +324,16 @@ class Roleme(Cog):
             return
 
         colours = await ctx.bot.database.get_colourme_roles(ctx.guild)
-
-        role_name = "Colourme {}".format(colour_alias)
-
         role = await ctx.bot.database.get_colourme_role(ctx.author)
 
         msg = ":heavy_check_mark: Removed colour role: `{}`."
-        if any(str(c) == role_name for c in colours):
+        if any(c.name == colour_alias for c in colours):
             await ctx.bot.database.remove_colourme_role(role)
             await role.delete()
         else:
             msg = ":x: Did not find role: `{}`."
 
-        # Add the role anyway.
-        await ctx.send(msg.format(str(role_name)))
+        await ctx.send(msg.format(str(colour_alias)))
 
     @colourme.command()
     @has_permissions(manage_roles=True)
