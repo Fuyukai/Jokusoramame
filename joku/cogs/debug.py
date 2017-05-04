@@ -32,7 +32,7 @@ class Debug(Cog):
 
     @commands.command(pass_context=True)
     @commands.check(is_owner)
-    async def load(self, ctx, *, cog):
+    async def unload(self, ctx, *, cog):
         try:
             ctx.bot.unload_extension(cog)
         except Exception as e:
