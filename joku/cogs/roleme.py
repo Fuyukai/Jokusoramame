@@ -314,20 +314,18 @@ class Roleme(Cog):
     @mod_command()
     async def removecolour(self, ctx: Context, *, colour_alias: str):
         """
-        Removes a colour from the colour choice
+        Removes a colour from the colour choice.
         """
-
         enabled = await ctx.bot.database.get_setting(ctx.guild, "colourme_modchoice_enabled")
 
         if enabled != 'True':
             await ctx.send(":x: Colourme mod choice is not enabled on this server.")
             return
 
-        colours = await ctx.bot.database.get_colourme_roles(ctx.guild)
-        role = await ctx.bot.database.get_colourme_role(ctx.author)
+        role = ctx.guild.roles.find | (lambda r: r.name == colour_alias)
 
         msg = ":heavy_check_mark: Removed colour role: `{}`."
-        if any(c.name == colour_alias for c in colours):
+        if role:
             await ctx.bot.database.remove_colourme_role(role)
             await role.delete()
         else:
