@@ -224,23 +224,23 @@ class Roleme(Cog):
         modchoice_enabled = await ctx.bot.database.get_setting(ctx.guild,
                                                                "colourme_modchoice_enabled")
         removed = []
-        for usercolour in roles:
-            member = ctx.guild.get_member(usercolour.user_id)
-            if member is None or modchoice_enabled:
-                role = ctx.guild.roles.find | (lambda r: r.id == usercolour.role_id)
-                if not role:
-                    continue
+        async with ctx.channel.typing():
+            for usercolour in roles:
+                member = ctx.guild.get_member(usercolour.user_id)
+                if member is None or modchoice_enabled:
+                    role = ctx.guild.roles.find | (lambda r: r.id == usercolour.role_id)
+                    if not role:
+                        continue
 
-                #await role.delete()
-                removed.append(role)
+                    await role.delete()
+                    removed.append(role)
 
         rids = [role.id for role in removed]
 
         async with threadpool():
             with ctx.bot.database.get_session() as sess:
                 assert isinstance(sess, Session)
-                print("delet", rids)
-                #sess.query(UserColour).filter(UserColour.role_id.in_(rids)).delete()
+                sess.query(UserColour).filter(UserColour.role_id.in_(rids)).delete()
 
         await ctx.send(":heavy_check_mark: Deleted `{}` roles.".format(len(removed)))
 
