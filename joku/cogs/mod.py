@@ -339,12 +339,12 @@ class Moderation(Cog):
             "(`{}` forbidden, `{}` too long/other)".format(count, failed, forbidden, httperror)
         )
 
-    def str_to_bool(s):
+    def str_to_bool(self, s: str):
         if s.lower() == 'true':
             return True
         elif s.lower() == 'false':
             return False
         else:
-            raise ValueError # evil ValueError that doesn't tell you what the wrong value was
+            return False
 
 setup = Moderation.setup
