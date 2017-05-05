@@ -340,6 +340,9 @@ class Moderation(Cog):
         )
 
     def str_to_bool(self, s: str):
+        if s is None:
+            return False
+
         if s.lower() == 'true':
             return True
         elif s.lower() == 'false':
