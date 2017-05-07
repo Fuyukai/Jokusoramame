@@ -51,12 +51,14 @@ class Moderation(Cog):
         if message.guild is None:
             return
 
-        if message.author.top_role >= message.guild.me.top_role or message.author == message.guild.owner:
+        if message.author.top_role >= message.guild.me.top_role \
+                or message.author == message.guild.owner:
             # can't ban anyway
             return
 
         enabled = await self.bot.database.get_setting(message.guild, "mention_spam_enabled")
-        threshold = await self.bot.database.get_setting(message.guild, "mention_spam_threshold")
+        threshold = await self.bot.database.get_setting(message.guild, "mention_spam_threshold",
+                                                        default=3)
 
         if self.str_to_bool(enabled):
             if mentions == int(threshold):
