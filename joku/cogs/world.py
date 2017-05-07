@@ -86,11 +86,14 @@ class World(Cog):
             em.set_image(url=data["hdurl"])
 
             if 'copyright' in data:
-                em.set_footer(text="Powered by the NASA API | Copyright (C) {}".format(data["copyright"]),
-                              icon_url="https://images.nasa.gov/images/nasa_logo-large.ee501ef4.png")
+                em.set_footer(text="Powered by the NASA API "
+                                   "| Copyright (C) {}".format(data["copyright"]),
+                              icon_url="https://images.nasa.gov/images/"
+                                       "nasa_logo-large.ee501ef4.png")
             else:
                 em.set_footer(text="Powered by the NASA API",
-                              icon_url="https://images.nasa.gov/images/nasa_logo-large.ee501ef4.png")
+                              icon_url="https://images.nasa.gov/images/"
+                                       "nasa_logo-large.ee501ef4.png")
 
             await ctx.send(embed=em)
 
@@ -101,8 +104,8 @@ class World(Cog):
         
         To find your lat/long, you can use `j!geocode <place>`.
         
-        An optional date can be provided which will attempt to show data from that date. This date must be in 
-        YY-MM-DD format.
+        An optional date can be provided which will attempt to show data from that date. This date 
+        must be in  YY-MM-DD format.
         """
         url = "https://api.nasa.gov/planetary/earth/imagery"
         params = {"lat": str(lat), "lon": str(long), "cloud_score": "True"}
@@ -118,7 +121,8 @@ class World(Cog):
                 em.set_image(url=data["url"])
                 em.url = data["url"]
                 # em.timestamp = arrow.get(data["date"]).datetime
-                em.add_field(name="Cloud coverage (est)", value="{}%".format(round(data["cloud_score"] * 100, 2)))
+                em.add_field(name="Cloud coverage (est)",
+                             value="{}%".format(round(data["cloud_score"] * 100, 2)))
                 em.add_field(name="Picture date", value=data["date"])
                 em.colour = discord.Colour.green()
 
@@ -157,7 +161,8 @@ class World(Cog):
             em = discord.Embed(title=neo_object["name"], url=neo_object["nasa_jpl_url"])
 
             # add useful fields
-            em.add_field(name="Potentially hazardous?", value=neo_object["is_potentially_hazardous_asteroid"])
+            em.add_field(name="Potentially hazardous?",
+                         value=neo_object["is_potentially_hazardous_asteroid"])
             em.add_field(name="Pass date", value=date)
             em.add_field(name="Absolute magnitude", value=neo_object["absolute_magnitude_h"])
 

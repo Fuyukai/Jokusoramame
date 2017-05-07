@@ -115,7 +115,8 @@ class Location(Cog):
             long2 = geocode_result["geometry"]["location"]["lng"]
 
             req = self.make_mq_request(size="@2x",
-                                       start="{},{}".format(lat1, long1), end="{},{}".format(lat2, long2))
+                                       start="{},{}".format(lat1, long1),
+                                       end="{},{}".format(lat2, long2))
 
             async with self.session.get(self.MQ_MAPS, params=req,
                                         headers={"Accept": "image/png"}) as r:
@@ -158,7 +159,8 @@ class Location(Cog):
         Decodes a lat/long pair into a place name.
         """
         async with ctx.channel.typing():
-            geocode_result = await self.bot.loop.run_in_executor(None, self.maps.reverse_geocode, (lat, long))
+            geocode_result = await self.bot.\
+                loop.run_in_executor(None, self.maps.reverse_geocode, (lat, long))
 
         if not geocode_result:
             await ctx.send(":x: That lat/long pair does not match any known location.")
@@ -170,8 +172,10 @@ class Location(Cog):
         em.description = "The place here is **{}**.".format(wanted["formatted_address"])
         em.set_footer(text="Powered by Google Maps")
 
-        em.add_field(name="Place types", value=", ".join(x.replace("_", " ").capitalize() for x in wanted["types"]))
-        em.add_field(name="Location type", value=wanted["geometry"]["location_type"].replace("_", "").capitalize())
+        em.add_field(name="Place types",
+                     value=", ".join(x.replace("_", " ").capitalize() for x in wanted["types"]))
+        em.add_field(name="Location type",
+                     value=wanted["geometry"]["location_type"].replace("_", "").capitalize())
 
         em.colour = discord.Colour.green()
 
@@ -199,7 +203,8 @@ class Location(Cog):
         routes = route[0]["legs"][0]
         em = discord.Embed(title="Directions Results")
         em.description = "From **{}** to **{}** will take you **{}** over **{}**.".format(
-            routes["start_address"], routes["end_address"], routes["duration"]["text"], routes["distance"]["text"]
+            routes["start_address"], routes["end_address"], routes["duration"]["text"],
+            routes["distance"]["text"]
         )
 
         qs = urlencode({"saddr": routes["start_address"], "daddr": routes["end_address"]})
@@ -207,7 +212,8 @@ class Location(Cog):
 
         if len(routes["steps"]) > 15:
             # build the url
-            em.description += "\n\n**This has more than 15 steps.** To see the full route, go to {}.".format(final)
+            em.description += "\n\n**This has more than 15 steps.** " \
+                              "To see the full route, go to {}.".format(final)
 
         em.url = final
         for n, step in enumerate(routes["steps"]):

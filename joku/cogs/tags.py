@@ -39,7 +39,8 @@ class Tags(Cog):
             return
 
         if alias is not None:
-            em = discord.Embed(title=alias.alias_name, description="Alias for `{}`".format(tag.name))
+            em = discord.Embed(title=alias.alias_name, description="Alias for `{}`"
+                               .format(tag.name))
             owner = ctx.bot.get_member(alias.user_id)
         else:
             em = discord.Embed(title=tag.name, description="```{}```".format(tag.content))

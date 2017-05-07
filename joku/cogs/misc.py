@@ -51,7 +51,8 @@ class Misc(Cog):
         """
         channel = ctx.channel  # type: discord.TextChannel
         if channel.permissions_for(ctx.guild.me).manage_messages:
-            count = len(await channel.purge(limit=100, check=lambda m: m.author == ctx.guild.me, before=ctx.message))
+            count = len(await channel.purge(limit=100, check=lambda m: m.author == ctx.guild.me,
+                                            before=ctx.message))
         else:
             count = 0
             async for message in channel.history(limit=100, before=ctx.message):

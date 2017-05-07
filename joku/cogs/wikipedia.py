@@ -41,7 +41,9 @@ class Wikipedia(Cog):
                 result = await self.bot.loop.run_in_executor(None, _get_wp_page)
         except wikipedia.DisambiguationError as e:
             em = discord.Embed(title="Disambiguation")
-            em.description = "`{}` may refer to:\n\n{}".format(term, "\n".join(" - `{}`".format(x) for x in e.options))
+            em.description = "`{}` may refer to:" \
+                             "\n\n{}".format(term,
+                                             "\n".join(" - `{}`".format(x) for x in e.options))
             em.colour = discord.Colour.orange()
         except wikipedia.PageError as e:
             em = discord.Embed(title="Error")
@@ -62,7 +64,8 @@ class Wikipedia(Cog):
             # borrow this import thanks
             em.timestamp = wikipedia.datetime.utcnow()
             em.set_footer(text="Donate to Wikipedia today!",
-                          icon_url="http://icons.iconarchive.com/icons/sykonist/popular-sites/256/Wikipedia-icon.png")
+                          icon_url="http://icons.iconarchive.com/icons/sykonist/"
+                                   "popular-sites/256/Wikipedia-icon.png")
 
         await ctx.send(embed=em)
 
@@ -82,7 +85,8 @@ class Wikipedia(Cog):
             fmt = "Results for `{}`:\n\n".format(search_str)
 
             for result in result:
-                built = "[{}](https://en.wikipedia.org/wiki/{})\n".format(result, quote(result.replace(" ", "_")))
+                built = "[{}](https://en.wikipedia.org/wiki/{})\n"\
+                    .format(result, quote(result.replace(" ", "_")))
                 fmt += built
 
         em.description = fmt

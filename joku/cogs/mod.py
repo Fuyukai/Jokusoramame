@@ -58,7 +58,7 @@ class Moderation(Cog):
 
         enabled = await self.bot.database.get_setting(message.guild, "mention_spam_enabled")
         threshold = await self.bot.database.get_setting(message.guild, "mention_spam_threshold",
-                                                        default=3)
+                                                        default=5)
 
         if self.str_to_bool(enabled):
             if mentions == int(threshold):
