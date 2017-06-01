@@ -148,7 +148,10 @@ class Stocks(Cog):
                 us_mappings = []
                 coros = []
                 for guild in collected:
-                    guild = self.bot.connection._guilds.get(guild.id)  # type: discord.Guild
+                    try:
+                        guild = self.bot.connection._get_guild(guild.id)  # type: discord.Guild
+                    except:
+                        guild = self.bot._connection._get_guild(guild.id)
                     if not guild:
                         continue
 
