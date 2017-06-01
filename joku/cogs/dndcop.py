@@ -21,18 +21,18 @@ class InvisCop(Cog):
         """
         if status is None:
             # Check the status.
-            setting = await ctx.bot.database.get_setting(ctx.message.guild, "dndcop", {})
-            if setting.get("status") == 1:
+            setting = await ctx.bot.database.get_setting(ctx.message.guild, "dndcop")
+            if setting == "true":
                 await ctx.channel.send("Invis Cop is currently **on.**")
             else:
                 await ctx.channel.send("Invis Cop is currently **off.**")
         else:
             if status.lower() == "on":
-                await ctx.bot.database.set_setting(ctx.message.guild, "dndcop", status=1)
+                await ctx.bot.database.set_setting(ctx.message.guild, "dndcop", "true")
                 await ctx.channel.send(":heavy_check_mark: Turned Invis Cop on.")
                 return
             elif status.lower() == "off":
-                await ctx.bot.database.set_setting(ctx.message.guild, "dndcop", status=0)
+                await ctx.bot.database.set_setting(ctx.message.guild, "dndcop", "false")
                 await ctx.channel.send(":heavy_check_mark: Turned Invis Cop off.")
                 return
             else:
@@ -48,9 +48,9 @@ class InvisCop(Cog):
         if message.author.bot:
             return
 
-        enabled = (await self.bot.database.get_setting(message.guild, "dndcop", {})).get("status") == 1
+        enabled = await self.bot.database.get_setting(message.guild, "dndcop", {})
 
-        if enabled:
+        if enabled == "true":
             # Check the author's status for being not ONLINE or AWAY.
             assert isinstance(message.author, discord.Member)
             if message.author.status is discord.Status.offline:
