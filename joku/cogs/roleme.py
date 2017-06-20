@@ -44,6 +44,10 @@ class Roleme(Cog):
             await ctx.send(":x: You already have this role.")
             return
 
+        if role >= ctx.guild.me.top_role:
+            await ctx.send(":x: I cannot assign this role. (it is above my highest role)")
+            return
+
         await member.add_roles(role)
         await ctx.send(":heavy_check_mark: Given you the `{}` role.".format(role.name))
 
