@@ -73,10 +73,10 @@ class Reminders(Cog):
 
     async def ready(self):
         # Start a reminder polling task.
-        if self._is_running_reminders is True:
+        if Reminders._is_running_reminders is True:
             return
 
-        self._is_running_reminders = True
+        Reminders._is_running_reminders = True
 
         try:
             while True:
@@ -89,7 +89,7 @@ class Reminders(Cog):
                 await asyncio.sleep(300)
         finally:
             # Stop running reminders so that a reload will cause them to start again.
-            self._is_running_reminders = False
+            Reminders._is_running_reminders = False
 
     @commands.command()
     async def remind(self, ctx: Context, tstr: str, *, content: str):
