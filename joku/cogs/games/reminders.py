@@ -2,10 +2,9 @@
 Reminders cog. Database backed to ensure persistence between bot restarts.
 """
 import asyncio
-import logging
-import time
-
 import datetime
+import logging
+
 import discord
 from discord.ext import commands
 
@@ -18,7 +17,7 @@ logger = logging.getLogger("Jokusoramame.Reminders")
 
 
 class Reminders(Cog):
-    _is_running_reminders = False
+    _is_running_reminders = asyncio.Lock()
 
     _currently_running = {}
 
@@ -72,13 +71,10 @@ class Reminders(Cog):
             self._currently_running.pop(reminder.id, None)
 
     async def ready(self):
-        # Start a reminder polling task.
-        if Reminders._is_running_reminders is True:
+        if self._is_running_reminders.locked():
             return
 
-        Reminders._is_running_reminders = True
-
-        try:
+        async with self._is_running_reminders:
             while True:
                 # Scan the reminders firing in the next 300 seconds.
                 reminders = await self.bot.database.scan_reminders(within=300)
@@ -87,9 +83,6 @@ class Reminders(Cog):
 
                 # Sleep for 300 seconds afterwards.
                 await asyncio.sleep(300)
-        finally:
-            # Stop running reminders so that a reload will cause them to start again.
-            Reminders._is_running_reminders = False
 
     @commands.command()
     async def remind(self, ctx: Context, tstr: str, *, content: str):
