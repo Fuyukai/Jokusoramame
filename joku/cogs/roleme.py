@@ -355,7 +355,7 @@ class Roleme(Cog):
                                                                 "colourme_userchoice_enabled")
 
         # Ensure userchoice and modchoice cannot be enabled at the same time.
-        if (modchoice_enabled is not (None or 'False')) or (userchoice_enabled is not (None or 'False')):
+        if (modchoice_enabled == 'True') or (userchoice_enabled == 'True'):
             await ctx.send(
                 ":x: Colourme already enabled. Use `j::colourme switch` to change colourme mode")
             return
