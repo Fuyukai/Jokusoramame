@@ -1,77 +1,48 @@
-from __future__ import with_statement
+"""
+Example environment file for asql-migrate.
+"""
+import typing
 
-import os
-import sys
+from asyncqlio.db import DatabaseInterface
+from asyncqlio.orm.session import Session
 
-from alembic import context
-from ruamel import yaml
-from sqlalchemy import engine_from_config, pool, create_engine
-from logging.config import fileConfig
+# If you need to import your own tables, do so here.
+# import sys, os
+# sys.path.insert(0, os.path.abspath("."))
+# import my_package.Table
 
-# this is the Alembic Config object, which provides
-# access to the values within the .ini file in use.
-config = context.config
-
-# Interpret the config file for Python logging.
-# This line sets up loggers basically.
-fileConfig(config.config_file_name)
-
-# add your model's MetaData object here
-# for 'autogenerate' support
-# from myapp import mymodel
-# target_metadata = mymodel.Base.metadata
-sys.path.insert(0, os.getcwd())
-from joku.db import tables
-target_metadata = tables.Base.metadata
-
-# other values from the config, defined by the needs of env.py,
-# can be acquired:
-# my_important_option = config.get_main_option("my_important_option")
-# ... etc.
+# The DSN to connect to the server with.
+# You probably want to change this.
+dsn = "postgresql://jokusoramame@127.0.0.1/jokusoramame"
 
 
-def run_migrations_offline():
-    """Run migrations in 'offline' mode.
-
-    This configures the context with just a URL
-    and not an Engine, though an Engine is acceptable
-    here as well.  By skipping the Engine creation
-    we don't even need a DBAPI to be available.
-
-    Calls to context.execute() here emit the given string to the
-    script output.
-
+async def create_database_interface() -> DatabaseInterface:
     """
-    url = config.get_main_option("sqlalchemy.url")
-    context.configure(
-        url=url, target_metadata=target_metadata, literal_binds=True)
-
-    with context.begin_transaction():
-        context.run_migrations()
-
-
-def run_migrations_online():
-    """Run migrations in 'online' mode.
-
-    In this scenario we need to create an Engine
-    and associate a connection with the context.
-
+    Creates the database interface used by the migrations.
     """
-    with open(os.path.join(os.getcwd(), "config.yml")) as f:
-        d = yaml.load(f)
+    # If you wish to override how the database interface is created, do so here.
+    # This includes importing your Table object, and binding tables.
+    if dsn is None:
+        raise RuntimeError("No DSN provided! Either edit it in env.py, or provide it on the "
+                           "command line.")
 
-    connectable = create_engine(d["dsn"], poolclass=pool.NullPool)
+    db = DatabaseInterface(dsn=dsn)
+    await db.connect()
+    return db
 
-    with connectable.connect() as connection:
-        context.configure(
-            connection=connection,
-            target_metadata=target_metadata
-        )
 
-        with context.begin_transaction():
-            context.run_migrations()
+sig = typing.Callable[[Session], None]
 
-if context.is_offline_mode():
-    run_migrations_offline()
-else:
-    run_migrations_online()
+
+async def run_migration_online(sess: Session, upgrade: sig):
+    """
+    Runs a migration file "online". This will acquire a session, call the upgrade function,
+    and then commit the session.
+    """
+    await upgrade(sess)
+
+
+async def run_migration_offline(sess: Session, upgrade: sig):
+    """
+    Runs a migration file "offline".
+    """

@@ -1,37 +1,46 @@
-"""
-Bot launcher.
-
-This class is responsible for bootstrapping the bot.
-"""
-import gyukutai
-gyukutai.apply()
-
+import logging
 import os
 import shutil
 import sys
+from ruamel import yaml
 
-from joku.core.bot import Jokusoramame
+import curio
+from curio import TaskError
+from curious.exc import Unauthorized
+from logbook import StreamHandler
+from logbook.compat import redirect_logging
+
+from jokusoramame.bot import Jokusoramame
+from jokusoramame.utils import loop
+
+# logging
+
+redirect_logging()
+StreamHandler(sys.stderr).push_application()
+logging.getLogger().setLevel(logging.DEBUG)
+logging.getLogger("cuiows").setLevel(logging.ERROR)
 
 
 def main():
-    # Read in the config file.
-    try:
-        config = sys.argv[1]
-    except IndexError:
-        config = "config.yml"
+    if not os.path.exists("config.yml"):
+        shutil.copy("config.example.yml", "config.yml")
+        print("Copied config.example.yml to config.yml")
+        return
 
-    if not os.path.exists(config):
-        shutil.copy("config.example.yml", config)
+    with open("config.yml") as f:
+        config = yaml.load(f, Loader=yaml.Loader)
 
-    bot = Jokusoramame(config_file=config)
-    bot.logger.info("Launching Jokusoramame in autosharded mode...")
+    bot = Jokusoramame(config)
     try:
         bot.run()
-    except (KeyboardInterrupt, EOFError):
-        pass
+    except TaskError as e:
+        if type(e.__cause__) == Unauthorized:
+            logging.getLogger("Jokusoramame").error("Invalid token passed")
+        else:
+            raise
+    finally:
+        curio.run(loop.shutdown())
 
-    # fuck off forever
-    bot.loop.set_exception_handler(lambda *args, **kwargs: None)
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

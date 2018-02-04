@@ -1,92 +1,9 @@
 ## Example config file.
-## Make sure to edit it before usage!
 
-# The bot's token.
-# This can be retrieved from your bot's application page.
-bot_token: mfa.syfydwefbvwet
+# The bot's token to run with.
+token: xcqyegftw
 
-# The bots.discord.pw token.
-# If this is omitted, the bot will not automatically update it's server count.
-dbots_token: dniewudbyuewbdfuewvfueqwh89defbewyfbuewhf
-
-# The cogs to load.
-# The cogs to load.
+# A list of plugins to autoload.
 autoload:
-  # Core cogs. It is recommended not to change these.
-  - joku.cogs.debug
-  - joku.cogs.tracking
-  - joku.cogs.misc
-
-  # Game cogs. Disable these if you don't want the game functions etc.
-  - joku.cogs.games.levelling
-  - joku.cogs.games.money
-  - joku.cogs.games.reminders
-  - joku.cogs.games.stocks
-
-  # Special cogs for interacting with various services.
-  - joku.cogs.images
-  - joku.cogs.world
-  - joku.cogs.wikipedia
-  - joku.cogs.location
-
-  # Moderation cogs.
-  - joku.cogs.configuration
-  - joku.cogs.roleme
-  - joku.cogs.dndcop
-  - joku.cogs.mod
-
-  # Other misc cogs. There's no real downside to keeping these enabled.
-  - joku.cogs.events
-  - joku.cogs.todos
-  - joku.cogs.tags
-
-# The redis configuration.
-# The bot uses Redis for temporary data and tracking data.
-redis:
-  address: !!python/tuple ["127.0.0.1", 6432]
-
-# The database address to connect to.
-# This is in the format of dbtype<+driver>://username<:password>@ip<:port>/db
-# The only currently supported database is postgresql due to using some postgres-specific things.
-# Password, port and driver can be omitted.
-dsn: postgresql+psycopg2://joku@127.0.0.1/joku
-
-# If the bot is in developer mode or not.
-# If it is, the bot will use the prefix of `jd!` and `jd::`, and will report errors in the main channel.
-developer_mode: false
-
-# The webserver configuration.
-webserver:
-  # The IP to bind to.
-  ip: 127.0.0.1
-  # The port to bind to.
-  port: 4444
-  # The secret cookie key to use.
-  # CHANGE THIS TO SOMETHING UNIQUE!
-  cookie_key: "I am insecure, please hack me!"
-
-# The OAuth2 configuration.
-oauth:
-  # Your OAuth2 secret key.
-  secret_key: asjsfdyysafdw
-  # Your OAuth2 redirect URI.
-  redirect_uri: http://127.0.0.1/oauth2/redirect
-
-## Anything below this is optional.
-
-# The pixiv configuration.
-pixiv:
-  username: "my@email.com"
-  password: mypixivpassword
-
-# Log channel IDs.
-# Set to 0 to disable.
-log_channels:
-  error_channel: 0
-
-# The client ID for your Unsplash application.
-unsplash_client_id: "fwenfyugbt6wegftwevgrewfgv4hrtf7 fbsdvcwetfcr bgfrweafycdvytaw"
-# The API key for the NASA API.
-nasa_api_key: "space immigrants"
-# The API key for the Google Maps API.
-maps_api_key: "cdu9whbydfwetv"
+  - jokusoramame.plugins.core
+  - jokusoramame.plugins.levelling

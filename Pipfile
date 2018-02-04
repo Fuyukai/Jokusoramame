@@ -1,38 +1,27 @@
 [[source]]
+
 url = "https://pypi.python.org/simple"
 verify_ssl = true
 
-[packages]
-numpy = "*"
-seaborn = "*"
-tabulate = "*"
-psutil = "*"
-psycopg2 = "*"
-dill = "*"
-aioredis = "*"
-requests-oauthlib = "*"
-alembic = "*"
-parsedatetime = "*"
-aiopixiv = "*"
-itsdangerous = "*"
-arrow = "*"
-pytz = "*"
-wikipedia = "*"
-googlemaps = "*"
-"ruamel.yaml" = "*"
-bingmaps = "*"
-lupa = "*"
-aiohttp = "*"
-gyukutai = "*"
-Kyoukai = "==2.0.3"
-SQLAlchemy = ">=1.1.0"
-Jinja2 = "*"
-GitPython = "*"
-Logbook = "*"
-Pillow = "*"
-multiprocessing_on_dill = "*"
 
-[packages."discord.py"]
-git = "https://github.com/Rapptz/discord.py.git"
-ref = "rewrite"
-editable = 1
+[packages]
+
+"ruamel.yaml" = "*"
+lru-dict = "*"
+logbook = "*"
+asyncqlio = "*"
+asyncpg = "*"
+tabulate = "*"
+click = "*"
+tqdm = "*"
+numpy = "*"
+psutil = "*"
+gitpython = "*"
+multio = {git = "https://github.com/theelous3/multio.git"}
+discord-curious = {git = "https://github.com/SunDwarf/curious.git"}
+curio = {git = "https://github.com/dabeaz/curio.git"}
+"0ad0ce3" = {path = "/home/laura/dev/discord/curious"}
+"ff93b34" = {path = "/home/laura/dev/libs/asyncws"}
+uvloop = "*"
+asks = {git = "https://github.com/theelous3/asks.git"}
+lupa = "*"
