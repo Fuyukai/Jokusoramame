@@ -37,13 +37,13 @@ class Jokusoramame(Client):
         self._loaded = False
 
     @event("command_error")
-    async def command_error(self, ctx: Context, error: CommandsError):
+    async def command_error(self, ev_ctx: EventContext, ctx: Context, error: CommandsError):
         if isinstance(error, MissingArgumentError):
-            await ctx.channel.send(f":x: {repr(error)}")
+            await ctx.channel.messages.send(f":x: {repr(error)}")
         elif isinstance(error, ConditionsFailedError):
-            await ctx.channel.send(f":x: {repr(error)}")
+            await ctx.channel.messages.send(f":x: {repr(error)}")
         elif isinstance(error, ConversionFailedError):
-            await ctx.channel.send(f":x: {repr(error)}")
+            await ctx.channel.messages.send(f":x: {repr(error)}")
 
     @event("connect")
     async def on_connect(self, ctx: EventContext):
@@ -75,7 +75,10 @@ class Jokusoramame(Client):
         """
         Logs messages to stdout.
         """
-        logger.info(f"Received message: {message.content}")
+        if message.content:
+            logger.info(f"Received message: {message.content}")
+        else:
+            logger.info(f"Received message: <empty mnessage, probably embed message>")
         logger.info(f"  From: {message.author.name} ({message.author.user.username})")
         logger.info(f"  In: {message.channel.name}")
         logger.info(f"  Guild: {message.guild.name if message.guild else 'N/A'}")
