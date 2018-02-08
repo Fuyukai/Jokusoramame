@@ -5,6 +5,7 @@ import sys
 from ruamel import yaml
 
 import curio
+import multio
 from curio import TaskError
 from curious.exc import Unauthorized
 from logbook import StreamHandler
@@ -22,6 +23,8 @@ logging.getLogger("cuiows").setLevel(logging.ERROR)
 
 
 def main():
+    multio.init('curio')
+
     if not os.path.exists("config.yml"):
         shutil.copy("config.example.yml", "config.yml")
         print("Copied config.example.yml to config.yml")
