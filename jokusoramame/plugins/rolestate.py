@@ -3,7 +3,7 @@ from typing import List
 import operator
 from asyncqlio import Session
 from curious import Member, EventContext, event, Embed, Guild, Role
-from curious.commands import Plugin, Context, command
+from curious.commands import Plugin, Context, command, condition
 from curious.exc import NotFound
 
 from jokusoramame.db.tables import Rolestate as tbl_rolestate
@@ -94,10 +94,45 @@ class Rolestate(Plugin):
         await member.roles.add(*roles)
 
     @command()
-    async def rolestate(self, ctx: Context):
+    @condition(lambda ctx: ctx.author.guild_permissions.manage_roles)
+    async def rolestate(self, ctx: Context, *, new_setting: str = None):
         """
-        Views the current rolestate setting for this guild.
+        Views or updates the current rolestate setting for this guild.
+
+        Rolestate can be turned on with j!rolestate on, and vice-versa for off.
         """
+        # update setting
+        if new_setting is not None:
+            if new_setting.lower() not in ["on", "off"]:
+                return await ctx.channel.messages.send(":x: Invalid setting for rolestate.")
+
+            sess: Session = ctx.bot.db.get_session()
+            async with sess:
+                setting: tbl_gsetting = await sess.select(tbl_gsetting) \
+                    .where(tbl_gsetting.guild_id == ctx.guild.id) \
+                    .where(tbl_gsetting.name == "rolestate").first()
+
+                if setting is None:
+                    setting = tbl_gsetting(guild_id=ctx.guild.id, name="rolestate")
+
+                setting.value = new_setting
+                await sess.add(setting)
+
+            await ctx.channel.send(":heavy_check_mark: Rolestate setting updated.")
+
+        else:
+            sess: Session = ctx.bot.db.get_session()
+            async with sess:
+                setting: tbl_gsetting = await sess.select(tbl_gsetting) \
+                    .where(tbl_gsetting.guild_id == ctx.guild.id) \
+                    .where(tbl_gsetting.name == "rolestate").first()
+
+            if setting is None:
+                val = "off"
+            else:
+                val = setting.value
+
+            await ctx.channel.send(f"Rolestate is currently **{val}**.")
 
     @rolestate.subcommand()
     async def view(self, ctx: Context, target: int = None):
