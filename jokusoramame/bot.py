@@ -78,7 +78,7 @@ class Jokusoramame(Client):
         if message.content:
             logger.info(f"Received message: {message.content}")
         else:
-            logger.info(f"Received message: <empty mnessage, probably embed message>")
+            logger.info(f"Received message: <empty message, probably embed message>")
         logger.info(f"  From: {message.author.name} ({message.author.user.username})")
         logger.info(f"  In: {message.channel.name}")
         logger.info(f"  Guild: {message.guild.name if message.guild else 'N/A'}")

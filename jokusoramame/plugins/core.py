@@ -21,7 +21,7 @@ from curio.subprocess import check_output, run
 from curious import Channel, Embed, EventContext, Message, event
 from curious.commands import Plugin, command, condition
 from curious.commands.context import Context
-from curious.exc import HTTPException
+from curious.exc import HTTPException, PermissionsError
 
 
 def is_owner(ctx: Context):
@@ -55,21 +55,12 @@ class Core(Plugin):
     """
     Joku v2 core plugin.
     """
-    @event("message_create")
-    async def ban_emojis(self, ctx, message: Message):
-        if message.guild_id != 198101180180594688:
-            return
-
-        if message.author.guild_permissions.administrator:
-            return
-
-        if "<a:" in message.content:
-            await message.delete()
-            await message.channel.send(f":x: {message.author.mention} No")
-
     @event("channel_create")
     async def first(self, ctx: EventContext, channel: Channel):
-        await channel.messages.send("first")
+        try:
+            await channel.messages.send("first")
+        except PermissionsError:  # clobber
+            pass
 
     @command()
     async def ping(self, ctx: Context):
@@ -117,7 +108,7 @@ class Core(Plugin):
         """
         seconds_booted = time.time() - psutil.Process().create_time()
         uptime_str = display_time(seconds_booted)
-        await ctx.channel.send(f"{uptime_str} (total: {int(seconds_booted)}s)")
+        await ctx.channel.messages.send(f"{uptime_str} (total: {int(seconds_booted)}s)")
 
     @command()
     @condition(is_owner)
@@ -154,7 +145,7 @@ class Core(Plugin):
             stdout.seek(0)
 
         fmt = f"```py\n{stdout.read()}\n{result}\n```"
-        await ctx.channel.send(fmt)
+        await ctx.channel.messages.send(fmt)
 
     @command()
     @condition(is_owner)
@@ -170,7 +161,7 @@ class Core(Plugin):
                 rows = await cursor.flatten()
 
         except Exception as e:
-            await ctx.channel.send(f"`{str(e)}`")
+            await ctx.channel.messages.send(f"`{str(e)}`")
             return
         # get timings of the runtime
         after = time.monotonic()
@@ -186,7 +177,7 @@ class Core(Plugin):
             fmt = f"```\n{result}\n\n"
 
         fmt += f"Query returned in {taken:.3f}s```"
-        await ctx.channel.send(fmt)
+        await ctx.channel.messages.send(fmt)
 
     @command()
     @condition(is_owner)
@@ -195,7 +186,7 @@ class Core(Plugin):
         Changes the name of the bot.
         """
         await ctx.bot.user.edit(username=name)
-        await ctx.channel.send(":heavy_check_mark: Changed name.")
+        await ctx.channel.messages.send(":heavy_check_mark: Changed name.")
 
     @command()
     @condition(is_owner)
@@ -206,17 +197,18 @@ class Core(Plugin):
         sess = asks.Session()
         resp: Response = await sess.get(link)
         if resp.status_code != 200:
-            await ctx.channel.send(f":x: Failed to download avatar. (code: {resp.status_code})")
+            await ctx.channel.messages.send(f":x: Failed to download avatar. "
+                                            f"(code: {resp.status_code})")
             return
 
         data = resp.raw
         try:
             await ctx.bot.user.edit(avatar=data)
         except HTTPException:
-            await ctx.channel.send(":x: Failed to edit avatar.")
+            await ctx.channel.messages.send(":x: Failed to edit avatar.")
             return
 
-        await ctx.channel.send(":heavy_check_mark: Changed avatar.")
+        await ctx.channel.messages.send(":heavy_check_mark: Changed avatar.")
 
     @command()
     async def info(self, ctx: Context):
@@ -254,8 +246,8 @@ class Core(Plugin):
 
         em.add_field(name="Memory usage", value=f"{memory_usage:.2f} MiB")
         em.add_field(name="Servers", value=len(ctx.bot.guilds))
-        em.add_field(name="Shards", value=ctx._event_context.shard_count)
+        em.add_field(name="Shards", value=ctx.event_context.shard_count)
 
         em.set_footer(text=f"香港快递 | Git branch: {curr_branch.name}")
 
-        await ctx.channel.send(embed=em)
+        await ctx.channel.messages.send(embed=em)
