@@ -1,7 +1,7 @@
 """
 Contains database definitions.
 """
-from asyncqlio import BigInt, Column, Integer, Serial, Text, table_base
+from asyncqlio import BigInt, Column, Integer, Serial, Text, table_base, Boolean
 
 Table = table_base(name="Table")
 
@@ -62,3 +62,17 @@ class Rolestate(Table, table_name="rolestate"):
 
     #: The stored nickname for this rolestate.
     nick = Column(Text(), nullable=False)
+
+
+class RolemeRole(Table, table_name="roleme_role"):
+    """
+    Represents a roleme role.
+    """
+    #: The role ID of this roleme role.
+    id = Column(BigInt(), primary_key=True)
+
+    #: The guild ID for this roleme role.
+    guild_id = Column(BigInt(), nullable=False)
+
+    #: If this role can be self-assigned.
+    self_assignable = Column(Boolean(), default=True, nullable=False)

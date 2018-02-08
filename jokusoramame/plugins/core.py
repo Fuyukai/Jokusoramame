@@ -228,6 +228,8 @@ class Core(Plugin):
                 commit.message.split("\n")[0]
             )
 
+        d += "\n[Icon credit: @tofuvi](http://tofuvi.tumblr.com/)"
+
         em = Embed()
         em.title = "Jokusoramame v2! New! Improved!"
         em.description = d
