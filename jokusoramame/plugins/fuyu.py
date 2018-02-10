@@ -18,7 +18,8 @@ class Fuyu(Plugin):
     API_URL = "https://api.github.com"
     HEADERS = {
         "Accept": "application/vnd.github.v3+json",
-        "User-Agent": "Jokusoramame/v2 (https://github.com/SunDwarf/Jokusoramame, like Gecko)"
+        "User-Agent": "Mozilla/5.0 (compatible; Jokusoramame/v2 "
+                      "(https://github.com/SunDwarf/Jokusoramame, like Gecko)"
     }
 
     @event("message_create")
