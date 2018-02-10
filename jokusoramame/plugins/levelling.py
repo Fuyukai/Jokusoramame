@@ -137,11 +137,12 @@ class Levelling(Plugin):
                     # em.add_field(name="Ranking", value=f"{ranking} / {total}")
 
                     try:
-                        await message.channel.send(embed=em)
+                        await message.channel.messages.send(embed=em)
                     except PermissionsError:
                         # no embeds
-                        await message.channel.send(f":tada: **{message.author.user.username} is now"
-                                                   f" level {user.level}**!")
+                        await message.channel.messages.send(f":tada: "
+                                                            f"**{message.author.user.username} "
+                                                            f"is now level {user.level}**!")
             finally:
                 await sess.add(user)
 
