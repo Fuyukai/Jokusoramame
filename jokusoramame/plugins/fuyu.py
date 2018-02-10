@@ -1,3 +1,4 @@
+import random
 import re
 
 import asks
@@ -21,6 +22,15 @@ class Fuyu(Plugin):
         "User-Agent": "Mozilla/5.0 (compatible; Jokusoramame/v2 "
                       "(https://github.com/SunDwarf/Jokusoramame, like Gecko)"
     }
+
+    @event("message_create")
+    async def annoy(self, ctx: EventContext, message: Message):
+        if message.channel.id != 353878396670836736:
+            return
+
+        chance = random.randint(0, 2)
+        if chance == 1 and not message.author.guild_permissions.manage_messages:
+            await message.delete()
 
     @event("message_create")
     async def link_issue(self, ctx: EventContext, message: Message):
