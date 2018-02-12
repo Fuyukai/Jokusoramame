@@ -20,9 +20,8 @@ gitpython = "*"
 multio = {git = "https://github.com/theelous3/multio.git"}
 discord-curious = {git = "https://github.com/SunDwarf/curious.git"}
 curio = {git = "https://github.com/dabeaz/curio.git"}
-"0ad0ce3" = {path = "/home/laura/dev/discord/curious"}
-"ff93b34" = {path = "/home/laura/dev/libs/asyncws"}
 uvloop = "*"
 asks = {git = "https://github.com/theelous3/asks.git"}
 lupa = "*"
 redis = "*"
+entropy = "*"
