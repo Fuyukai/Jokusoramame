@@ -7,3 +7,7 @@ token: xcqyegftw
 autoload:
   - jokusoramame.plugins.core
   - jokusoramame.plugins.levelling
+
+redis:
+  host: 127.0.0.1
+  port: 6379

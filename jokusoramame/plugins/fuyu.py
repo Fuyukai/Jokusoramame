@@ -28,9 +28,17 @@ class Fuyu(Plugin):
         if message.channel.id != 353878396670836736:
             return
 
+        if message.author.guild_permissions.manage_messages:
+            return
+
         chance = random.randint(0, 2)
-        if chance == 1 and not message.author.guild_permissions.manage_messages:
+        if chance == 1:
             await message.delete()
+        else:
+            if message.author.id == ctx.bot.user.id:
+                return
+
+            await message.channel.messages.send(message.author.mention)
 
     @event("message_create")
     async def link_issue(self, ctx: EventContext, message: Message):

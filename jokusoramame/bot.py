@@ -1,11 +1,13 @@
 import logbook
+import traceback
 from asyncqlio import DatabaseInterface
 from curious import BotType, Client, EventContext, Game, Message, event
 from curious.commands import CommandsManager, Context
 from curious.commands.exc import CommandsError, ConditionsFailedError, ConversionFailedError, \
-    MissingArgumentError
+    MissingArgumentError, CommandInvokeError
 
 from jokusoramame.db.connector import CurioAsyncpgConnector
+from jokusoramame.redis import RedisInterface
 
 logger = logbook.Logger("Jokusoramame")
 
@@ -34,15 +36,21 @@ class Jokusoramame(Client):
         self.db = DatabaseInterface("postgresql://jokusoramame@127.0.0.1/jokusoramame",
                                     connector=CurioAsyncpgConnector)
 
+        #: The redis interface.
+        self.redis = RedisInterface(**self.config["redis"])
+
         self._loaded = False
 
     @event("command_error")
     async def command_error(self, ev_ctx: EventContext, ctx: Context, error: CommandsError):
-        if isinstance(error, MissingArgumentError):
-            await ctx.channel.messages.send(f":x: {repr(error)}")
-        elif isinstance(error, ConditionsFailedError):
-            await ctx.channel.messages.send(f":x: {repr(error)}")
-        elif isinstance(error, ConversionFailedError):
+        if isinstance(error, CommandInvokeError):
+            if self.config.get("dev_mode"):
+                tb = traceback.format_exception(None, error, error.__traceback__)
+                await ctx.channel.messages.send(f"```\n{tb}```")
+            else:
+                await ctx.channel.messages.send(":x: An error has occurred.")
+                traceback.print_exception(None, error, error.__traceback__)
+        else:
             await ctx.channel.messages.send(f":x: {repr(error)}")
 
     @event("connect")
