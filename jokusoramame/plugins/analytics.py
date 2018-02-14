@@ -2,12 +2,12 @@
 Analytical work.
 """
 import entropy
+import string
 
 import asks
-import string
 from asks.response_objects import Response
-from curious import Member, event, EventContext, Message, Embed
-from curious.commands import Plugin, command, Context
+from curious import Embed, EventContext, Member, Message, event
+from curious.commands import Context, Plugin, command
 
 
 class Analytics(Plugin):
@@ -42,6 +42,22 @@ class Analytics(Plugin):
         Analyses various things about users or guilds.
         """
         return await ctx.channel.messages.send(":x: This command needs a valid subcommand.")
+
+    @analyse.subcommand()
+    async def toggle(self, ctx: Context, *, guild_id: int):
+        """
+        Toggles analytics for the specified guild ID.
+        """
+        if ctx.author.id != 214796473689178133:
+            return await ctx.channel.messages.send(":x: Analytics are expensive, so only the owner"
+                                                   "can enable them.")
+
+        guild = ctx.bot.guilds.get(guild_id)
+        if guild is None:
+            return await ctx.channel.send(":x: This guild does not exist.")
+
+        enabled = await ctx.bot.redis.toggle_analytics(guild)
+        await ctx.channel.messages.send(f":heavy_check_mark: Analytics status: {enabled}")
 
     @analyse.subcommand()
     async def member(self, ctx: Context, *, victim: Member = None):

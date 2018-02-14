@@ -7,7 +7,7 @@ import zlib
 import json
 import redis
 from curio.thread import async_thread
-from curious import Message, User
+from curious import Message, User, Guild
 
 
 class RedisInterface(object):
@@ -22,13 +22,30 @@ class RedisInterface(object):
         self.redis = redis.Redis(host=host, port=port)
 
     @async_thread
+    def toggle_analytics(self, guild: Guild):
+        """
+        Toggles analytics.
+        """
+        key = f"analytics_enabled_{guild.id}"
+        if self.redis.get(key):
+            self.redis.delete(key)
+            return False
+
+        self.redis.set(key, "\x07")
+        return True
+
+    @async_thread
     def add_message(self, message: Message):
         """
         Adds a message to Redis, for usage in analysis.
 
         :param message: The :class:`.Message` to add.
-        :return:
         """
+
+        enabled = self.redis.get(f"analytics_enabled_{message.guild_id}")
+        if enabled is None:
+            return
+
         key = f"messages_{message.author_id}"
         body = json.dumps({
             "c": message.content,
