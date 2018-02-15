@@ -59,6 +59,49 @@ class Analytics(Plugin):
         enabled = await ctx.bot.redis.toggle_analytics(guild)
         await ctx.channel.messages.send(f":heavy_check_mark: Analytics status: {enabled}")
 
+    async def analyse_member(self, member: Member) -> dict:
+        """
+        Analyses a member's messages, returning a dictionary of statistics.
+        """
+        messages = await self.client.redis.get_messages(member.user)
+        if len(messages) == 0:
+            return {}
+
+        # do some processing
+        total_entropy = 0
+        total_length = 0
+
+        # count capitals vs lowercase
+        capitals = 0
+
+        # track number of used messages
+        used_messages = 0
+
+        for message in messages:
+            content = message["c"]
+            if not content:
+                continue
+
+            used_messages += 1
+
+            total_entropy += entropy.shannon_entropy(content)
+            total_length += len(content)
+            capitals += sum(char in string.ascii_uppercase for char in content)
+
+        # calculate averages
+        avg_entropy = total_entropy / len(messages)
+        avg_message_length = sum(len(m["c"]) for m in messages) / len(messages)
+
+        return {
+            "message_count": used_messages,
+            "message_total": len(messages),
+            "total_entropy": total_entropy,
+            "total_length": total_length,
+            "average_entropy": avg_entropy,
+            "average_length": avg_message_length,
+            "capitals": capitals
+        }
+
     @analyse.subcommand()
     async def member(self, ctx: Context, *, victim: Member = None):
         """
@@ -68,44 +111,26 @@ class Analytics(Plugin):
             victim = ctx.author
 
         async with ctx.channel.typing:
-            messages = await ctx.bot.redis.get_messages(victim.user)
-            if len(messages) == 0:
-                return await ctx.channel.send(":x: No messages have been recorded for this member.")
+            processed = await self.analyse_member(victim)
+            if not processed:
+                return await ctx.channel.messages.send(":x: There are no analytics available for "
+                                                       "this user.")
 
-            # do some processing
-            total_entropy = 0
-            total_length = 0
-
-            # count capitals vs lowercase
-            capitals = 0
-
-            # track number of used messages
-            used_messages = 0
-
-            for message in messages:
-                content = message["c"]
-                if not content:
-                    continue
-
-                used_messages += 1
-
-                total_entropy += entropy.shannon_entropy(content)
-                total_length += len(content)
-                capitals += sum(char in string.ascii_uppercase for char in content)
-
-            # calculate averages
-            avg_entropy = total_entropy / len(messages)
-            avg_message_length = sum(len(m["c"]) for m in messages) / len(messages)
-
+        messages = processed['message_total']
+        used_messages = processed['message_count']
+        avg_entropy = processed['average_entropy']
+        avg_length = processed['avg_length']
+        total_length = processed['total_length']
+        capitals = processed['capitals']
         em = Embed()
         em.title = "GHCQ Analysis Department"
-        em.description = f"Analysis for {victim.user.username} used {used_messages} messages. " \
-                         f"Skipped {len(messages) - used_messages} messages."
+        em.description = f"Analysis for {victim.user.username} used {used_messages} " \
+                         f"messages. Skipped {messages - used_messages} messages."
         em.colour = victim.colour
         em.set_thumbnail(url=victim.user.avatar_url)
         em.add_field(name="Avg. Entropy", value=format(avg_entropy, '.4f'))
         em.add_field(name="Avg. message length",
-                     value=f"{format(avg_message_length, '.2f')} chars")
+                     value=f"{format(avg_length, '.2f')} chars")
         em.add_field(name="Total message length", value=f"{total_length} chars")
         em.add_field(name="% capital letters",
                      value=format((capitals / total_length) * 100, '.2f'))

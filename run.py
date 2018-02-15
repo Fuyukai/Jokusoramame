@@ -6,6 +6,7 @@ from ruamel import yaml
 
 import curio
 import multio
+import traceback
 from curio import TaskError
 from curious.exc import Unauthorized
 from logbook import StreamHandler
@@ -39,8 +40,12 @@ def main():
     except TaskError as e:
         if type(e.__cause__) == Unauthorized:
             logging.getLogger("Jokusoramame").error("Invalid token passed")
-        else:
-            raise
+        elif type(e.__cause__) == curio.TaskGroupError:
+            error = e.__cause__
+            for task in error.failed:
+                if task.next_exc is not None:
+                    traceback.print_exception(None, task.next_exc, task.next_exc.__traceback__)
+
     finally:
         curio.run(loop.shutdown())
 

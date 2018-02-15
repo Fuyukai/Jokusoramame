@@ -5,6 +5,7 @@ from curious import BotType, Client, EventContext, Game, Message, event
 from curious.commands import CommandsManager, Context
 from curious.commands.exc import CommandsError, ConditionsFailedError, ConversionFailedError, \
     MissingArgumentError, CommandInvokeError
+from curious.ext.paginator import ReactionsPaginator
 
 from jokusoramame.db.connector import CurioAsyncpgConnector
 from jokusoramame.redis import RedisInterface
@@ -45,8 +46,10 @@ class Jokusoramame(Client):
     async def command_error(self, ev_ctx: EventContext, ctx: Context, error: CommandsError):
         if isinstance(error, CommandInvokeError):
             if self.config.get("dev_mode"):
-                tb = traceback.format_exception(None, error, error.__traceback__)
-                await ctx.channel.messages.send(f"```\n{tb}```")
+                tb = traceback.format_exception(None,
+                                                error.__cause__,
+                                                error.__cause__.__traceback__)
+                await ctx.channel.messages.send(f"```\n{''.join(tb)}```")
             else:
                 await ctx.channel.messages.send(":x: An error has occurred.")
                 traceback.print_exception(None, error, error.__traceback__)
