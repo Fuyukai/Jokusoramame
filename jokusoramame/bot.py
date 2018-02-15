@@ -78,7 +78,10 @@ class Jokusoramame(Client):
             plugins.insert(0, "jokusoramame.plugins.core")
 
         for plugin in plugins:
-            await self.manager.load_plugins_from(plugin)
+            try:
+                await self.manager.load_plugins_from(plugin)
+            except ModuleNotFoundError:
+                logger.exception("Unable to load", plugin)
             logger.info("Loaded plugin {}.".format(plugin))
 
     @event("message_create")

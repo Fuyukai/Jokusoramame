@@ -25,3 +25,4 @@ asks = {git = "https://github.com/theelous3/asks.git"}
 lupa = "*"
 redis = "*"
 entropy = "*"
+googlemaps = "*"

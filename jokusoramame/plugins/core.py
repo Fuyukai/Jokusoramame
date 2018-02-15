@@ -23,6 +23,8 @@ from curious.commands import Plugin, command, condition
 from curious.commands.context import Context
 from curious.exc import HTTPException, PermissionsError
 
+from jokusoramame.bot import Jokusoramame
+
 
 def is_owner(ctx: Context):
     return ctx.author.id in [ctx.bot.application_info.owner.id, 214796473689178133]
@@ -253,3 +255,14 @@ class Core(Plugin):
         em.set_footer(text=f"香港快递 | Git branch: {curr_branch.name}")
 
         await ctx.channel.messages.send(embed=em)
+
+    @command()
+    @condition(is_owner)
+    async def reload(self, ctx: Context, *, module_name: str):
+        """
+        Reloads a plugin.
+        """
+        bot: Jokusoramame = ctx.bot
+        await bot.manager.unload_plugins_from(module_name)
+        await bot.manager.load_plugins_from(module_name)
+        await ctx.channel.messages.send(f":heavy_check_mark: Reloaded {module_name}.")

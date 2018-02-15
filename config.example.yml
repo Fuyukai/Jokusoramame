@@ -8,6 +8,23 @@ autoload:
   - jokusoramame.plugins.core
   - jokusoramame.plugins.levelling
 
+# If this bot is in dev mode.
+dev_mode: false
+
+# The GitHub API token, used for accessing the GitHub API without being ratelimited.
+github_token: "test"
+
+# The redis configuration.
 redis:
   host: 127.0.0.1
   port: 6379
+
+## API keys, etc.
+
+# The TransportAPI key data.
+transportapi:
+  app_id: 0
+  app_key: aaaaa
+
+# The Google Maps API key.
+googlemapskey: "heck"
