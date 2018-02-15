@@ -8,7 +8,7 @@ from curious import event, EventContext, Message
 from curious.commands import Plugin
 
 
-ISSUE_REGEXP = re.compile(r"(.+)/(.+)#([0-9]+)")
+ISSUE_REGEXP = re.compile(r"(\S+)/(\S+)#([0-9]+)")
 logger = logging.getLogger(__file__)
 
 
