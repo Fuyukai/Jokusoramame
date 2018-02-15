@@ -1,7 +1,6 @@
 import datetime
 import random
 import re
-from pprint import pprint
 from typing import Tuple
 
 import asks
@@ -11,6 +10,7 @@ from curio.thread import async_thread
 from curious import Embed
 from curious.commands import Context, Plugin
 from curious.commands.decorators import autoplugin
+from curious.ext.paginator import ReactionsPaginator
 
 from jokusoramame import USER_AGENT
 from jokusoramame.bot import Jokusoramame
@@ -100,7 +100,7 @@ class Location(Plugin):
         route = "/bus/stops/near.json"
         result = await self.make_transport_api_request(
             route=route,
-            params={"lat": lat, "lon": long, "rpp": 5},
+            params={"lat": lat, "lon": long},
         )
         return result.json()
 
@@ -119,9 +119,9 @@ class Location(Plugin):
         first = geodecode[0]['formatted_address']
         await ctx.channel.messages.send(f"**Geodecoded result:** {first}")
 
-    async def command_bus(self, ctx: Context, *, stop: str):
+    async def command_buses(self, ctx: Context, *, stop: str):
         """
-        Gets the bus schedule for a specified stop.
+        Gets the bus schedule for a specified UK bus stop.
 
         Note that the stop might not be the one you specified; it is the closest one in the range of
         the area you specify.
@@ -137,9 +137,9 @@ class Location(Plugin):
         else:
             atco = stop
 
-        return await self.command_bus_departures(ctx, atco=atco)
+        return await self.command_buses_departures(ctx, atco=atco)
 
-    async def command_bus_atco(self, ctx: Context, *, location: str):
+    async def command_buses_atco(self, ctx: Context, *, location: str):
         """
         Gets the ATCO code of a bus stop.
         """
@@ -152,19 +152,23 @@ class Location(Plugin):
         if len(response['stops']) == 0:
             return await ctx.channel.messages.send(":x: Could not find any stops here.")
 
-        em = Embed()
-        em.title = "Stop Search Results"
+        embeds = []
         for stop in response['stops']:
-            em.add_field(name="Name", value=truncate(stop['stop_name']))
+            em = Embed()
+            em.title = "Stop Search Results"
+            em.description = f"Full name: {stop['name']}"
             em.add_field(name="ATCO", value=stop['atcocode'])
             em.add_field(name="Direction", value=bearing_map[stop['bearing']])
+            em.add_field(name="Indicator", value=stop['indicator'])
+            em.set_footer(text="Powered by TransportAPI")
+            em.timestamp = datetime.datetime.utcnow()
+            em.colour = random.randint(0, 0xffffff)
+            embeds.append(em)
 
-        em.set_footer(text="Powered by TransportAPI")
-        em.timestamp = datetime.datetime.utcnow()
-        em.colour = random.randint(0, 0xffffff)
-        await ctx.channel.messages.send(embed=em)
+        paginator = ReactionsPaginator(embeds, ctx.channel, ctx.author)
+        await paginator.paginate()
 
-    async def command_bus_departures(self, ctx: Context, *, atco: str):
+    async def command_buses_departures(self, ctx: Context, *, atco: str):
         """
         Gets the live departures for a specified bus stop.
         """
@@ -174,7 +178,7 @@ class Location(Plugin):
             url = f"/bus/stop/{atco}/live.json"
             result = await self.make_transport_api_request(url, params={
                 "group": "route",
-                "nextbuses": "yes"
+                "nextbuses": "no"
             })
             js = result.json()
             if 'error' in js:
@@ -204,3 +208,51 @@ class Location(Plugin):
         embed.colour = colour
 
         await ctx.channel.messages.send(embed=embed)
+
+    async def command_trains(self, ctx: Context, *, station: str):
+        """
+        Shows information about the trains at a UK Train station.
+        """
+        return await self.command_trains_departures(ctx, station=station)
+
+    async def command_trains_departures(self, ctx: Context, *, station: str):
+        """
+        Shows the train departures from the specified UK train station.
+        """
+        route = f"/train/station/{station}/live.json"
+        params = {
+            "station_detail": "origin,destination,calling_at,called_at",
+            "type": "departure"
+        }
+        r = await self.make_transport_api_request(route, params)
+        data = r.json()
+
+        if 'error' in data:
+            return await ctx.channel.messages.send(f":x: API gave error: {data['error']}")
+
+        departures = data['departures']['all']
+
+        # used for pagination
+        embeds = []
+
+        for i, departure in enumerate(departures):
+            dest = departure['destination_name']
+            dest_station = departure['station_detail']['destination']
+
+            em = Embed()
+            em.title = f"Departures from {data['station_name']}"
+            em.description = f"This train is currently {departure['status'].lower()}"
+            em.add_field(name="Origin", value=departure['origin_name'])
+            em.add_field(name="Destination", value=dest)
+            em.add_field(name="Expected arrival", value=departure['expected_arrival_time'])
+            em.add_field(name="Expected departure", value=departure['expected_departure_time'])
+            em.add_field(name="Arriving on destination",
+                         value=f"Platform {dest_station['platform']}")
+            em.add_field(name="Arriving at destination",
+                         value=f"{dest_station['aimed_arrival_time']}")
+            em.set_footer(text=f"{i+1}/{len(departures)} trains")
+            em.colour = random.randint(0, 0xffffff)
+            embeds.append(em)
+
+        paginator = ReactionsPaginator(embeds, ctx.channel, ctx.author)
+        await paginator.paginate()
