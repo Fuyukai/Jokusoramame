@@ -5,6 +5,7 @@ from curious import BotType, Client, EventContext, Game, Message, event
 from curious.commands import CommandsManager, Context
 from curious.commands.exc import CommandsError, ConditionsFailedError, ConversionFailedError, \
     MissingArgumentError, CommandInvokeError
+from curious.exc import CuriousError
 from curious.ext.paginator import ReactionsPaginator
 
 from jokusoramame.db.connector import CurioAsyncpgConnector
@@ -49,10 +50,15 @@ class Jokusoramame(Client):
                 tb = traceback.format_exception(None,
                                                 error.__cause__,
                                                 error.__cause__.__traceback__)
-                await ctx.channel.messages.send(f"```\n{''.join(tb)}```")
+                try:
+                    await ctx.channel.messages.send(f"```\n{''.join(tb)}```")
+                except CuriousError:
+                    traceback.print_exception(None, error.__cause__,
+                                              error.__cause__.__traceback__)
             else:
                 await ctx.channel.messages.send(":x: An error has occurred.")
-                traceback.print_exception(None, error, error.__traceback__)
+                traceback.print_exception(None, error.__cause__,
+                                          error.__cause__.__traceback__)
         else:
             await ctx.channel.messages.send(f":x: {repr(error)}")
 
