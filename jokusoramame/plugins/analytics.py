@@ -119,7 +119,7 @@ class Analytics(Plugin):
         messages = processed['message_total']
         used_messages = processed['message_count']
         avg_entropy = processed['average_entropy']
-        avg_length = processed['avg_length']
+        avg_length = processed['average_length']
         total_length = processed['total_length']
         capitals = processed['capitals']
         em = Embed()
@@ -127,7 +127,7 @@ class Analytics(Plugin):
         em.description = f"Analysis for {victim.user.username} used {used_messages} " \
                          f"messages. Skipped {messages - used_messages} messages."
         em.colour = victim.colour
-        em.set_thumbnail(url=victim.user.avatar_url)
+        em.set_thumbnail(url=str(victim.user.avatar_url))
         em.add_field(name="Avg. Entropy", value=format(avg_entropy, '.4f'))
         em.add_field(name="Avg. message length",
                      value=f"{format(avg_length, '.2f')} chars")
