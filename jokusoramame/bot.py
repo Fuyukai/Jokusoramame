@@ -1,3 +1,4 @@
+import threading
 import traceback
 
 import logbook
@@ -39,6 +40,9 @@ class Jokusoramame(Client):
 
         #: The redis interface.
         self.redis = RedisInterface(**self.config["redis"])
+
+        #: The plotting lock. Used for pyplot compatability.
+        self._plot_lock = threading.Lock()
 
         self._loaded = False
 

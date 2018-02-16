@@ -256,7 +256,7 @@ class Analytics(Plugin):
             """
             The main plotter function.
             """
-            with self._plot_lock:
+            with ctx.bot._plot_lock:
                 array = np.asarray([m[item_key] for m in member_data.values()])
 
                 axes: Axes = sns.kdeplot(array, bw=0.3)
@@ -266,8 +266,6 @@ class Analytics(Plugin):
                 plt.title("Distribution curve")
                 plt.tight_layout()
                 sns.despine()
-
-                sns.palplot()
 
                 # write to the main buffer
                 buf = BytesIO()
