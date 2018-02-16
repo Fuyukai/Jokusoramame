@@ -188,19 +188,22 @@ class Location(Plugin):
         embed.title = f"Bus Departures for {js['name']}"
         embed.description = "This only lists the next bus arriving."
 
-        for line, departure_list in js.get('departures', {}).items():
-            departure = departure_list[0]
-            embed.add_field(name="Route", value=str(line))
-            direction = departure['direction']
-            if len(direction) >= 27:
-                direction = direction[:24] + "..."
+        if len(js['departures']) == 0:
+            embed.description += "There are no buses departing this station currently."
+        else:
+            for line, departure_list in js.get('departures', {}).items():
+                departure = departure_list[0]
+                embed.add_field(name="Route", value=str(line))
+                direction = departure['direction']
+                if len(direction) >= 27:
+                    direction = direction[:24] + "..."
 
-            embed.add_field(name="Towards", value=direction)
-            departure_time = departure['aimed_departure_time']
-            if departure_time is None:
-                departure_time = "EOTL"
+                embed.add_field(name="Towards", value=direction)
+                departure_time = departure['aimed_departure_time']
+                if departure_time is None:
+                    departure_time = "EOTL"
 
-            embed.add_field(name="Leaving at", value=departure_time)
+                embed.add_field(name="Leaving at", value=departure_time)
 
         embed.set_footer(text="Powered by TransportAPI")
         embed.timestamp = datetime.datetime.utcnow()
@@ -231,6 +234,11 @@ class Location(Plugin):
             return await ctx.channel.messages.send(f":x: API gave error: {data['error']}")
 
         departures = data['departures']['all']
+        if len(departures) == 0:
+            em = Embed(title=f"Departures from {data['station_name']}")
+            em.description = "There are currently no departures from this station."
+            em.colour = random.randint(0, 0xffffff)
+            return await ctx.channel.send(embed=em)
 
         # used for pagination
         embeds = []
@@ -246,7 +254,7 @@ class Location(Plugin):
             em.add_field(name="Destination", value=dest)
             em.add_field(name="Expected arrival", value=departure['expected_arrival_time'])
             em.add_field(name="Expected departure", value=departure['expected_departure_time'])
-            em.add_field(name="Arriving on destination",
+            em.add_field(name="Platform at destination",
                          value=f"Platform {dest_station['platform']}")
             em.add_field(name="Arriving at destination",
                          value=f"{dest_station['aimed_arrival_time']}")
