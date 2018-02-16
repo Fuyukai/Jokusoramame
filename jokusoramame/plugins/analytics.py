@@ -3,18 +3,31 @@ Analytical work.
 """
 import entropy
 import string
-from typing import Dict
+import threading
+from io import BytesIO
+from typing import Awaitable, Dict
 
 import asks
+import matplotlib.pyplot as plt
+import numpy as np
+import seaborn as sns
+import tabulate
 from asks.response_objects import Response
+from curio.thread import async_thread
 from curious import Embed, EventContext, Guild, Member, Message, event
 from curious.commands import Context, Plugin
-from curious.commands.decorators import autoplugin
-import tabulate
+from curious.commands.decorators import autoplugin, ratelimit
+from curious.commands.ratelimit import BucketNamer
+from matplotlib.axes import Axes
 
 
 @autoplugin
 class Analytics(Plugin):
+    def __init__(self, client):
+        super().__init__(client)
+
+        self._plot_lock = threading.Lock()
+
     @event("message_create")
     async def add_to_analytics(self, ctx: EventContext, message: Message):
         await ctx.bot.redis.add_message(message)
@@ -182,13 +195,21 @@ class Analytics(Plugin):
 
         await ctx.channel.messages.send(embed=em)
 
+    async def get_sorted_items(self, guild: Guild, sort_key: str = "average_entropy"):
+        """
+        Gets a list of sorted member analytics data.
+        """
+        member_data = await self.get_combined_member_data(guild)
+        sorted_data = sorted(list(member_data.items()),
+                             key=lambda i: i[1][sort_key], reverse=True)
+
+        return sorted_data
+
     async def command_server_top(self, ctx: Context, *, sort_by: str = "entropy"):
         """
         Shows the top 10 people in the server by a field, where field is one of
         `[entropy, length, capitals]`.
         """
-        async with ctx.channel.typing:
-            member_data = await self.get_combined_member_data(ctx.guild)
 
         sort_key = "average_entropy"
         if sort_by == "length":
@@ -197,8 +218,8 @@ class Analytics(Plugin):
             sort_key = "capitals"
 
         # sort by key, get the top 10
-        member_data = sorted(list(member_data.items()),
-                             key=lambda i: i[1][sort_key], reverse=True)[:10]
+        async with ctx.channel.typing:
+            member_data = (await self.get_sorted_items(ctx.guild, sort_key))[:10]
 
         headers = ["POS", "Name", "Entropy", "Avg. Length", "Capitals"]
         rows = []
@@ -217,3 +238,55 @@ class Analytics(Plugin):
 
         table = tabulate.tabulate(rows, headers, tablefmt='orgtbl')
         await ctx.channel.messages.send(f"```\n{table}```")
+
+    @ratelimit(limit=1, time=60, bucket_namer=BucketNamer.GUILD)
+    async def command_server_distribution(self, ctx: Context, *, item: str = "entropy"):
+        """
+        Plots a distribution plot for the specified item.
+        """
+
+        item_key = "average_entropy"
+        if item == "length":
+            item_key = "average_length"
+        elif item == "capitals":
+            item_key = "capitals"
+
+        @async_thread()
+        def plotter(member_data) -> Awaitable[BytesIO]:
+            """
+            The main plotter function.
+            """
+            with self._plot_lock:
+                array = np.asarray([m[item_key] for m in member_data.values()])
+
+                axes: Axes = sns.kdeplot(array, bw=0.3)
+                axes.set_xlabel(item.capitalize())
+                axes.set_ylabel("Count")
+                axes.set_xbound(0, np.max(array))
+                plt.title("Distribution curve")
+                plt.tight_layout()
+                sns.despine()
+
+                sns.palplot()
+
+                # write to the main buffer
+                buf = BytesIO()
+                plt.savefig(buf, format='png')
+                buf.seek(0)
+
+                # cleanup after ourselves
+                plt.clf()
+                plt.cla()
+
+                return buf
+
+        async with ctx.channel.typing:
+            fetched_data = await self.get_combined_member_data(ctx.guild)
+
+            if self._plot_lock.locked():
+                await ctx.channel.send("Waiting for plot lock...")
+
+            buf = await plotter(fetched_data)  # wait for the plotter to lock and plot
+
+        await ctx.channel.messages.upload(buf.read(), filename="plot.png")
+

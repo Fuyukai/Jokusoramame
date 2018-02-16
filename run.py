@@ -2,11 +2,11 @@ import logging
 import os
 import shutil
 import sys
+import traceback
 from ruamel import yaml
 
 import curio
 import multio
-import traceback
 from curio import TaskError
 from curious.exc import Unauthorized
 from logbook import StreamHandler
@@ -22,10 +22,15 @@ StreamHandler(sys.stderr).push_application()
 logging.getLogger().setLevel(logging.DEBUG)
 logging.getLogger("cuiows").setLevel(logging.ERROR)
 
+# misc setup of modules
+import matplotlib; matplotlib.use('Agg')  # use Agg for no-GUI mode
+multio.init('curio')  # use curio for our async backend
+import seaborn; seaborn.set(color_codes=True)  # enable seaborn colour codes
+seaborn.set_style("whitegrid")  # change seaborn style
+seaborn.set_palette(seaborn.color_palette("cubehelix", 16))  # change seaborn palette
+
 
 def main():
-    multio.init('curio')
-
     if not os.path.exists("config.yml"):
         shutil.copy("config.example.yml", "config.yml")
         print("Copied config.example.yml to config.yml")
