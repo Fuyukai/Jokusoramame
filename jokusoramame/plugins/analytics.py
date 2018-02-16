@@ -3,20 +3,23 @@ Analytical work.
 """
 import entropy
 import string
+from typing import Dict
 
 import asks
 from asks.response_objects import Response
-from curious import Embed, EventContext, Member, Message, event
-from curious.commands import Context, Plugin, command
+from curious import Embed, EventContext, Guild, Member, Message, event
+from curious.commands import Context, Plugin
+from curious.commands.decorators import autoplugin
+import tabulate
 
 
+@autoplugin
 class Analytics(Plugin):
     @event("message_create")
     async def add_to_analytics(self, ctx: EventContext, message: Message):
         await ctx.bot.redis.add_message(message)
 
-    @command()
-    async def entropy(self, ctx: Context, *, message: str = None):
+    async def command_entropy(self, ctx: Context, *, message: str = None):
         """
         Gets the entropy of a sentence.
         """
@@ -36,21 +39,19 @@ class Analytics(Plugin):
         en = entropy.shannon_entropy(message)
         await ctx.channel.messages.send(f"Entropy: {en}")
 
-    @command()
-    async def analyse(self, ctx: Context):
+    async def command_analyse(self, ctx: Context):
         """
         Analyses various things about users or guilds.
         """
-        return await ctx.channel.messages.send(":x: This command needs a valid subcommand.")
+        return await self.command_analyse_member(ctx, victim=ctx.author)
 
-    @analyse.subcommand()
     async def toggle(self, ctx: Context, *, guild_id: int):
         """
         Toggles analytics for the specified guild ID.
         """
         if ctx.author.id != 214796473689178133:
             return await ctx.channel.messages.send(":x: Analytics are expensive, so only the owner"
-                                                   "can enable them.")
+                                                   " can enable them.")
 
         guild = ctx.bot.guilds.get(guild_id)
         if guild is None:
@@ -102,8 +103,7 @@ class Analytics(Plugin):
             "capitals": capitals
         }
 
-    @analyse.subcommand()
-    async def member(self, ctx: Context, *, victim: Member = None):
+    async def command_analyse_member(self, ctx: Context, *, victim: Member = None):
         """
         Analyses a member.
         """
@@ -136,3 +136,84 @@ class Analytics(Plugin):
                      value=format((capitals / total_length) * 100, '.2f'))
 
         await ctx.channel.messages.send(embed=em)
+
+    async def get_combined_member_data(self, guild: Guild) -> Dict[Member, dict]:
+        """
+        Gets the combined member data for a guild.
+        """
+        member_data = {member: await self.analyse_member(member)
+                       for member in guild.members.values() if not member.user.bot}
+        member_data = {member: data for (member, data) in member_data.items()
+                       if data}
+
+        return member_data
+
+    async def command_analyse_server(self, ctx: Context):
+        """
+        Analyses the current server.
+        """
+        async with ctx.channel.typing:
+            member_data = await self.get_combined_member_data(ctx.guild)
+
+        def sum_data(key: str) -> int:
+            return sum(x[key] for x in member_data.values())
+
+        message_count = sum_data('message_count')
+        message_total = sum_data('message_total')
+        average_entropy = sum_data('average_entropy') / len(member_data)
+        average_length = sum_data('average_length') / len(member_data)
+        total_length = sum_data('total_length')
+        capitals = sum_data('capitals')
+
+        em = Embed()
+        em.title = "GHCQ Analysis Department"
+        em.description = f"Analysis for {ctx.guild.name} used {message_count} messages " \
+                         f"({message_total - message_count} messages skipped) " \
+                         f"from {len(member_data)} members"
+        em.add_field(name="Avg. entropy",
+                     value=format(average_entropy, '.4f'))
+        em.add_field(name="Avg. message length",
+                     value=f"{format(average_length, '.2f')} chars")
+        em.add_field(name="Total message length", value=f"{total_length} chars")
+        em.add_field(name="% capital letters",
+                     value=format((capitals / total_length) * 100, '.2f'))
+        em.set_thumbnail(url=ctx.guild.icon_url)
+        em.colour = ctx.guild.owner.colour
+
+        await ctx.channel.messages.send(embed=em)
+
+    async def command_server_top(self, ctx: Context, *, sort_by: str = "entropy"):
+        """
+        Shows the top 10 people in the server by a field, where field is one of
+        `[entropy, length, capitals]`.
+        """
+        async with ctx.channel.typing:
+            member_data = await self.get_combined_member_data(ctx.guild)
+
+        sort_key = "average_entropy"
+        if sort_by == "length":
+            sort_key = "average_length"
+        elif sort_by == "capitals":
+            sort_key = "capitals"
+
+        # sort by key, get the top 10
+        member_data = sorted(list(member_data.items()),
+                             key=lambda i: i[1][sort_key], reverse=True)[:10]
+
+        headers = ["POS", "Name", "Entropy", "Avg. Length", "Capitals"]
+        rows = []
+        for i, (member, stats) in enumerate(member_data):
+            # we're gonna add to this list to build the list of rows
+            current_row = [i + 1]
+            name = member.user.name.encode("ascii", errors="replace") \
+                .decode("ascii", errors="replace")
+            current_row.append(name)
+
+            current_row.append(format(stats['average_entropy'], '.3f'))
+            current_row.append(format(stats['average_length'], '.2f') + ' chars')
+            capitals = (stats['capitals'] / stats['total_length']) * 100
+            current_row.append(format(capitals, '.2f') + '%')
+            rows.append(current_row)
+
+        table = tabulate.tabulate(rows, headers, tablefmt='orgtbl')
+        await ctx.channel.messages.send(f"```\n{table}```")
