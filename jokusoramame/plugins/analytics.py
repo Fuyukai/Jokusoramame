@@ -281,7 +281,7 @@ class Analytics(Plugin):
         async with ctx.channel.typing:
             fetched_data = await self.get_combined_member_data(ctx.guild)
 
-            if self._plot_lock.locked():
+            if ctx.bot._plot_lock.locked():
                 await ctx.channel.send("Waiting for plot lock...")
 
             buf = await plotter(fetched_data)  # wait for the plotter to lock and plot
