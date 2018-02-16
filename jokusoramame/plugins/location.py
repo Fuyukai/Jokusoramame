@@ -189,7 +189,7 @@ class Location(Plugin):
         embed.description = "This only lists the next bus arriving."
 
         if len(js['departures']) == 0:
-            embed.description += "There are no buses departing this station currently."
+            embed.description = "There are no buses departing this station currently."
         else:
             for line, departure_list in js.get('departures', {}).items():
                 departure = departure_list[0]
