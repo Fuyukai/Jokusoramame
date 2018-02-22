@@ -259,7 +259,8 @@ class Analytics(Plugin):
             with ctx.bot._plot_lock:
                 array = np.asarray([m[item_key] for m in member_data.values()])
 
-                axes: Axes = sns.kdeplot(array, bw=0.3)
+                axes: Axes = sns.distplot(array, bins=np.arange(array.min(), array.max()),
+                                          kde=True)
                 axes.set_xlabel(item.capitalize())
                 axes.set_ylabel("Count")
                 axes.set_xbound(0, np.max(array))
