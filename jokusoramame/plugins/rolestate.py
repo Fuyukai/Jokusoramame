@@ -1,13 +1,12 @@
+import operator
 from typing import List
 
-import operator
 from asyncqlio import Session
-from curious import Member, EventContext, event, Embed, Guild, Role
-from curious.commands import Plugin, Context, command, condition
+from curious import Embed, EventContext, Guild, Member, Role, event
+from curious.commands import Context, Plugin, command, condition
 from curious.exc import NotFound
 
-from jokusoramame.db.tables import Rolestate as tbl_rolestate
-from jokusoramame.db.tables import GuildSetting as tbl_gsetting
+from jokusoramame.db.tables import GuildSetting as tbl_gsetting, Rolestate as tbl_rolestate
 
 
 class Rolestate(Plugin):
@@ -41,7 +40,8 @@ class Rolestate(Plugin):
 
         return rolestate
 
-    def _unmap_rolestate(self, guild: Guild, rolestate_str: str) -> List[Role]:
+    @staticmethod
+    def _unmap_rolestate(guild: Guild, rolestate_str: str) -> List[Role]:
         """
         Unmaps a list of roles into role objects.
 
