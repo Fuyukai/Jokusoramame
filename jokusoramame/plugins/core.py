@@ -4,6 +4,7 @@ Core plugin.
 import contextlib
 import platform
 import subprocess
+import sys
 import time
 import traceback
 from io import StringIO
@@ -17,8 +18,8 @@ import pkg_resources
 import psutil
 import tabulate
 from asks.response_objects import Response
-from curio.subprocess import check_output, run
-from curious import Channel, Embed, EventContext, Message, event
+from curio.subprocess import run
+from curious import Channel, Embed, EventContext, event
 from curious.commands import Plugin, command, condition
 from curious.commands.context import Context
 from curious.exc import HTTPException, PermissionsError
@@ -133,7 +134,8 @@ class Core(Plugin):
                 "guild": ctx.message.guild,
                 "channel": ctx.message.channel,
                 "author": ctx.message.author,
-                "bot": ctx.bot
+                "bot": ctx.bot,
+                **sys.modules
             }
             exec(f_code, namespace, namespace)
             func = namespace["_"]
