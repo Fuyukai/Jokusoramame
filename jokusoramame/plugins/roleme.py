@@ -1,12 +1,11 @@
 """
 Roleme stuff.
 """
-from typing import List
 
 from asyncqlio import Session
 from asyncqlio.orm.query import ResultGenerator
 from curious import Role
-from curious.commands import Plugin, command, Context, condition
+from curious.commands import Context, Plugin, command, condition
 
 from jokusoramame.db.tables import RolemeRole
 
