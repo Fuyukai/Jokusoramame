@@ -20,9 +20,17 @@ from curious.commands.decorators import autoplugin, ratelimit
 from curious.commands.ratelimit import BucketNamer
 from matplotlib.axes import Axes
 
+from jokusoramame import USER_AGENT
+
 
 @autoplugin
 class Analytics(Plugin):
+    label_mapping = {
+        "neg": "Negative",
+        "pos": "Positive",
+        "neutral": "Neutral"
+    }
+
     def __init__(self, client):
         super().__init__(client)
 
@@ -31,6 +39,38 @@ class Analytics(Plugin):
     @event("message_create")
     async def add_to_analytics(self, ctx: EventContext, message: Message):
         await ctx.bot.redis.add_message(message)
+
+    async def command_sentiment(self, ctx: Context, *, message: str):
+        """
+        Analyses the sentiment of a message.
+        """
+        url = "http://text-processing.com/api/sentiment/"
+        body = {"text": message}
+        headers = {"User-Agent": USER_AGENT}
+
+        async with ctx.channel.typing:
+            response: Response = await asks.post(uri=url, data=body, headers=headers)
+
+        if response.status_code != 200:
+            return await ctx.channel.messages.send(f":x: API returned error: {response.text}")
+
+        data = response.json()
+        label = data["label"]
+        prob = data["probability"]
+
+        em = Embed(title="Sentiment analysis")
+        if label == "pos":
+            em.colour = 0x00ff00
+        elif label == "neg":
+            em.colour = 0xff0000
+        else:
+            em.colour = 0xabcdef
+
+        em.description = f"Analysis: {self.label_mapping[label]}"
+        em.add_field(name="Positive", value=f"{prob['pos']:.2f}")
+        em.add_field(name="Negative", value=f"{prob['neg']:.2f}")
+        em.add_field(name="Neutral", value=f"{prob['neutral']:.2f}")
+        await ctx.channel.messages.send(embed=em)
 
     async def command_entropy(self, ctx: Context, *, message: str = None):
         """
@@ -288,4 +328,3 @@ class Analytics(Plugin):
             buf = await plotter(fetched_data)  # wait for the plotter to lock and plot
 
         await ctx.channel.messages.upload(buf.read(), filename="plot.png")
-

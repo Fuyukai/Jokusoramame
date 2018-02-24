@@ -9,7 +9,7 @@ verify_ssl = true
 "ruamel.yaml" = "*"
 lru-dict = "*"
 logbook = "*"
-asyncqlio = "*"
+asyncqlio = {git = "https://github.com/SunDwarf/asyncqlio.git"}
 asyncpg = "*"
 tabulate = "*"
 click = "*"
@@ -27,3 +27,4 @@ redis = "*"
 entropy = "*"
 googlemaps = "*"
 seaborn = "*"
+sympy = "*"
