@@ -1,3 +1,4 @@
+import re
 from io import BytesIO
 from typing import Awaitable, List
 
@@ -6,6 +7,10 @@ import seaborn as sns
 from curio.thread import async_thread
 from curious.commands import Context, Plugin
 from curious.commands.decorators import autoplugin, ratelimit
+from yapf.yapflib.style import CreatePEP8Style
+from yapf.yapflib.yapf_api import FormatCode
+
+code_regexp = re.compile(r"```([^\n]+)\n?(.+)\n?```", re.DOTALL)
 
 
 @autoplugin
@@ -44,3 +49,36 @@ class Misc(Plugin):
             buf = await plot_palette()
 
         await ctx.channel.messages.upload(fp=buf.read(), filename="plot.png")
+
+    def _normalize_language(self, lang: str) -> str:
+        """
+        Normalizes a language name into consistency.
+        """
+        lang = lang.lower().rstrip("\n")
+        print(repr(lang))
+        if lang in ["py", "python", "py3k"]:
+            return "python"
+
+        return lang
+
+    async def command_reformat(self, ctx: Context, *, message: str):
+        """
+        Reformats some code.
+        """
+        code_match = code_regexp.match(message)
+        if code_match is None:
+            return await ctx.channel.messages.send(":x: Could not find a valid code block with "
+                                                   "language.")
+
+        language, code = code_match.groups()
+        code = code.replace("\t", "    ")
+        language = self._normalize_language(language)
+
+        if language == "python":
+            # yapfify
+            style = CreatePEP8Style()
+            style['COLUMN_LIMIT'] = 100
+            reformatted, changes = FormatCode(code, style_config=style)
+            return await ctx.channel.messages.send(f"```py\n{reformatted}```")
+
+        return await ctx.channel.messages.send(":x: Unknown language.")
