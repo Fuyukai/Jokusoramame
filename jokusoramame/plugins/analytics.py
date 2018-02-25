@@ -81,6 +81,32 @@ class Analytics(Plugin):
         em.timestamp = datetime.datetime.utcnow()
         await ctx.channel.messages.send(embed=em)
 
+    async def command_thesaurus(self, ctx: Context, *, phrase: str):
+        """
+        Gets some nearest phrases.
+        """
+        url = "https://api.aylien.com/api/v1/related"
+        body = {"phrase": phrase}
+
+        async with ctx.channel.typing:
+            response: Response = await asks.post(uri=url, data=body, headers=self.headers)
+
+        if response.status_code != 200:
+            return await ctx.channel.messages.send(f":x: API returned error: {response.text}")
+
+        data = response.json()
+        related = data['related']
+        message = "Did you mean:\n\n"
+
+        if len(related) <= 0:
+            return await ctx.channel.messages.send(":x: No related phrases.")
+
+        for relate in related[:5]:
+            related_phrase = relate['phrase']
+            message += f"*{related_phrase}* ?\n"
+
+        await ctx.channel.messages.send(message)
+
     async def command_entropy(self, ctx: Context, *, message: str = None):
         """
         Gets the entropy of a sentence.
