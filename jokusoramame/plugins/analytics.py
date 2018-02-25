@@ -1,9 +1,9 @@
 """
 Analytical work.
 """
+import datetime
 import entropy
 import string
-import threading
 from io import BytesIO
 from typing import Awaitable, Dict
 
@@ -21,6 +21,7 @@ from curious.commands.ratelimit import BucketNamer
 from matplotlib.axes import Axes
 
 from jokusoramame import USER_AGENT
+from jokusoramame.utils import get_apikeys
 
 
 @autoplugin
@@ -34,7 +35,12 @@ class Analytics(Plugin):
     def __init__(self, client):
         super().__init__(client)
 
-        self._plot_lock = threading.Lock()
+        self.aylien = get_apikeys("aylien")
+        self.headers = {
+            "User-Agent": USER_AGENT,
+            "X-AYLIEN-TextAPI-Application-Key": self.aylien["appkey"],
+            "X-AYLIEN-TextAPI-Application-ID": self.aylien["appid"]
+        }
 
     @event("message_create")
     async def add_to_analytics(self, ctx: EventContext, message: Message):
@@ -44,32 +50,35 @@ class Analytics(Plugin):
         """
         Analyses the sentiment of a message.
         """
-        url = "http://text-processing.com/api/sentiment/"
-        body = {"text": message}
-        headers = {"User-Agent": USER_AGENT}
+        url = "https://api.aylien.com/api/v1/sentiment"
+        body = {"text": message, "mode": "tweet"}
 
         async with ctx.channel.typing:
-            response: Response = await asks.post(uri=url, data=body, headers=headers)
+            response: Response = await asks.post(uri=url, data=body, headers=self.headers)
 
         if response.status_code != 200:
             return await ctx.channel.messages.send(f":x: API returned error: {response.text}")
 
         data = response.json()
-        label = data["label"]
-        prob = data["probability"]
+        polarity = data["polarity"]
 
-        em = Embed(title="Sentiment analysis")
-        if label == "pos":
+        em = Embed(title=f"Sentiment analysis for {ctx.author.name}'s message")
+        if polarity == "positive":
             em.colour = 0x00ff00
-        elif label == "neg":
+        elif polarity == "negative":
             em.colour = 0xff0000
         else:
             em.colour = 0xabcdef
 
-        em.description = f"Analysis: {self.label_mapping[label]}"
-        em.add_field(name="Positive", value=f"{prob['pos']:.2f}")
-        em.add_field(name="Negative", value=f"{prob['neg']:.2f}")
-        em.add_field(name="Neutral", value=f"{prob['neutral']:.2f}")
+        subj_confidence = data['subjectivity_confidence'] * 100
+        polr_confidence = data['polarity_confidence'] * 100
+
+        em.description = f"Analysis: {polarity.capitalize()}"
+        em.add_field(name="Subjectivity", value=data['subjectivity'], inline=False)
+        em.add_field(name="Polarity confidence", value=f"{polr_confidence:.2f}%")
+        em.add_field(name="Subjectivity confidence", value=f"{subj_confidence:.2f}%")
+        em.set_footer(text="Powered by Aylien")
+        em.timestamp = datetime.datetime.utcnow()
         await ctx.channel.messages.send(embed=em)
 
     async def command_entropy(self, ctx: Context, *, message: str = None):
