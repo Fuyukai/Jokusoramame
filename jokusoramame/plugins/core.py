@@ -286,7 +286,6 @@ class Core(Plugin):
 
                 y_pos = np.arange(len(names))
                 plt.bar(y_pos, values, align='center', color=colours)
-                plt.gca()[1].set_yscale("log")
                 plt.xticks(y_pos, names, rotation=90)
                 plt.ylabel("Count")
                 plt.xlabel("Event")
