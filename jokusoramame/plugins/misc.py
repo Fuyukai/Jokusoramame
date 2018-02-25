@@ -10,6 +10,8 @@ from curious.commands.decorators import autoplugin, ratelimit
 from yapf.yapflib.style import CreatePEP8Style
 from yapf.yapflib.yapf_api import FormatCode
 
+from jokusoramame.utils import rgbize
+
 code_regexp = re.compile(r"```([^\n]+)\n?(.+)\n?```", re.DOTALL)
 
 
@@ -20,12 +22,7 @@ class Misc(Plugin):
         """
         Shows a palette plot.
         """
-        pal_colours = []
-        colours = colours[:12]  # limit to 12
-        for colour in colours:
-            rgb255 = ((colour >> 16) & 255, (colour >> 8) & 255, colour & 255)
-            rgb100 = tuple(c / 255 for c in rgb255)
-            pal_colours.append(rgb100)
+        pal_colours = rgbize(colours[:12])
 
         @async_thread
         def plot_palette() -> Awaitable[BytesIO]:
