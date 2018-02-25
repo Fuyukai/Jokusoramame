@@ -7,24 +7,31 @@ import subprocess
 import sys
 import time
 import traceback
-from io import StringIO
+from io import BytesIO, StringIO
+from itertools import cycle
 
 import asks
 import asyncqlio
 import curio
 import curious
 import git
+import matplotlib.pyplot as plt
+import numpy as np
 import pkg_resources
 import psutil
 import tabulate
 from asks.response_objects import Response
 from curio.subprocess import run
+from curio.thread import spawn_thread
 from curious import Channel, Embed, EventContext, event
 from curious.commands import Plugin, command, condition
 from curious.commands.context import Context
+from curious.commands.decorators import ratelimit
+from curious.commands.ratelimit import BucketNamer
 from curious.exc import HTTPException, PermissionsError
 
 from jokusoramame.bot import Jokusoramame
+from jokusoramame.utils import rgbize
 
 
 def is_owner(ctx: Context):
@@ -58,6 +65,7 @@ class Core(Plugin):
     """
     Joku v2 core plugin.
     """
+
     @event("channel_create")
     async def first(self, ctx: EventContext, channel: Channel):
         try:
@@ -257,6 +265,42 @@ class Core(Plugin):
         em.set_footer(text=f"香港快递 | Git branch: {curr_branch.name}")
 
         await ctx.channel.messages.send(embed=em)
+
+    @command()
+    @ratelimit(limit=1, time=60, bucket_namer=BucketNamer.GLOBAL)
+    async def stats(self, ctx: Context):
+        """
+        Shows some bot stats.
+        """
+        palette = [0xabcdef, 0xbcdefa, 0xcdefab, 0xdefabc, 0xefabcd, 0xfabcde]
+        palette = cycle(palette)
+
+        async with ctx.channel.typing, spawn_thread():
+            with ctx.bot._plot_lock:
+                names, values = [], []
+                for name, value in ctx.bot.events_handled.most_common():
+                    names.append(name)
+                    values.append(value)
+
+                colours = rgbize([next(palette) for _ in names])
+
+                y_pos = np.arange(len(names))
+                plt.bar(y_pos, values, align='center', color=colours)
+                plt.gca()[1].set_yscale("log")
+                plt.xticks(y_pos, names, rotation=90)
+                plt.ylabel("Count")
+                plt.xlabel("Event")
+                plt.tight_layout()
+                plt.title("Event stats")
+
+                buf = BytesIO()
+                plt.savefig(buf, format='png')
+                plt.cla()
+                plt.clf()
+
+        buf.seek(0)
+        data = buf.read()
+        await ctx.channel.messages.upload(data, filename="stats.png")
 
     @command()
     @condition(is_owner)
