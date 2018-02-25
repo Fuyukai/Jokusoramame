@@ -3,6 +3,7 @@ Misc utilities.
 """
 # create the asyncio event loop
 import asyncio
+import json
 from typing import List, Tuple
 
 try:
@@ -36,3 +37,11 @@ def rgbize(palette: List[int]) -> List[Tuple[float, float, float]]:
         pal_colours.append(rgb100)
 
     return pal_colours
+
+
+def get_apikeys(name: str) -> dict:
+    """
+    Gets the API keys for the specified name.
+    """
+    with open(f"apikeys/{name}.json") as f:
+        return json.load(f)

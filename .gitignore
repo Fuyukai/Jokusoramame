@@ -98,3 +98,5 @@ rethinkdb_data/
 alembic.ini
 
 Pipfile.lock
+
+apikeys/*.json

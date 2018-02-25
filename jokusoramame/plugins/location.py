@@ -14,6 +14,7 @@ from curious.ext.paginator import ReactionsPaginator
 
 from jokusoramame import USER_AGENT
 from jokusoramame.bot import Jokusoramame
+from jokusoramame.utils import get_apikeys
 
 
 def truncate(s: str) -> str:
@@ -47,7 +48,10 @@ class Location(Plugin):
     def __init__(self, client: Jokusoramame):
         super().__init__(client)
 
-        self.maps_client = googlemaps.Client(key=client.config['googlemapskey'])
+        self.mapskey = get_apikeys("googlemaps")
+        self.transportkey = get_apikeys("transport")
+
+        self.maps_client = googlemaps.Client(key=self.mapskey['googlemaps'])
         self.maps_client.requests_kwargs['headers']['User-Agent'] = USER_AGENT
 
     @async_thread
@@ -80,8 +84,8 @@ class Location(Plugin):
         Makes a TransportAPI request.
         """
         params = {
-            "app_id": self.client.config["transportapi"]["app_id"],
-            "app_key": self.client.config["transportapi"]["app_key"],
+            "app_id": self.transportkey["app_id"],
+            "app_key": self.transportkey["app_key"],
             **params
         }
         headers = {

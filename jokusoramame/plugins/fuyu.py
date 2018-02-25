@@ -7,6 +7,8 @@ from asks.response_objects import Response
 from curious import EventContext, Message, event
 from curious.commands import Plugin
 
+from jokusoramame.utils import get_apikeys
+
 ISSUE_REGEXP = re.compile(r"(\S+)/(\S+)#([0-9]+)")
 logger = logging.getLogger(__file__)
 
@@ -21,6 +23,11 @@ class Fuyu(Plugin):
         "User-Agent": "Mozilla/5.0 (compatible; Jokusoramame/v2 "
                       "(https://github.com/SunDwarf/Jokusoramame, like Gecko)"
     }
+
+    def __init__(self, client):
+        super().__init__(client)
+
+        self.githubkey = get_apikeys("github")
 
     @event("message_create")
     async def annoy(self, ctx: EventContext, message: Message):
@@ -44,7 +51,7 @@ class Fuyu(Plugin):
         """
         Links an issue in my channel.
         """
-        gh_token = ctx.bot.config["github_token"]
+        gh_token = self.githubkey["token"]
         headers = {"Authorization": f"Token {gh_token}", **self.HEADERS}
 
         if message.guild_id != 198101180180594688:
