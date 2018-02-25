@@ -42,13 +42,31 @@ class Misc(Plugin):
 
                 return buf
 
+        @async_thread()
+        def plot_dark_palette() -> Awaitable[BytesIO]:
+            with ctx.bot._plot_lock:
+                with plt.style.context("dark_background"):
+                    sns.palplot(pal_colours, size=1)
+                    plt.tight_layout()  # remove useless padding
+
+                    buf = BytesIO()
+                    plt.savefig(buf, format="png")
+                    buf.seek(0)
+
+                    plt.clf()
+                    plt.cla()
+
+                return buf
+
         if ctx.bot._plot_lock.locked():
             await ctx.channel.messages.send("Waiting for plot lock...")
 
         async with ctx.channel.typing:
             buf = await plot_palette()
+            buf2 = await plot_dark_palette()
 
         await ctx.channel.messages.upload(fp=buf.read(), filename="plot.png")
+        await ctx.channel.messages.upload(fp=buf2, filename="plot_dark.png")
 
     def _normalize_language(self, lang: str) -> str:
         """
