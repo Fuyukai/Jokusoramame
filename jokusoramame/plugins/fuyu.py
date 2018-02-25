@@ -84,10 +84,23 @@ class Fuyu(Plugin):
         if message.guild_id != 198101180180594688:
             return
 
+        contents = [await ctx.bot.clean_content(message.content)]
+        for embed in message.embeds:
+            contents.append(embed.title)
+            contents.append(embed.description)
+            for field in embed._fields:
+                contents.append(field.name)
+                contents.append(field.value)
+
+        for emoji in message.emojis:
+            contents.append(emoji.name)
+            contents.append(emoji.id)
+
         nices = ['69', '420']
 
-        if '69420' in message.content:
-            return await message.channel.messages.send("***nice***")
+        for content in map(str, contents):
+            if '69420' in content:
+                return await message.channel.messages.send("***nice***")
 
-        elif any(x in message.content for x in nices):
-            return await message.channel.messages.send("nice")
+            elif any(x in content for x in nices):
+                return await message.channel.messages.send("nice")
