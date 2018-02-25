@@ -1,12 +1,11 @@
+import logging
 import random
 import re
 
 import asks
-import logging
 from asks.response_objects import Response
-from curious import event, EventContext, Message
+from curious import EventContext, Message, event
 from curious.commands import Plugin
-
 
 ISSUE_REGEXP = re.compile(r"(\S+)/(\S+)#([0-9]+)")
 logger = logging.getLogger(__file__)
@@ -72,3 +71,16 @@ class Fuyu(Plugin):
         else:
             logger.warning(f"Got status code {request.status_code} from GitHub...\n"
                            f"{request.content}")
+
+    @event("message_create")
+    async def nice(self, ctx: EventContext, message: Message):
+        if message.guild_id != 198101180180594688:
+            return
+
+        nices = ['69', '420']
+
+        if '69420' in message.content:
+            return await message.channel.messages.send("***nice***")
+
+        elif any(x in message.content for x in nices):
+            return await message.channel.messages.send("nice")
