@@ -36,15 +36,79 @@ class Analytics(Plugin):
         super().__init__(client)
 
         self.aylien = get_apikeys("aylien")
-        self.headers = {
+        self.aylien_headers = {
             "User-Agent": USER_AGENT,
             "X-AYLIEN-TextAPI-Application-Key": self.aylien["appkey"],
             "X-AYLIEN-TextAPI-Application-ID": self.aylien["appid"]
         }
 
+        self.perspective = get_apikeys("perspective")
+        self.perspective_headers = {
+            "User-Agent": USER_AGENT
+        }
+
     @event("message_create")
     async def add_to_analytics(self, ctx: EventContext, message: Message):
         await ctx.bot.redis.add_message(message)
+
+    async def make_commentanalyzer_request(self, model: str, message: str):
+        """
+        Makes a comment analyzer request.
+
+        :param model: The model to use.
+        :param message: The message to analyse.
+        """
+        url = "https://commentanalyzer.googleapis.com/v1alpha1/comments:analyze"
+        message = await self.client.clean_content(message)
+        body = {
+            "comment": {
+                "text": message,
+                "type": "PLAIN_TEXT"
+            },
+            "languages": ["en"],
+            "requestedAttributes": {
+                model: {}
+            }
+        }
+        params = {"key": self.perspective['apikey']}
+        response: Response = await asks.post(uri=url, json=body, params=params)
+
+        return response
+
+    async def command_toxicity(self, ctx: Context, *, message: str):
+        """
+        Analyses the toxicity of a message. Warning: Google will store these messages for analysis.
+        """
+        async with ctx.channel.typing:
+            response = await self.make_commentanalyzer_request("TOXICITY", message)
+
+        if response.status_code != 200:
+            return await ctx.channel.messages.send(f":x: API returned error: {response.content}")
+
+        result = response.json()
+        toxicity = result['attributeScores']['TOXICITY']
+
+        em = Embed(title="Toxicity score")
+        value = toxicity['summaryScore']['value']
+
+        # calculate the verdict
+        if value <= 0.35:
+            em.colour = 0x00ef00
+            verdict = "Not toxic"
+        elif 0.35 < value < 0.75:
+            em.colour = 0xabcdef
+            verdict = "Unsure"
+        else:
+            em.colour = 0xff0000
+            verdict = "Toxic"
+
+        em.description = f"Toxicity of {ctx.author.mention}'s message: {verdict}"
+        em.add_field(name="Type", value=toxicity['summaryScore']['type'].capitalize())
+        em.add_field(name="Score", value=format(value, '.2f'))
+        em.set_footer(text="Powered by Perspective API")
+        em.timestamp = datetime.datetime.utcnow()
+
+        return await ctx.channel.messages.send(embed=em)
 
     async def command_sentiment(self, ctx: Context, *, message: str):
         """
