@@ -9,7 +9,7 @@ verify_ssl = true
 "ruamel.yaml" = "*"
 lru-dict = "*"
 logbook = "*"
-asyncqlio = {git = "https://github.com/SunDwarf/asyncqlio.git"}
+asyncqlio = {git = "https://github.com/Fuyukai/asyncqlio.git"}
 asyncpg = "*"
 tabulate = "*"
 click = "*"
@@ -18,7 +18,7 @@ numpy = "*"
 psutil = "*"
 gitpython = "*"
 multio = {git = "https://github.com/theelous3/multio.git"}
-discord-curious = {git = "https://github.com/SunDwarf/curious.git"}
+discord-curious = {git = "https://github.com/Fuyukai/curious.git"}
 curio = {git = "https://github.com/dabeaz/curio.git"}
 uvloop = "*"
 asks = {git = "https://github.com/theelous3/asks.git"}
