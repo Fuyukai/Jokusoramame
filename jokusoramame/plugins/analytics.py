@@ -3,6 +3,7 @@ Analytical work.
 """
 import datetime
 import entropy
+import random
 import string
 from io import BytesIO
 from typing import Awaitable, Dict
@@ -13,7 +14,8 @@ import numpy as np
 import seaborn as sns
 import tabulate
 from asks.response_objects import Response
-from curio.thread import async_thread
+from clarifai.rest import ApiError, ClarifaiApp
+from curio.thread import AWAIT, async_thread
 from curious import Embed, EventContext, Guild, Member, Message, event
 from curious.commands import Context, Plugin
 from curious.commands.decorators import autoplugin, ratelimit
@@ -46,6 +48,13 @@ class Analytics(Plugin):
         self.perspective_headers = {
             "User-Agent": USER_AGENT
         }
+
+        clarifai_keys = get_apikeys("clarifai")
+        # hot-patch
+        old_cu = ClarifaiApp.check_upgrade
+        ClarifaiApp.check_upgrade = lambda *args: None
+        self.clarifai = ClarifaiApp(api_key=clarifai_keys['apikey'])
+        ClarifaiApp.check_upgrade = old_cu
 
     @event("message_create")
     async def add_to_analytics(self, ctx: EventContext, message: Message):
@@ -170,6 +179,39 @@ class Analytics(Plugin):
             message += f"*{related_phrase}* ?\n"
 
         await ctx.channel.messages.send(message)
+
+    @async_thread()
+    def command_imagetag(self, ctx: Context, *, url: str = None):
+        """
+        Gets information about an image.
+        """
+        if url is None:
+            try:
+                attachment = ctx.message.attachments[0]
+            except IndexError:
+                return AWAIT(ctx.channel.messages.send(":x: Could not find any file to tag."))
+            url = attachment.proxy_url
+
+        model = self.clarifai.models.get("general-v1.3")
+        try:
+            result = model.predict_by_url(url)
+        except ApiError as e:
+            return AWAIT(ctx.channel.messages.send(f":x: API error: {e.error_desc}"))
+
+        data = result['outputs'][0]['data']
+
+        em = Embed()
+        em.title = "Image Tag Results"
+        em.set_thumbnail(url=url)
+        em.description = "Top 10 concepts (name/probability):"
+
+        for concept in data['concepts'][:10]:
+            em.add_field(name=concept['name'], value=f"{concept['value'] * 100:.2f}%")
+
+        em.set_footer(text=f"Using model {result['outputs'][0]['model']['name']}")
+        em.colour = random.randint(0x000000, 0xffffff)
+        em.timestamp = datetime.datetime.utcnow()
+        AWAIT(ctx.channel.messages.send(embed=em))
 
     async def command_entropy(self, ctx: Context, *, message: str = None):
         """
