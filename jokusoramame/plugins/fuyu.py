@@ -7,6 +7,7 @@ from asks.response_objects import Response
 from curious import EventContext, Message, event
 from curious.commands import Plugin
 
+from jokusoramame import USER_AGENT
 from jokusoramame.utils import get_apikeys
 
 ISSUE_REGEXP = re.compile(r"(\S+)/(\S+)#([0-9]+)")
@@ -20,8 +21,7 @@ class Fuyu(Plugin):
     API_URL = "https://api.github.com"
     HEADERS = {
         "Accept": "application/vnd.github.v3+json",
-        "User-Agent": "Mozilla/5.0 (compatible; Jokusoramame/v2 "
-                      "(https://github.com/SunDwarf/Jokusoramame, like Gecko)"
+        "User-Agent": USER_AGENT,
     }
 
     def __init__(self, client):
