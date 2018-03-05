@@ -6,6 +6,8 @@ import asyncio
 import json
 from typing import List, Tuple
 
+from dataclasses import dataclass
+
 try:
     import uvloop
 
@@ -39,9 +41,28 @@ def rgbize(palette: List[int]) -> List[Tuple[float, float, float]]:
     return pal_colours
 
 
-def get_apikeys(name: str) -> dict:
+@dataclass
+class APIKey(object):
+    #: The actual API key.
+    key: str
+
+    #: For services that require it, the API ID.
+    id_: str = None
+
+
+def get_apikeys(name: str) -> APIKey:
     """
-    Gets the API keys for the specified name.
+    Gets API keys for the specified name.
+
+    :param name: The name of the API keys to load.
+    :return:
     """
     with open(f"apikeys/{name}.json") as f:
-        return json.load(f)
+        data = json.load(f)
+
+    if 'id' in data:
+        data['id_'] = data.pop('id')
+
+    data.pop("_comment", None)
+
+    return APIKey(**data)

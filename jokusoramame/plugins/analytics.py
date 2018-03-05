@@ -40,8 +40,8 @@ class Analytics(Plugin):
         self.aylien = get_apikeys("aylien")
         self.aylien_headers = {
             "User-Agent": USER_AGENT,
-            "X-AYLIEN-TextAPI-Application-Key": self.aylien["appkey"],
-            "X-AYLIEN-TextAPI-Application-ID": self.aylien["appid"]
+            "X-AYLIEN-TextAPI-Application-Key": self.aylien.key,
+            "X-AYLIEN-TextAPI-Application-ID": self.aylien.id_
         }
 
         self.perspective = get_apikeys("perspective")
@@ -53,7 +53,7 @@ class Analytics(Plugin):
         # hot-patch
         old_cu = ClarifaiApp.check_upgrade
         ClarifaiApp.check_upgrade = lambda *args: None
-        self.clarifai = ClarifaiApp(api_key=clarifai_keys['apikey'])
+        self.clarifai = ClarifaiApp(api_key=clarifai_keys.key)
         ClarifaiApp.check_upgrade = old_cu
 
     @event("message_create")
@@ -79,7 +79,7 @@ class Analytics(Plugin):
                 model: {}
             }
         }
-        params = {"key": self.perspective['apikey']}
+        params = {"key": self.perspective.key}
         response: Response = await asks.post(uri=url, json=body, params=params)
 
         return response

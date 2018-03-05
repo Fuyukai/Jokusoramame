@@ -80,7 +80,11 @@ class Jokusoramame(Client):
             return
 
         logger.info(f"Connecting database.")
-        await self.db.connect()
+        try:
+            await self.db.connect()
+        except ConnectionError:
+            await self._kill()
+            raise
 
         plugins = self.config.get("autoload", [])
         if "jokusoramame.plugins.core" not in plugins:

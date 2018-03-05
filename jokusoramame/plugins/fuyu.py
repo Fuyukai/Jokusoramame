@@ -51,7 +51,7 @@ class Fuyu(Plugin):
         """
         Links an issue in my channel.
         """
-        gh_token = self.githubkey["token"]
+        gh_token = self.githubkey.key
         headers = {"Authorization": f"Token {gh_token}", **self.HEADERS}
 
         if message.guild_id != 198101180180594688:
