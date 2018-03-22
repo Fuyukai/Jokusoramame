@@ -1,12 +1,13 @@
 """
 Analytical work.
 """
+import base64
 import datetime
 import entropy
 import random
 import string
 from io import BytesIO
-from typing import Awaitable, Dict
+from typing import Awaitable, Dict, Tuple
 
 import asks
 import matplotlib.pyplot as plt
@@ -20,6 +21,7 @@ from curious import Embed, EventContext, Guild, Member, Message, event
 from curious.commands import Context, Plugin
 from curious.commands.decorators import autoplugin, ratelimit
 from curious.commands.ratelimit import BucketNamer
+from curious.ext.paginator import ReactionsPaginator
 from matplotlib.axes import Axes
 
 from jokusoramame import USER_AGENT
@@ -47,6 +49,16 @@ class Analytics(Plugin):
         self.perspective = get_apikeys("perspective")
         self.perspective_headers = {
             "User-Agent": USER_AGENT
+        }
+
+        self.watson = get_apikeys("watson")
+        concat = f"{self.watson.id_}:{self.watson.key}"
+        auth = base64.urlsafe_b64encode(concat.encode()).decode()
+        self.watson_headers = {
+            "User-Agent": USER_AGENT,
+            "Authorization": f"Basic {auth}",
+            "Content-Type": "application/json; charset=utf-8",
+            "Accept": "application/json"
         }
 
         clarifai_keys = get_apikeys("clarifai")
@@ -127,7 +139,7 @@ class Analytics(Plugin):
         body = {"text": message, "mode": "tweet"}
 
         async with ctx.channel.typing:
-            response: Response = await asks.post(uri=url, data=body, headers=self.headers)
+            response: Response = await asks.post(uri=url, data=body, headers=self.aylien_headers)
 
         if response.status_code != 200:
             return await ctx.channel.messages.send(f":x: API returned error: {response.text}")
@@ -162,7 +174,8 @@ class Analytics(Plugin):
         body = {"phrase": phrase}
 
         async with ctx.channel.typing:
-            response: Response = await asks.post(uri=url, data=body, headers=self.headers)
+            response: Response = await asks.post(uri=url, data=body,
+                                                 headers=self.aylien_headers)
 
         if response.status_code != 200:
             return await ctx.channel.messages.send(f":x: API returned error: {response.text}")
@@ -179,6 +192,95 @@ class Analytics(Plugin):
             message += f"*{related_phrase}* ?\n"
 
         await ctx.channel.messages.send(message)
+
+    async def make_personality_request(self, target: Member):
+        """
+        Makes a personality analysis API request.
+        """
+        url = "https://gateway.watsonplatform.net/personality-insights/api/v3/profile"
+        messages = await self.client.redis.get_messages(target.user)
+        body = {
+            "contentItems": [{"content": message["c"]} for message in messages]
+        }
+        # incredibly bad
+        params = {
+            "version": "2017-10-13"
+        }
+        response: Response = await asks.post(uri=url, json=body,
+                                             params=params,
+                                             headers=self.watson_headers)
+
+        return response
+
+    @staticmethod
+    def get_core_personality_embeds(target: Member, response_data: dict) \
+            -> Tuple[Embed, Embed, Embed]:
+        """
+        Gets the three core personality embeds.
+        """
+        sections = ["Personality", "Needs", "Values"]
+
+        def _format_trait(d: dict) -> str:
+            return format(d['percentile'] * 100, '.2f')
+
+        # make the personality one
+        p_embed = Embed()
+        personality = response_data.get("personality", [])
+        for core_trait in personality:
+            p_embed.add_field(name="Trait Name", value=core_trait['name'])
+            p_embed.add_field(name="Percentage",
+                              value=_format_trait(core_trait))
+
+        n_embed = Embed()
+        needs = response_data.get("needs", [])
+        for need in needs:
+            n_embed.add_field(name="Trait name", value=need['name'])
+            n_embed.add_field(name="Percentage",
+                              value=_format_trait(need))
+
+        v_embed = Embed()
+        values = response_data.get("values", [])
+        for value in values:
+            v_embed.add_field(name="Trait name", value=value['name'])
+            v_embed.add_field(name="Percentage",
+                              value=_format_trait(value))
+
+        embeds = (p_embed, n_embed, v_embed)
+        colour = random.randint(0, 0xffffff)
+        # tweak embeds
+        for i, embed in enumerate(embeds):
+            embed.description = f"Personality anaylsis for {target.user.mention}"
+            embed.set_thumbnail(url=str(target.user.avatar_url))
+            embed.colour = colour
+            embed.set_author(
+                url="https://pbs.twimg.com/profile_images/938480103541141504/ieI9rd0G_400x400.jpg"
+            )
+            embed.title = f"Personality Analysis (section: {sections[i]})"
+
+        return embeds
+
+    async def command_personality(self, ctx: Context, *, target: Member = None):
+        """
+        Evaluates the personality of a member.
+        """
+        if target is None:
+            target = ctx.author
+
+        async with ctx.channel.typing:
+            request = await self.make_personality_request(target)
+            if request.status_code != 200:
+                return await ctx.channel.messages.send(f":x: API returned error: "
+                                                       f"`{request.json()}`")
+
+            embeds = list(self.get_core_personality_embeds(target, request.json()))
+
+        for i, embed in enumerate(embeds):
+            embed.set_footer(text=f"Page {i + 1}/{len(embeds)}")
+            embed.timestamp = datetime.datetime.utcnow()
+
+        paginator = ReactionsPaginator(content=embeds, channel=ctx.channel,
+                                       respond_to=ctx.author)
+        await paginator.paginate()
 
     @async_thread()
     def command_imagetag(self, ctx: Context, *, url: str = None):
