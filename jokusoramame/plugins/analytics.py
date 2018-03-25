@@ -10,6 +10,7 @@ from io import BytesIO
 from typing import Awaitable, Dict, Tuple
 
 import asks
+import curio
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
@@ -341,7 +342,22 @@ class Analytics(Plugin):
         """
         return await self.command_analyse_member(ctx, victim=ctx.author)
 
-    async def toggle(self, ctx: Context, *, guild_id: int):
+    async def command_analyse_clear(self, ctx: Context):
+        """
+        Clears your data from analytics.
+        """
+        await ctx.channel.messages.send("Are you sure you want to clear your data [Y/N]? "
+                                        "Your data will not be stored (this will be visible).")
+
+        async with curio.timeout_after(5):
+            result: Message = await ctx.bot.events.wait_for(
+                "message_create", predicate=lambda m: m.author == ctx.author
+            )
+        if result.content.lower() == "y":
+            await ctx.bot.redis.clear_member_data(ctx.author.user)
+            return await ctx.channel.messages.send("Cleared.")
+
+    async def command_analyse_toggle(self, ctx: Context, *, guild_id: int):
         """
         Toggles analytics for the specified guild ID.
         """

@@ -1,13 +1,12 @@
 """
 Redis interface.
 """
-from typing import Tuple
+import json
 import zlib
 
-import json
 import redis
 from curio.thread import async_thread
-from curious import Message, User, Guild
+from curious import Guild, Message, User
 
 
 class RedisInterface(object):
@@ -35,6 +34,14 @@ class RedisInterface(object):
         return True
 
     @async_thread
+    def clear_member_data(self, user: User):
+        """
+        Clears the analytics data for a user.
+        """
+        self.redis.set(f"analytics_flag_{user.id}", "true")
+        self.redis.delete(f"messages_{user.id}")
+
+    @async_thread
     def add_message(self, message: Message):
         """
         Adds a message to Redis, for usage in analysis.
@@ -44,6 +51,10 @@ class RedisInterface(object):
 
         enabled = self.redis.get(f"analytics_enabled_{message.guild_id}")
         if enabled is None:
+            return
+
+        allowed = self.redis.get(f"analytics_flag_{message.author.user.id}")
+        if allowed is not None:
             return
 
         key = f"messages_{message.author_id}"
