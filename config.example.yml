@@ -16,4 +16,5 @@ redis:
   host: 127.0.0.1
   port: 6379
 
-## API keys, etc.
+# The postgres URL to use.
+db_url: postgresql://jokusoramame@127.0.0.1/jokusoramame

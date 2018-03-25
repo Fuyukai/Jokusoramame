@@ -2,6 +2,7 @@
 Example environment file for asql-migrate.
 """
 import typing
+from ruamel import yaml
 
 from asyncqlio.db import DatabaseInterface
 from asyncqlio.orm.session import Session
@@ -13,7 +14,10 @@ from asyncqlio.orm.session import Session
 
 # The DSN to connect to the server with.
 # You probably want to change this.
-dsn = "postgresql://jokusoramame@127.0.0.1/jokusoramame"
+
+with open("config.yml") as f:
+    data = yaml.load(f, Loader=yaml.Loader)
+    dsn = data.get("db_url")
 
 
 async def create_database_interface() -> DatabaseInterface:

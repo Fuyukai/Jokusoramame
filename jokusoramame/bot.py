@@ -35,7 +35,7 @@ class Jokusoramame(Client):
         self.manager.register_events()
 
         #: The DB object.
-        self.db = DatabaseInterface("postgresql://jokusoramame@127.0.0.1/jokusoramame",
+        self.db = DatabaseInterface(self.config.get("db_url"),
                                     connector=CurioAsyncpgConnector)
 
         #: The redis interface.
