@@ -14,11 +14,11 @@ class RedisInterface(object):
     Represents an interface to the Redis server.
     """
 
-    def __init__(self, host: str = "127.0.0.1", port: int = 6379):
+    def __init__(self, host: str = "127.0.0.1", port: int = 6379, password: str = None):
         """
         :param redis_conn: A (host, port) tuple to connect to redis on.
         """
-        self.redis = redis.Redis(host=host, port=port)
+        self.redis = redis.Redis(host=host, port=port, password=password)
 
     @async_thread
     def toggle_analytics(self, guild: Guild):
