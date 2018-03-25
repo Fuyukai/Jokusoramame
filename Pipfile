@@ -22,7 +22,7 @@ numpy = "*"
 psutil = "*"
 gitpython = "*"
 multio = {git = "https://github.com/theelous3/multio.git"}
-discord-curious = {git = "https://github.com/Fuyukai/curious.git"}
+discord-curious = "*"
 curio = {git = "https://github.com/dabeaz/curio.git"}
 uvloop = "*"
 asks = {git = "https://github.com/theelous3/asks.git"}
