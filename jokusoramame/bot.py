@@ -5,8 +5,9 @@ import logbook
 from asyncqlio import DatabaseInterface
 from curious import BotType, Client, EventContext, Game, Message, event
 from curious.commands import CommandsManager, Context
-from curious.commands.exc import CommandInvokeError, CommandsError
-from curious.exc import CuriousError
+from curious.commands.exc import CommandInvokeError, CommandsError, ConversionFailedError, \
+    MissingArgumentError
+from curious.exc import CuriousError, HTTPException
 
 from jokusoramame.db.connector import CurioAsyncpgConnector
 from jokusoramame.redis import RedisInterface
@@ -59,9 +60,14 @@ class Jokusoramame(Client):
                     traceback.print_exception(None, error.__cause__,
                                               error.__cause__.__traceback__)
             else:
-                await ctx.channel.messages.send(":x: An error has occurred.")
+                if not isinstance(error.__cause__, HTTPException):
+                    await ctx.channel.messages.send(":x: An error has occurred.")
                 traceback.print_exception(None, error.__cause__,
                                           error.__cause__.__traceback__)
+        elif isinstance(error, MissingArgumentError):
+            await ctx.channel.messages.send(f":x: {repr(error)}")
+        elif isinstance(error, ConversionFailedError):
+            await ctx.channel.messages.send(f":x: {repr(error)}")
         else:
             await ctx.channel.messages.send(f":x: {repr(error)}")
 

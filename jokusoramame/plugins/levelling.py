@@ -8,7 +8,7 @@ import tabulate
 from asyncqlio import Session
 from curious import Embed, EventContext, Member, Message, event
 from curious.commands import Context, Plugin, command
-from curious.exc import PermissionsError
+from curious.exc import Forbidden, PermissionsError
 from curious.ext.paginator import ReactionsPaginator
 from numpy.ma import floor
 from numpy.polynomial import Polynomial as P
@@ -138,11 +138,15 @@ class Levelling(Plugin):
 
                     try:
                         await message.channel.messages.send(embed=em)
-                    except PermissionsError:
+                    except (PermissionsError, Forbidden):
                         # no embeds
-                        await message.channel.messages.send(f":tada: "
-                                                            f"**{message.author.user.username} "
-                                                            f"is now level {user.level}**!")
+                        try:
+                            await message.channel.messages.send(f":tada: "
+                                                                f"**{message.author.user.username} "
+                                                                f"is now level {user.level}**!")
+                        except (PermissionsError, Forbidden):
+                            # oh well
+                            pass
             finally:
                 await sess.add(user)
 
