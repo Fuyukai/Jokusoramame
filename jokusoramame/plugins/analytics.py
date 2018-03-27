@@ -349,7 +349,7 @@ class Analytics(Plugin):
         await ctx.channel.messages.send("Are you sure you want to clear your data [Y/N]? "
                                         "Your data will not be stored (this will be visible).")
 
-        async with curio.timeout_after(5):
+        async with curio.timeout_after(30):
             result: Message = await ctx.bot.events.wait_for(
                 "message_create", predicate=lambda m: m.author == ctx.author
             )
