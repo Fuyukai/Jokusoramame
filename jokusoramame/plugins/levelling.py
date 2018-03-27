@@ -151,11 +151,15 @@ class Levelling(Plugin):
                 await sess.add(user)
 
     @command()
-    async def level(self, ctx: Context, *, member: Member = None):
+    async def level(self, ctx: Context, *, member=None):
         """
         Shows the level of somebody, or yourself.
         """
         # default member is the author
+        if member in ["top", "bottom"]:
+            return await self.leaderboard(ctx, mode=member)
+
+        member = ctx._lookup_converter(Member)(Member, ctx, member)
         member = member or ctx.author
 
         sess: Session = ctx.bot.db.get_session()
@@ -185,17 +189,20 @@ class Levelling(Plugin):
         em.thumbnail.url = member.user.static_avatar_url
         await ctx.channel.send(embed=em)
 
-    @level.subcommand(aliases=["top"])
-    async def leaderboard(self, ctx: Context):
+    @level.subcommand()
+    async def leaderboard(self, ctx: Context, *, mode: str = "top"):
         """
         Shows the current leaderboard for levels.
         """
         sess: Session = ctx.bot.db.get_session()
         async with sess:
-            rows = await sess.select(UserXP) \
-                .where(UserXP.guild_id.eq(ctx.guild.id)) \
-                .order_by(UserXP.xp.desc()).all()
-
+            query = sess.select(UserXP).where(UserXP.guild_id.eq(ctx.guild.id))
+            print(ctx.tokens, ctx.command_name)
+            if len(ctx.tokens) >= 1 and ctx.tokens[0] == "bottom":
+                query = query.order_by(UserXP.xp.asc())
+            else:
+                query = query.order_by(UserXP.xp.desc())
+            rows = await query.all()
             rows: List[UserXP] = await rows.flatten()
 
         # paginate into chunks
