@@ -3,7 +3,7 @@ import traceback
 
 import logbook
 from asyncqlio import DatabaseInterface
-from curious import BotType, Client, EventContext, Game, Message, event
+from curious import BotType, Client, EventContext, Game, Message, Status, event
 from curious.commands import CommandsManager, Context
 from curious.commands.exc import CommandInvokeError, CommandsError, ConversionFailedError, \
     MissingArgumentError
@@ -73,12 +73,18 @@ class Jokusoramame(Client):
 
     @event("connect")
     async def on_connect(self, ctx: EventContext):
-        # set the game text
-        text = "[shard {}/{}] j!help".format(ctx.shard_id + 1, ctx.shard_count)
-        await self.change_status(game=Game(name=text))
+        text = f"[shard {ctx.shard_id + 1}/{ctx.shard_count}] booting..."
+        await self.change_status(game=Game(name=text), status=Status.DND)
 
     @event("ready")
     async def on_ready(self, ctx: EventContext):
+        # set the game text
+        text = "[shard {}/{}] j!help".format(ctx.shard_id + 1, ctx.shard_count)
+        try:
+            await self.change_status(game=Game(name=text))
+        except Exception:
+            pass
+
         logger.info(f"Shard {ctx.shard_id} loaded.")
         if self._loaded is False:
             self._loaded = True
