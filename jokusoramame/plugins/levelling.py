@@ -176,7 +176,7 @@ class Levelling(Plugin):
             return
 
         em = Embed()
-        em.title = member.nickname
+        em.title = str(member.nickname)
         em.add_field(name="Level", value=user.level, inline=True)
         em.add_field(name="XP", value=user.xp)
         em.add_field(name="XP required for next level", value=get_next_exp_required(user.xp)[1])
