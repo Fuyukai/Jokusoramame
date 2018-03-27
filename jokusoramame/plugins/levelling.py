@@ -159,7 +159,8 @@ class Levelling(Plugin):
         if member in ["top", "bottom"]:
             return await self.leaderboard(ctx, mode=member)
 
-        member = ctx._lookup_converter(Member)(Member, ctx, member)
+        if member is not None:
+            member = ctx._lookup_converter(Member)(Member, ctx, member)
         member = member or ctx.author
 
         sess: Session = ctx.bot.db.get_session()
