@@ -1,15 +1,11 @@
 [[source]]
-
 url = "https://pypi.python.org/simple"
 verify_ssl = true
 
 [requires]
-
 python_version = "3.6"
 
-
 [packages]
-
 "ruamel.yaml" = "*"
 lru-dict = "*"
 logbook = "*"
@@ -36,3 +32,4 @@ yapf = "*"
 sphinx = "*"
 clarifai = "*"
 prettyprinter = "*"
+dataclasses = "*"
