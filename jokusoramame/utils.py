@@ -4,7 +4,7 @@ Misc utilities.
 # create the asyncio event loop
 import asyncio
 import json
-from typing import List, Tuple
+from typing import List, Sequence, Tuple
 
 from dataclasses import dataclass
 
@@ -16,6 +16,7 @@ try:
 except ImportError:
     try:
         import tokio
+
         print("Using Tokio")
         asyncio.set_event_loop_policy(tokio.EventLoopPolicy())
     except ImportError:
@@ -66,3 +67,14 @@ def get_apikeys(name: str) -> APIKey:
     data.pop("_comment", None)
 
     return APIKey(**data)
+
+
+def chunked(sequence: Sequence, chunk_size: int):
+    """
+    Splits a sequence into sized chunks
+
+    :param sequence: The sequence to be chunked.
+    :param chunk_size: Amount of items per chunk.
+    """
+    for i in range(0, len(sequence), chunk_size):
+        yield sequence[i:i + chunk_size]

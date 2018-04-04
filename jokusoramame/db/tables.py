@@ -1,7 +1,7 @@
 """
 Contains database definitions.
 """
-from asyncqlio import BigInt, Column, Integer, Serial, Text, table_base, Boolean
+from asyncqlio import BigInt, Boolean, Column, Integer, Serial, Text, table_base
 
 Table = table_base(name="Table")
 
@@ -76,3 +76,20 @@ class RolemeRole(Table, table_name="roleme_role"):
 
     #: If this role can be self-assigned.
     self_assignable = Column(Boolean(), default=True, nullable=False)
+
+
+class UserBalance(Table, table_name="user_balance"):
+    """
+    Represents a user's balance.
+    """
+    #: The ID of this balance.
+    id = Column(Serial(), primary_key=True)
+
+    #: The user ID for this balance.
+    user_id = Column(BigInt(), nullable=False)
+
+    #: The guild ID this balance is associated with.
+    guild_id = Column(BigInt(), unique=False, nullable=False)
+
+    #: The amount of money this user has.
+    money = Column(Integer(), unique=False, nullable=False, default=0)
