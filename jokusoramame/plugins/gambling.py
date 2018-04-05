@@ -76,6 +76,10 @@ async def construct_leaderboard(ctx: Context, *, mode: str):
         rows = await query.all()
         rows = await rows.flatten()
 
+    if not rows:
+        # Maybe this should be handled more gracefully?
+        return
+
     pages = []
     pos = 0
 
