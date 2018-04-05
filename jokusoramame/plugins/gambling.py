@@ -151,7 +151,7 @@ class Gambling(Plugin):
         # Rounds to nearest 5
         amount = int(5 * round(amount * 50 / 5))
 
-        await ctx.channel.messages.send('\N{MONEY BAG} You have earned **{0} :̶.̶|̶:̶;̶** today.'.format(amount))
+        await ctx.channel.messages.send(f'\N{MONEY BAG} You have earned **{amount} :̶.̶|̶:̶;̶** today.')
         await update_balance(ctx, await ensure_balance(ctx), amount)
 
     @command()
@@ -183,6 +183,6 @@ class Gambling(Plugin):
 
         embed = Embed(title=str(target.name), colour=target.colour)
         embed.set_thumbnail(url=str(target.user.avatar_url))
-        embed.add_field(name='Balance', value='**{0.money} :̶.̶|̶:̶;̶**'.format(balance))
+        embed.add_field(name='Balance', value=f'**{balance.money} :̶.̶|̶:̶;̶**')
 
         await ctx.channel.send(embed=embed)
