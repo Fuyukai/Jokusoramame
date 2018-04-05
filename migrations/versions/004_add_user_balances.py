@@ -21,7 +21,7 @@ async def upgrade(session: DDLSession):
         guild_id BIGINT NOT NULL,
         money INTEGER NOT NULL DEFAULT 0
     );
-    
+
     CREATE INDEX user_balance_user_id_idx ON user_balance (user_id);
     CREATE INDEX user_balance_guild_id_idx ON user_balance (guild_id);
     CREATE INDEX user_balance_money_idx ON user_balance (money);
