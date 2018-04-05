@@ -260,12 +260,12 @@ class Analytics(Plugin):
 
         return embeds
 
-    async def command_personality(self, ctx: Context, *, target: Member = None):
+    @ratelimit(limit=1, time=60, bucket_namer=BucketNamer.AUTHOR)
+    async def command_personality(self, ctx: Context):
         """
         Evaluates the personality of a member.
         """
-        if target is None:
-            target = ctx.author
+        target = ctx.author
 
         async with ctx.channel.typing:
             request = await self.make_personality_request(target)
