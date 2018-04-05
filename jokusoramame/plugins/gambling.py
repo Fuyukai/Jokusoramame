@@ -108,8 +108,6 @@ async def construct_leaderboard(ctx: Context, *, mode: str):
 class Gambling(Plugin):
     """
     Plugin for gambling related commands.
-
-    U better thank me...
     """
 
     @ratelimit(limit=5, time=3600)  # 5 per 1h
