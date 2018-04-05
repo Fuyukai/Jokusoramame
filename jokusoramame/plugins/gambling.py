@@ -20,8 +20,7 @@ BAD_RESPONSES = [
     '\N{FIRE} Your bank account went up in flames and you lost **{0} :̶.̶|̶:̶;̶**.',
     '\N{SHOPPING TROLLEY} You spend **{0} :̶.̶|̶:̶;̶** at the supermarket.',
     '\N{GHOST} A ghost pops up out of nowhere and scares you. You drop **{0} :̶.̶|̶:̶;̶**.',
-    '\N{HAMMER AND PICK} _All that is solid melts into air._ (You lost **{0} :̶.̶|̶:̶;̶**.)',
-    '\N{DRAGON} Ryuu ga waga teki wo kurau! (You lost **{0} :̶.̶|̶:̶;̶**.)'
+    '\N{HAMMER AND PICK} _All that is solid melts into air._ (You lost **{0} :̶.̶|̶:̶;̶**.)'
 ]
 
 GOOD_RESPONSES = [
@@ -127,6 +126,7 @@ class Gambling(Plugin):
                 'You are now free of debt.'
             )
             await update_balance(ctx, balance, abs(balance.money) + 5)
+            return
 
         if balance.money < price:
             return await ctx.channel.messages.send("\N{CROSS MARK} Don't gamble with money you don't have, dum-dum...")
@@ -183,6 +183,6 @@ class Gambling(Plugin):
 
         embed = Embed(title=str(target.name), colour=target.colour)
         embed.set_thumbnail(url=str(target.user.avatar_url))
-        embed.add_field(name='Balance'.format(target), value='**{0.money} :̶.̶|̶:̶;̶**'.format(balance))
+        embed.add_field(name='Balance', value='**{0.money} :̶.̶|̶:̶;̶**'.format(balance))
 
         await ctx.channel.send(embed=embed)
