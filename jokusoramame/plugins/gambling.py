@@ -129,7 +129,7 @@ class Gambling(Plugin):
         if balance.money < price:
             return await ctx.channel.messages.send("\N{CROSS MARK} Don't gamble with money you don't have, dum-dum...")
 
-        amount = int(((price * 10) * np.random.randn()) + 100)  # weight slightly towards positive
+        amount = int(((price * 10) * np.random.randn()) + price)  # weight slightly towards positive
 
         if amount < 0:
             response = random.choice(BAD_RESPONSES)
