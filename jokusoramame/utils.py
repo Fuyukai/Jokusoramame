@@ -4,7 +4,7 @@ Misc utilities.
 # create the asyncio event loop
 import asyncio
 import json
-from typing import List, Sequence, Tuple
+from typing import Any, List, Sequence, Tuple
 
 from dataclasses import dataclass
 
@@ -69,7 +69,7 @@ def get_apikeys(name: str) -> APIKey:
     return APIKey(**data)
 
 
-def chunked(sequence: Sequence, chunk_size: int):
+def chunked(sequence: Sequence[Any], chunk_size: int):
     """
     Splits a sequence into sized chunks
 
