@@ -17,11 +17,17 @@ from jokusoramame.db.tables import UserBalance
 from jokusoramame.utils import chunked
 
 BAD_RESPONSES = [
-    'haha nerd u lost **{0} :̶.̶|̶:̶;̶**'
+    '\N{FIRE} Your bank account went up in flames and you lost **{0} :̶.̶|̶:̶;̶**.',
+    '\N{SHOPPING TROLLEY} You spend **{0} :̶.̶|̶:̶;̶** at the supermarket.',
+    '\N{GHOST} A ghost pops up out of nowhere and scares you. You drop **{0} :̶.̶|̶:̶;̶**.',
+    '\N{HAMMER AND PICK} _All that is solid melts into air._ (You lost **{0} :̶.̶|̶:̶;̶**.)',
+    '\N{DRAGON} Ryuu ga waga teki wo kurau! (You lost **{0} :̶.̶|̶:̶;̶**.)'
 ]
 
 GOOD_RESPONSES = [
-    'wowe.... **{0} :̶.̶|̶:̶;̶**'
+    '\N{FIRST PLACE MEDAL} You win first place in the Money Making Race™ and gain **{0} :̶.̶|̶:̶;̶**.',
+    '\N{SLOT MACHINE} You have a gambling addiction and win **{0} :̶.̶|̶:̶;̶**.',
+    '\N{GEM STONE} You find a diamond and sell it for **{0} :̶.̶|̶:̶;̶**.'
 ]
 
 
