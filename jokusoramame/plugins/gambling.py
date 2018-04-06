@@ -49,10 +49,7 @@ class Gambling(Plugin):
                 .first()
 
             if balance is None:
-                balance = UserBalance()
-                balance.guild_id = member.guild_id
-                balance.user_id = member.id
-                balance.money = 0
+                balance = UserBalance(guild_id=member.guild_id, user_id=member.id, money=0)
                 await sess.add(balance)
 
             return balance
