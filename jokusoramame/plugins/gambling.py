@@ -5,10 +5,12 @@
 #   - inventory
 
 import random
+from collections import namedtuple
+from typing import List
 
 import numpy as np
 import tabulate
-from curious import Embed, Member
+from curious import Embed, Guild, Member
 from curious.commands import Context, Plugin, command
 from curious.commands.decorators import ratelimit
 from curious.ext.paginator import ReactionsPaginator
@@ -36,49 +38,6 @@ async def update_balance(ctx: Context, balance, amount: int):
         await sess.add(balance)
 
 
-async def construct_leaderboard(ctx: Context, *, mode: str):
-    order_by = {
-        'top': UserBalance.money.desc(),
-        'bottom': UserBalance.money.asc()
-    }
-
-    async with ctx.bot.db.get_session() as sess:
-        query = sess.select(UserBalance) \
-            .where(UserBalance.guild_id.eq(ctx.guild.id)) \
-            .order_by(order_by[mode])
-
-        rows = await query.all()
-        rows = await rows.flatten()
-
-    if not rows:
-        # Maybe this should be handled more gracefully?
-        return
-
-    pages = []
-    pos = 0
-
-    for chunk in chunked(rows, 10):
-        rows = []
-
-        for row in chunk:
-            pos += 1
-
-            member = ctx.guild.members.get(row.user_id)
-            name = member.user.name if member else str(row.user_id)
-
-            # Strips unicode
-            name = name.encode('ascii', errors='replace').decode()
-            rows.append(
-                (str(pos), name, row.money)
-            )
-
-        tab = tabulate.tabulate(rows, headers='POS User Money'.split(), tablefmt='orgtbl')
-        pages.append('```' + tab + '```')
-
-    paginator = ReactionsPaginator(content=pages, channel=ctx.channel, respond_to=ctx.author)
-    await paginator.paginate()
-
-
 class Gambling(Plugin):
     """
     Plugin for gambling related commands.
@@ -92,7 +51,7 @@ class Gambling(Plugin):
         """
         async with self.client.db.get_session() as sess:
             balance = await sess.select.from_(UserBalance) \
-                .where((UserBalance.user_id == member.id) & (UserBalance.guild_id == member.guild.id)) \
+                .where((UserBalance.user_id.eq(member.id)) & (UserBalance.guild_id.eq(member.guild.id))) \
                 .first()
 
             if balance is None:
@@ -103,6 +62,56 @@ class Gambling(Plugin):
                 await sess.add(balance)
 
             return balance
+
+    async def construct_leaderboard(self, guild: Guild, *, mode: str) -> List[str]:
+        """
+        Query the database for the balance of each member in a guild, and sort it appropriately.
+
+        A table follows this format:
+        |   POS | User    |   Money |
+        |-------+---------+---------|
+        |     1 | name    |       0 |
+
+        each table contains 10 entries
+
+        :param guild: The guild to construct the leaderboard for.
+        :param mode: Tells if the results should be ordered in ascending or descending order.
+        :return: A list of formatted tables.
+        """
+        order_by = {
+            'top': UserBalance.money.desc(),
+            'bottom': UserBalance.money.asc()
+        }
+
+        async with self.client.db.get_session() as sess:
+            query = sess.select(UserBalance) \
+                .where(UserBalance.guild_id.eq(guild.id)) \
+                .order_by(order_by[mode])
+
+            rows = await query.all()
+            rows = await rows.flatten()
+
+        entry = namedtuple('entry', 'position name money')
+        pages = []
+        pos = 0
+
+        for chunk in chunked(rows, 10):
+            rows = []
+
+            for row in chunk:
+                pos += 1
+
+                member = guild.members.get(row.user_id)
+                name = member.user.name if member else str(row.user_id)
+
+                # Strips unicode
+                name = name.encode('ascii', errors='replace').decode()
+                rows.append(entry(pos, name, row.money))
+
+            tab = tabulate.tabulate(rows, headers='POS User Money'.split(), tablefmt='orgtbl')
+            pages.append('```' + tab + '```')
+
+        return pages
 
     @ratelimit(limit=5, time=3600)  # 5 per 1h
     @command()
@@ -154,14 +163,26 @@ class Gambling(Plugin):
         """
         Shows the people with the most amount of money in a guild.
         """
-        await construct_leaderboard(ctx, mode='top')
+        pages = await self.construct_leaderboard(ctx.guild, mode='top')
+
+        if not pages:
+            return await ctx.channel.messages.send('\N{CROSS MARK} No entries found for this guild.')
+
+        paginator = ReactionsPaginator(content=pages, channel=ctx.channel, respond_to=ctx.author)
+        await paginator.paginate()
 
     @command()
     async def poorest(self, ctx: Context):
         """
         Shows the people with the least amount of money in a guild.
         """
-        await construct_leaderboard(ctx, mode='bottom')
+        pages = await self.construct_leaderboard(ctx.guild, mode='bottom')
+
+        if not pages:
+            return await ctx.channel.messages.send('\N{CROSS MARK} No entries found for this guild.')
+
+        paginator = ReactionsPaginator(content=pages, channel=ctx.channel, respond_to=ctx.author)
+        await paginator.paginate()
 
     @command()
     async def balance(self, ctx: Context, *, target: Member = None):
