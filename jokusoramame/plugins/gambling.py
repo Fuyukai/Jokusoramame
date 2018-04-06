@@ -38,7 +38,7 @@ class Gambling(Plugin):
     """
     entry = namedtuple('entry', 'position name money')
 
-    async def ensure_balance(self, member: Member = None):
+    async def ensure_balance(self, member: Member):
         """
         Return a balance associated to the member and corresponding guild. If one does not exist it is created.
 
@@ -162,6 +162,7 @@ class Gambling(Plugin):
         amount = int(5 * round(amount * 50 / 5))
 
         await ctx.channel.messages.send(f'\N{MONEY BAG} You have earned **{amount} :̶.̶|̶:̶;̶** today.')
+        await self.ensure_balance(ctx.author)
         await self.update_balance(ctx.author, amount)
 
     @command()
