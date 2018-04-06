@@ -30,31 +30,6 @@ GOOD_RESPONSES = [
 ]
 
 
-async def ensure_balance(ctx: Context, member: Member = None):
-    """
-    Return a balance associated to the member and corresponding guild. If one does not exist it is created.
-
-    :param ctx: Context object
-    :param member: Member to ensure balance for, defaults to author.
-    """
-    if member is None:
-        member = ctx.author
-
-    async with ctx.bot.db.get_session() as sess:
-        balance = await sess.select.from_(UserBalance) \
-            .where((UserBalance.user_id == member.id) & (UserBalance.guild_id == member.guild.id)) \
-            .first()
-
-        if balance is None:
-            balance = UserBalance()
-            balance.guild_id = member.guild_id
-            balance.user_id = member.id
-            balance.money = 0
-            await sess.add(balance)
-
-        return balance
-
-
 async def update_balance(ctx: Context, balance, amount: int):
     async with ctx.bot.db.get_session() as sess:
         balance.money += amount
@@ -109,13 +84,33 @@ class Gambling(Plugin):
     Plugin for gambling related commands.
     """
 
+    async def ensure_balance(self, member: Member = None):
+        """
+        Return a balance associated to the member and corresponding guild. If one does not exist it is created.
+
+        :param member: Member to ensure balance for.
+        """
+        async with self.client.db.get_session() as sess:
+            balance = await sess.select.from_(UserBalance) \
+                .where((UserBalance.user_id == member.id) & (UserBalance.guild_id == member.guild.id)) \
+                .first()
+
+            if balance is None:
+                balance = UserBalance()
+                balance.guild_id = member.guild_id
+                balance.user_id = member.id
+                balance.money = 0
+                await sess.add(balance)
+
+            return balance
+
     @ratelimit(limit=5, time=3600)  # 5 per 1h
     @command()
     async def raffle(self, ctx: Context, price: int = 5):
         """
         Lady luck is smiling
         """
-        balance = await ensure_balance(ctx)
+        balance = await self.ensure_balance(ctx.author)
 
         price = max(price, 5)  # No mercy for the "hahaha I am very sneaky" user
 
@@ -152,7 +147,7 @@ class Gambling(Plugin):
         amount = int(5 * round(amount * 50 / 5))
 
         await ctx.channel.messages.send(f'\N{MONEY BAG} You have earned **{amount} :̶.̶|̶:̶;̶** today.')
-        await update_balance(ctx, await ensure_balance(ctx), amount)
+        await update_balance(ctx, await self.ensure_balance(ctx.author), amount)
 
     @command()
     async def richest(self, ctx: Context):
@@ -179,7 +174,7 @@ class Gambling(Plugin):
         if target.user.bot:
             return await ctx.channel.messages.send('\N{CROSS MARK} Bots cannot earn money.')
 
-        balance = await ensure_balance(ctx, target)
+        balance = await self.ensure_balance(target)
 
         embed = Embed(title=str(target.name), colour=target.colour)
         embed.set_thumbnail(url=str(target.user.avatar_url))
