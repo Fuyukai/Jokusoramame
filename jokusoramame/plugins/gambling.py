@@ -117,7 +117,9 @@ class Gambling(Plugin):
     @command()
     async def raffle(self, ctx: Context, price: int = 5):
         """
-        Lady luck is smiling
+        Big money! Big prizes! I love it!
+
+        This command can be used up to 5 times within an hour.
         """
         balance = await self.ensure_balance(ctx.author)
 
