@@ -32,12 +32,6 @@ GOOD_RESPONSES = [
 ]
 
 
-async def update_balance(ctx: Context, balance, amount: int):
-    async with ctx.bot.db.get_session() as sess:
-        balance.money += amount
-        await sess.add(balance)
-
-
 class Gambling(Plugin):
     """
     Plugin for gambling related commands.
@@ -113,6 +107,19 @@ class Gambling(Plugin):
 
         return pages
 
+    async def update_balance(self, member: Member, amount: int):
+        """
+        Update the member's balance in the database.
+
+        :param member: The member whose balance to update.
+        :param amount: The amount of money to change the member's balance by.
+        """
+        async with self.client.db.get_session() as sess:
+            await sess.update(UserBalance) \
+                .where(UserBalance.guild_id.eq(member.guild_id) & UserBalance.user_id.eq(member.id)) \
+                .set(UserBalance.money + amount) \
+                .run()
+
     @ratelimit(limit=5, time=3600)  # 5 per 1h
     @command()
     async def raffle(self, ctx: Context, price: int = 5):
@@ -131,7 +138,7 @@ class Gambling(Plugin):
                 '\N{DRAGON} A debt collector came and broke your knees. '
                 'You are now free of debt.'
             )
-            await update_balance(ctx, balance, abs(balance.money) + 5)
+            await self.update_balance(ctx.author, abs(balance.money) + 5)
             return
 
         if balance.money < price:
@@ -145,7 +152,7 @@ class Gambling(Plugin):
             response = random.choice(GOOD_RESPONSES)
 
         await ctx.channel.messages.send(response.format(abs(amount)))
-        await update_balance(ctx, balance, amount)
+        await self.update_balance(ctx.author, amount)
 
     @ratelimit(limit=1, time=86_400)  # 24h
     @command()
@@ -158,7 +165,7 @@ class Gambling(Plugin):
         amount = int(5 * round(amount * 50 / 5))
 
         await ctx.channel.messages.send(f'\N{MONEY BAG} You have earned **{amount} :̶.̶|̶:̶;̶** today.')
-        await update_balance(ctx, await self.ensure_balance(ctx.author), amount)
+        await self.update_balance(ctx.author, amount)
 
     @command()
     async def richest(self, ctx: Context):
