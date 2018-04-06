@@ -36,6 +36,7 @@ class Gambling(Plugin):
     """
     Plugin for gambling related commands.
     """
+    entry = namedtuple('entry', 'position name money')
 
     async def ensure_balance(self, member: Member = None):
         """
@@ -63,7 +64,7 @@ class Gambling(Plugin):
         |-------+---------+---------|
         |     1 | name    |       0 |
 
-        each table contains 10 entries
+        Each table contains 10 entries.
 
         :param guild: The guild to construct the leaderboard for.
         :param mode: Tells if the results should be ordered in ascending or descending order.
@@ -82,7 +83,6 @@ class Gambling(Plugin):
             rows = await query.all()
             rows = await rows.flatten()
 
-        entry = namedtuple('entry', 'position name money')
         pages = []
         pos = 0
 
@@ -97,7 +97,7 @@ class Gambling(Plugin):
 
                 # Strips unicode
                 name = name.encode('ascii', errors='replace').decode()
-                rows.append(entry(pos, name, row.money))
+                rows.append(self.entry(pos, name, row.money))
 
             tab = tabulate.tabulate(rows, headers='POS User Money'.split(), tablefmt='orgtbl')
             pages.append('```' + tab + '```')
