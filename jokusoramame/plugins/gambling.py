@@ -45,7 +45,7 @@ class Gambling(Plugin):
         """
         async with self.client.db.get_session() as sess:
             balance = await sess.select.from_(UserBalance) \
-                .where((UserBalance.user_id.eq(member.id)) & (UserBalance.guild_id.eq(member.guild.id))) \
+                .where(UserBalance.user_id.eq(member.id) & UserBalance.guild_id.eq(member.guild.id)) \
                 .first()
 
             if balance is None:
