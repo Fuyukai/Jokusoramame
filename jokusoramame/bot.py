@@ -1,11 +1,13 @@
+import math
 import threading
+import time
 import traceback
 
 import logbook
 from asyncqlio import DatabaseInterface
 from curious import BotType, Client, EventContext, Game, Message, Status, event
 from curious.commands import CommandsManager, Context
-from curious.commands.exc import CommandInvokeError, CommandsError, ConversionFailedError, \
+from curious.commands.exc import CommandInvokeError, CommandRateLimited, CommandsError, ConversionFailedError, \
     MissingArgumentError
 from curious.exc import CuriousError, HTTPException
 
@@ -13,6 +15,13 @@ from jokusoramame.db.connector import CurioAsyncpgConnector
 from jokusoramame.redis import RedisInterface
 
 logger = logbook.Logger("Jokusoramame")
+
+specifiers = [
+    (86_400, " day(s)"),
+    (3600, 'h'),
+    (60, 'm'),
+    (1, 's')
+]
 
 
 class Jokusoramame(Client):
@@ -68,6 +77,20 @@ class Jokusoramame(Client):
             await ctx.channel.messages.send(f":x: {repr(error)}")
         elif isinstance(error, ConversionFailedError):
             await ctx.channel.messages.send(f":x: {repr(error)}")
+        elif isinstance(error, CommandRateLimited):
+            seconds = int(math.ceil(error.bucket[1] - time.monotonic()))
+
+            message = ''
+            for amount, name in specifiers:
+                n, seconds = divmod(seconds, amount)
+
+                if n == 0:
+                    continue
+
+                message += f"{n}{name} "
+
+            await ctx.channel.messages.send(f":x: The command {error.ctx.command_name} is "
+                                            f"currently rate limited for {message.strip()}.")
         else:
             await ctx.channel.messages.send(f":x: {repr(error)}")
 
