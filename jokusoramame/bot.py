@@ -16,7 +16,7 @@ from jokusoramame.redis import RedisInterface
 
 logger = logbook.Logger("Jokusoramame")
 
-specifiers = [
+intervals = [
     (86_400, " day(s)"),
     (3600, 'h'),
     (60, 'm'),
@@ -81,7 +81,7 @@ class Jokusoramame(Client):
             seconds = int(math.ceil(error.bucket[1] - time.monotonic()))
 
             message = ''
-            for amount, name in specifiers:
+            for amount, name in intervals:
                 n, seconds = divmod(seconds, amount)
 
                 if n == 0:
