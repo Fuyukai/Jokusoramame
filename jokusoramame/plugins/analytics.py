@@ -21,7 +21,7 @@ from clarifai.rest import ApiError, ClarifaiApp
 from curio.thread import AWAIT, async_thread
 from curious import Embed, EventContext, Guild, Member, Message, event
 from curious.commands import Context, Plugin
-from curious.commands.decorators import autoplugin, ratelimit
+from curious.commands.decorators import command, ratelimit
 from curious.commands.ratelimit import BucketNamer
 from curious.ext.paginator import ReactionsPaginator
 from matplotlib.axes import Axes
@@ -30,7 +30,6 @@ from jokusoramame import USER_AGENT
 from jokusoramame.utils import get_apikeys
 
 
-@autoplugin
 class Analytics(Plugin):
     label_mapping = {
         "neg": "Negative",
@@ -98,7 +97,8 @@ class Analytics(Plugin):
 
         return response
 
-    async def command_toxicity(self, ctx: Context, *, message: str):
+    @command()
+    async def toxicity(self, ctx: Context, *, message: str):
         """
         Analyses the toxicity of a message. Warning: Google will store these messages for analysis.
         """
@@ -133,7 +133,8 @@ class Analytics(Plugin):
 
         return await ctx.channel.messages.send(embed=em)
 
-    async def command_sentiment(self, ctx: Context, *, message: str):
+    @command()
+    async def sentiment(self, ctx: Context, *, message: str):
         """
         Analyses the sentiment of a message.
         """
@@ -168,7 +169,8 @@ class Analytics(Plugin):
         em.timestamp = datetime.datetime.utcnow()
         await ctx.channel.messages.send(embed=em)
 
-    async def command_thesaurus(self, ctx: Context, *, phrase: str):
+    @command()
+    async def thesaurus(self, ctx: Context, *, phrase: str):
         """
         Gets some nearest phrases.
         """
@@ -262,8 +264,9 @@ class Analytics(Plugin):
 
         return embeds
 
+    @command()
     @ratelimit(limit=1, time=60, bucket_namer=BucketNamer.AUTHOR)
-    async def command_personality(self, ctx: Context):
+    async def personality(self, ctx: Context):
         """
         Evaluates the personality of a member.
         """
@@ -285,8 +288,9 @@ class Analytics(Plugin):
                                        respond_to=ctx.author)
         await paginator.paginate()
 
+    @command()
     @async_thread()
-    def command_imagetag(self, ctx: Context, *, url: str = None):
+    def imagetag(self, ctx: Context, *, url: str = None):
         """
         Gets information about an image.
         """
@@ -318,7 +322,8 @@ class Analytics(Plugin):
         em.timestamp = datetime.datetime.utcnow()
         AWAIT(ctx.channel.messages.send(embed=em))
 
-    async def command_entropy(self, ctx: Context, *, message: str = None):
+    @command()
+    async def entropy(self, ctx: Context, *, message: str = None):
         """
         Gets the entropy of a sentence.
         """
@@ -338,13 +343,15 @@ class Analytics(Plugin):
         en = entropy.shannon_entropy(message)
         await ctx.channel.messages.send(f"Entropy: {en}")
 
-    async def command_analyse(self, ctx: Context):
+    @command()
+    async def analyse(self, ctx: Context):
         """
         Analyses various things about users or guilds.
         """
-        return await self.command_analyse_member(ctx, victim=ctx.author)
+        return await self._analyse_member(ctx, victim=ctx.author)
 
-    async def command_analyse_clear(self, ctx: Context):
+    @analyse.subcommand()
+    async def clear(self, ctx: Context):
         """
         Clears your data from analytics.
         """
@@ -359,7 +366,8 @@ class Analytics(Plugin):
             await ctx.bot.redis.clear_member_data(ctx.author.user)
             return await ctx.channel.messages.send("Cleared.")
 
-    async def command_analyse_toggle(self, ctx: Context, *, guild_id: int):
+    @analyse.subcommand()
+    async def toggle(self, ctx: Context, *, guild_id: int):
         """
         Toggles analytics for the specified guild ID.
         """
@@ -374,7 +382,8 @@ class Analytics(Plugin):
         enabled = await ctx.bot.redis.toggle_analytics(guild)
         await ctx.channel.messages.send(f":heavy_check_mark: Analytics status: {enabled}")
 
-    async def command_analyse_activity(self, ctx: Context):
+    @analyse.subcommand()
+    async def activity(self, ctx: Context):
         """
         Shows analytic activity for this guild.
         """
@@ -424,6 +433,46 @@ class Analytics(Plugin):
 
         await ctx.channel.messages.send(embed=embed)
 
+    @activity.subcommand(name="members")
+    async def activity_members(self, ctx: Context):
+        """
+        Analyses the activity of members.
+        """
+        members = ctx.guild.members.values()
+        skipped = 0
+        is_active = {member: False for member in members if not member.user.bot}
+        bot_count = sum(1 for member in members if member.user.bot)
+
+        now = datetime.datetime.utcnow()
+        async with ctx.channel.typing:
+            # loop over all messages of all members
+            for member in members:
+                messages = await ctx.bot.redis.get_messages(member.user)
+                if messages == ctx.bot.redis.FLAGGED:
+                    skipped += 1
+                    is_active[member] = True
+                    continue
+
+                for message in messages:
+                    dt = datetime.datetime.utcfromtimestamp(message['dt'])
+                    # see if it's within the last 2 weeks
+                    if (now - dt).days < 14:
+                        is_active[member] = True
+                        break
+
+        em = Embed(title="Activity Report")
+        em.description = f"Evaluated {len(members)} members. For privacy reasons, I cannot " \
+                         f"determine the activity of {skipped} member(s). For sanity reasons, " \
+                         f"I did not determine the activity of {bot_count} bots."
+        active = sum(is_active.values())
+        em.set_thumbnail(url=ctx.guild.icon_url)
+        em.add_field(name="Active Count", value=str(active))
+        em.add_field(name="Inactive Count", value=str(len(is_active) - active))
+        em.set_footer(text="This is accurate to two weeks.")
+        em.timestamp = now
+        em.colour = random.randint(0, 0xffffff)
+        await ctx.channel.messages.send(embed=em)
+
     async def analyse_member(self, member: Member) -> dict:
         """
         Analyses a member's messages, returning a dictionary of statistics.
@@ -467,7 +516,8 @@ class Analytics(Plugin):
             "capitals": capitals
         }
 
-    async def command_analyse_member(self, ctx: Context, *, victim: Member = None):
+    @analyse.subcommand(name="member")
+    async def _analyse_member(self, ctx: Context, *, victim: Member = None):
         """
         Analyses a member.
         """
@@ -512,7 +562,8 @@ class Analytics(Plugin):
 
         return member_data
 
-    async def command_analyse_server(self, ctx: Context):
+    @analyse.subcommand(name="server")
+    async def _analyse_server(self, ctx: Context):
         """
         Analyses the current server.
         """
@@ -556,7 +607,8 @@ class Analytics(Plugin):
 
         return sorted_data
 
-    async def command_server_top(self, ctx: Context, *, sort_by: str = "entropy"):
+    @_analyse_server.subcommand(name="top")
+    async def _server_top(self, ctx: Context, *, sort_by: str = "entropy"):
         """
         Shows the top 10 people in the server by a field, where field is one of
         `[entropy, length, capitals]`.
@@ -590,8 +642,9 @@ class Analytics(Plugin):
         table = tabulate.tabulate(rows, headers, tablefmt='orgtbl')
         await ctx.channel.messages.send(f"```\n{table}```")
 
+    @_analyse_server.subcommand(name="distribution")
     @ratelimit(limit=1, time=60, bucket_namer=BucketNamer.GUILD)
-    async def command_server_distribution(self, ctx: Context, *, item: str = "entropy"):
+    async def _server_distribution(self, ctx: Context, *, item: str = "entropy"):
         """
         Plots a distribution plot for the specified item.
         """
