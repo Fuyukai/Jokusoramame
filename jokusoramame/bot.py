@@ -103,7 +103,7 @@ class Jokusoramame(Client):
         try:
             await self.db.connect()
         except ConnectionError:
-            await self._kill()
+            await self.kill()
             raise
 
         plugins = self.config.get("autoload", [])
