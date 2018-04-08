@@ -31,34 +31,11 @@ from curious.commands.ratelimit import BucketNamer
 from curious.exc import HTTPException, PermissionsError
 
 from jokusoramame.bot import Jokusoramame
-from jokusoramame.utils import rgbize
+from jokusoramame.utils import display_time, rgbize
 
 
 def is_owner(ctx: Context):
     return ctx.author.id in [ctx.bot.application_info.owner.id, 214796473689178133]
-
-
-# Time functions taken from https://stackoverflow.com/a/24542445
-intervals = (
-    ('weeks', 604800),  # 60 * 60 * 24 * 7
-    ('days', 86400),  # 60 * 60 * 24
-    ('hours', 3600),  # 60 * 60
-    ('minutes', 60),
-    ('seconds', 1),
-)
-
-
-def display_time(seconds, granularity=2):
-    result = []
-
-    for name, count in intervals:
-        value = int(seconds // count)
-        if value:
-            seconds -= value * count
-            if value == 1:
-                name = name.rstrip('s')
-            result.append("{} {}".format(value, name))
-    return ', '.join(result[:granularity])
 
 
 class Core(Plugin):
@@ -117,7 +94,7 @@ class Core(Plugin):
         """
         Shows the bot's uptime.
         """
-        seconds_booted = time.time() - psutil.Process().create_time()
+        seconds_booted = int(time.time() - psutil.Process().create_time())
         uptime_str = display_time(seconds_booted)
         await ctx.channel.messages.send(f"{uptime_str} (total: {int(seconds_booted)}s)")
 
