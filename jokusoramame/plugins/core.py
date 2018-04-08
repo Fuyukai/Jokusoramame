@@ -86,6 +86,7 @@ class Core(Plugin):
                 result = e.stderr.decode()
             else:
                 result = proc.stdout.decode()
+                result += "\n" + proc.stderr.decode()
 
             await ctx.channel.messages.send(f"```joku@discord $ {command}\n{result}```")
 
