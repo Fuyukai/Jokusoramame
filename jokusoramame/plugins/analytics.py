@@ -2,6 +2,7 @@
 Analytical work.
 """
 import base64
+import collections
 import datetime
 import entropy
 import random
@@ -254,6 +255,7 @@ class Analytics(Plugin):
             embed.set_thumbnail(url=str(target.user.avatar_url))
             embed.colour = colour
             embed.set_author(
+                name="Joku Analytics",
                 url="https://pbs.twimg.com/profile_images/938480103541141504/ieI9rd0G_400x400.jpg"
             )
             embed.title = f"Personality Analysis (section: {sections[i]})"
@@ -371,6 +373,56 @@ class Analytics(Plugin):
 
         enabled = await ctx.bot.redis.toggle_analytics(guild)
         await ctx.channel.messages.send(f":heavy_check_mark: Analytics status: {enabled}")
+
+    async def command_analyse_activity(self, ctx: Context):
+        """
+        Shows analytic activity for this guild.
+        """
+        skipped = 0
+        analysed = 0
+        time_bins = collections.Counter()
+        message_count = 0
+        members = ctx.guild.members.values()
+
+        for member in members:
+            messages = await ctx.bot.redis.get_messages(member.user)
+            # skip any flagged members
+            if messages == ctx.bot.redis.FLAGGED:
+                skipped += 1
+                continue
+
+            if len(messages) == 0:
+                continue
+
+            analysed += 1
+            for message in messages:
+                creation_time = datetime.datetime.fromtimestamp(message["dt"])
+                time_bins[creation_time.date().isoformat()] += 1
+                message_count += 1
+
+        if len(time_bins) < 2:
+            return await ctx.channel.messages.send(":x: Not enough data.")
+
+        embed = Embed(title="GCHQ")
+        embed.colour = random.randint(0, 0xffffff)
+        embed.set_thumbnail(url=ctx.guild.icon_url)
+        embed.description = f"Tracked {analysed} members out of {len(members)} (skipped {skipped})."
+        embed.add_field(name="Message Count", value=str(message_count), inline=False)
+        most_active = time_bins.most_common(1)[0]
+        embed.add_field(name="Most Active Day", value=str(most_active[0]))
+        embed.add_field(name="Most Active Day (msgs)", value=str(most_active[1]))
+        # special logic to ensure the least active is not flagged as today
+        least_actives = time_bins.most_common()
+        least_actives = [least_actives[-1], least_actives[-2]]
+        if least_actives[0][0] == datetime.datetime.utcnow().date().isoformat():
+            least_active = least_actives[1]
+        else:
+            least_active = least_actives[0]
+
+        embed.add_field(name="Least Active Day", value=(str(least_active[0])))
+        embed.add_field(name="Least Active Day (msgs)", value=str(least_active[1]))
+
+        await ctx.channel.messages.send(embed=embed)
 
     async def analyse_member(self, member: Member) -> dict:
         """
@@ -563,7 +615,7 @@ class Analytics(Plugin):
                 axes.set_xbound(0, np.max(array))
                 plt.title("Distribution")
                 plt.tight_layout()
-                sns.despine()
+                #sns.despine()
 
                 # write to the main buffer
                 buf = BytesIO()

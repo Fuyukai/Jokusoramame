@@ -13,6 +13,7 @@ class RedisInterface(object):
     """
     Represents an interface to the Redis server.
     """
+    FLAGGED = object()
 
     def __init__(self, host: str = "127.0.0.1", port: int = 6379, password: str = None):
         """
@@ -76,7 +77,11 @@ class RedisInterface(object):
         """
         Gets the messages for a user.
         """
+        allowed = self.redis.get(f"analytics_flag_{user.id}")
+        if allowed is not None:
+            return self.FLAGGED
+
         key = f"messages_{user.id}"
-        l = self.redis.lrange(key, 0, 5000)
-        results = [json.loads(zlib.decompress(i).decode()) for i in l]
+        results = self.redis.lrange(key, 0, 5000)
+        results = [json.loads(zlib.decompress(i).decode()) for i in results]
         return results
