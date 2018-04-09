@@ -151,7 +151,7 @@ class Autoprune(Plugin):
 
         em = Embed(title="Activity Report")
         skipped = sum(x is None for x in activity_data.values())
-        active = sum(x.active for x in activity_data.values())
+        active = sum(x.active for x in activity_data.values() if x is not None)
         em.description = f"Evaluated {len(members)} members. For privacy reasons, I cannot " \
                          f"determine the activity of {skipped} member(s)."
         em.set_thumbnail(url=ctx.guild.icon_url)
