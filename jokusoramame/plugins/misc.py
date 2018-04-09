@@ -33,7 +33,7 @@ ADJECTIVES = {
     "Liberal ": 10,
     "Libertarian ": 10,
     "Conservative ": 10,
-    "Social": 12,
+    "Social ": 12,
     "Islamic ": 12,
     "Radical ": 12,
     "Catholic ": 12,
@@ -120,8 +120,8 @@ IDEOLOGIES = {
 }
 
 SUFFIXES = {
-    "in One Country": 1,
-    "with Chinese characteristics": 1,
+    " in One Country": 1,
+    " with Chinese characteristics": 1,
     "": 28
 }
 
