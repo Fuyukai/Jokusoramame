@@ -27,7 +27,7 @@ ADJECTIVES = {
     "Bolshevik ": 8,
     "Post-left ": 8,
     "Inclusive": 9,
-    "Individualist": 9,
+    "Individualist ": 9,
     "Queer ": 10,
     "Atheist ": 10,
     "Liberal ": 10,
