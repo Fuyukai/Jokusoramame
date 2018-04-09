@@ -289,3 +289,13 @@ class Core(Plugin):
         await bot.manager.unload_plugins_from(module_name)
         await bot.manager.load_plugins_from(module_name)
         await ctx.channel.messages.send(f":heavy_check_mark: Reloaded {module_name}.")
+
+    @command(name="load")
+    @condition(is_owner)
+    async def _load(self, ctx: Context, *, module_name: str):
+        """
+        Loads a plugin.
+        """
+        bot: Jokusoramame = ctx.bot
+        await bot.manager.load_plugins_from(module_name)
+        await ctx.channel.messages.send(f":heavy_check_mark: Loaded {module_name}.")
