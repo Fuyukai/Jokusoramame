@@ -3,7 +3,6 @@ Core plugin.
 """
 import contextlib
 import platform
-import subprocess
 import sys
 import time
 import traceback
@@ -21,7 +20,7 @@ import pkg_resources
 import psutil
 import tabulate
 from asks.response_objects import Response
-from curio.subprocess import run
+from curio import subprocess
 from curio.thread import spawn_thread
 from curious import Channel, Embed, EventContext, event
 from curious.commands import Plugin, command, condition
@@ -83,8 +82,8 @@ class Core(Plugin):
 
             command = "ping {} -D -s 16 -i 0.2 -c 4".format(words[0])
             try:
-                proc = await run(command.split(),
-                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                proc = await subprocess.run(command.split(),
+                                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             except subprocess.CalledProcessError as e:
                 result = e.stderr.decode()
             else:
@@ -302,3 +301,20 @@ class Core(Plugin):
         bot: Jokusoramame = ctx.bot
         await bot.manager.load_plugins_from(module_name)
         await ctx.channel.messages.send(f":heavy_check_mark: Loaded {module_name}.")
+
+    @command()
+    @condition(is_owner)
+    async def update(self, ctx):
+        """
+        Updates the bot from git.
+        """
+        try:
+            proc = await subprocess.run('git pull'.split(),
+                                        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        except subprocess.CalledProcessError as e:
+            result = e.stderr.decode()
+        else:
+            result = proc.stdout.decode()
+            result += "\n" + proc.stderr.decode()
+
+        await ctx.channel.messages.send(f"```\n{result}```")
