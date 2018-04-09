@@ -45,6 +45,9 @@ class Core(Plugin):
 
     @event("channel_create")
     async def first(self, ctx: EventContext, channel: Channel):
+        if channel.guild_id is None:
+            return
+
         try:
             await channel.messages.send("first")
         except PermissionsError:  # clobber
