@@ -2,7 +2,6 @@
 Analytical work.
 """
 import base64
-import collections
 import datetime
 import entropy
 import random
@@ -381,97 +380,6 @@ class Analytics(Plugin):
 
         enabled = await ctx.bot.redis.toggle_analytics(guild)
         await ctx.channel.messages.send(f":heavy_check_mark: Analytics status: {enabled}")
-
-    @analyse.subcommand()
-    async def activity(self, ctx: Context):
-        """
-        Shows analytic activity for this guild.
-        """
-        skipped = 0
-        analysed = 0
-        time_bins = collections.Counter()
-        message_count = 0
-        members = ctx.guild.members.values()
-
-        for member in members:
-            messages = await ctx.bot.redis.get_messages(member.user)
-            # skip any flagged members
-            if messages == ctx.bot.redis.FLAGGED:
-                skipped += 1
-                continue
-
-            if len(messages) == 0:
-                continue
-
-            analysed += 1
-            for message in messages:
-                creation_time = datetime.datetime.fromtimestamp(message["dt"])
-                time_bins[creation_time.date().isoformat()] += 1
-                message_count += 1
-
-        if len(time_bins) < 2:
-            return await ctx.channel.messages.send(":x: Not enough data.")
-
-        embed = Embed(title="GCHQ")
-        embed.colour = random.randint(0, 0xffffff)
-        embed.set_thumbnail(url=ctx.guild.icon_url)
-        embed.description = f"Tracked {analysed} members out of {len(members)} (skipped {skipped})."
-        embed.add_field(name="Message Count", value=str(message_count), inline=False)
-        most_active = time_bins.most_common(1)[0]
-        embed.add_field(name="Most Active Day", value=str(most_active[0]))
-        embed.add_field(name="Most Active Day (msgs)", value=str(most_active[1]))
-        # special logic to ensure the least active is not flagged as today
-        least_actives = time_bins.most_common()
-        least_actives = [least_actives[-1], least_actives[-2]]
-        if least_actives[0][0] == datetime.datetime.utcnow().date().isoformat():
-            least_active = least_actives[1]
-        else:
-            least_active = least_actives[0]
-
-        embed.add_field(name="Least Active Day", value=(str(least_active[0])))
-        embed.add_field(name="Least Active Day (msgs)", value=str(least_active[1]))
-
-        await ctx.channel.messages.send(embed=embed)
-
-    @activity.subcommand(name="members")
-    async def activity_members(self, ctx: Context):
-        """
-        Analyses the activity of members.
-        """
-        members = ctx.guild.members.values()
-        skipped = 0
-        is_active = {member: False for member in members if not member.user.bot}
-        bot_count = sum(1 for member in members if member.user.bot)
-
-        now = datetime.datetime.utcnow()
-        async with ctx.channel.typing:
-            # loop over all messages of all members
-            for member in members:
-                messages = await ctx.bot.redis.get_messages(member.user)
-                if messages == ctx.bot.redis.FLAGGED:
-                    skipped += 1
-                    is_active[member] = True
-                    continue
-
-                for message in messages:
-                    dt = datetime.datetime.utcfromtimestamp(message['dt'])
-                    # see if it's within the last 2 weeks
-                    if (now - dt).days < 14:
-                        is_active[member] = True
-                        break
-
-        em = Embed(title="Activity Report")
-        em.description = f"Evaluated {len(members)} members. For privacy reasons, I cannot " \
-                         f"determine the activity of {skipped} member(s). For sanity reasons, " \
-                         f"I did not determine the activity of {bot_count} bots."
-        active = sum(is_active.values())
-        em.set_thumbnail(url=ctx.guild.icon_url)
-        em.add_field(name="Active Count", value=str(active))
-        em.add_field(name="Inactive Count", value=str(len(is_active) - active))
-        em.set_footer(text="This is accurate to two weeks.")
-        em.timestamp = now
-        em.colour = random.randint(0, 0xffffff)
-        await ctx.channel.messages.send(embed=em)
 
     async def analyse_member(self, member: Member) -> dict:
         """
