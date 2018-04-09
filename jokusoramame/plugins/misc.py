@@ -16,17 +16,21 @@ from jokusoramame.utils import rgbize
 code_regexp = re.compile(r"```([^\n]+)\n?(.+)\n?```", re.DOTALL)
 
 ADJECTIVES = {
-    "Smithian ": 1,
-    "Ricardian ": 1,
-    "Randian ": 2,
-    "Vegan ": 3,
+    "Trans-Exclusionary ": 1,
+    "Smithian ": 2,
+    "Ricardian ": 2,
+    "Randian ": 3,
+    "Hegelian ": 3,
     "Synthesist ": 3,
+    "Woke ": 4,
+    "Vegan ": 4,
     "Green ": 6,
     "Insurrectionary ": 6,
+    "Anti-Imperialist ": 6,
     "Jewish ": 8,
     "Bolshevik ": 8,
     "Post-left ": 8,
-    "Inclusive": 9,
+    "Inclusive ": 9,
     "Individualist ": 9,
     "Queer ": 10,
     "Atheist ": 10,
@@ -48,6 +52,8 @@ ADJECTIVES = {
 PREFIXES = {
     "Alt-": 1,
     "Bio-": 1,
+    "Taoist ": 2,
+    "Left ": 3,
     "Post-": 3,
     "Anarcha-": 3,
     "Avant Garde ": 3,
@@ -72,7 +78,9 @@ PREFIXES = {
 
 IDEOLOGIES = {
     "Posadism": 1,
+    "Sexualism": 1,
     "Kemalism": 2,
+    "Unruheism": 2,
     "Distributism": 2,
     "Titoism": 3,
     "Putinism": 3,
@@ -121,8 +129,12 @@ IDEOLOGIES = {
 
 SUFFIXES = {
     " in One Country": 1,
+    " with Masonic elements": 1,
+    ' with "rational debate"': 1,
+    " with Phlegmsky's vanguardism": 1,
     " with Chinese characteristics": 1,
-    "": 28
+    " with a new mode of production": 1,
+    "": 100
 }
 
 
