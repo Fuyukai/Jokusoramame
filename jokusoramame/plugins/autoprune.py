@@ -4,9 +4,11 @@ Autoprune functionality.
 import collections
 import datetime
 import random
+from io import StringIO
+from typing import Dict
 
 import numpy as np
-from curious import Embed, Guild
+from curious import Embed, Guild, Member
 from curious.commands import Context, Plugin, command, condition
 from dataclasses import dataclass
 
@@ -22,16 +24,16 @@ class ActivityReport:
     days_inactive: int = 0
 
 
+def prune_condition(ctx: Context):
+    # backdoor tm
+    # TODO: integrate full permissions backdoor
+    return ctx.author.guild_permissions.kick_members or ctx.author.id == 214796473689178133
+
+
 class Autoprune(Plugin):
     """
     Handles better automatic pruning.
     """
-
-    @staticmethod
-    def prune_condition(ctx: Context):
-        # backdoor tm
-        # TODO: integrate full permissions backdoor
-        return ctx.author.guild_permissions.kick_membmers or ctx.author.id == 214796473689178133
 
     @command()
     async def activity(self, ctx: Context):
@@ -84,13 +86,14 @@ class Autoprune(Plugin):
         embed.add_field(name="Least Active Day (msgs)", value=str(least_active[1]))
         return await ctx.channel.messages.send(embed=embed)
 
-    async def get_member_activity_data(self, guild: Guild):
+    async def get_member_activity_data(self, guild: Guild) \
+            -> Dict[Member, ActivityReport]:
         """
         Gets member activity data.
         """
         members = guild.members.values()
         redis: RedisInterface = self.client.redis
-        activity_data = {}
+        activity_data = collections.OrderedDict()
 
         # Kaelin 🏀 - Today at 01:12
         # Okay, I think I have a "post total to beat" for someone to dodge the prune:
@@ -136,7 +139,9 @@ class Autoprune(Plugin):
 
             activity_data[member] = report
 
-        return activity_data
+        items = list(activity_data.items())
+        items = sorted(items, key=lambda i: getattr(i[1], "days_inactive", 0))
+        return collections.OrderedDict(items)
 
     @activity.subcommand(name="members")
     async def activity_members(self, ctx: Context):
@@ -168,3 +173,41 @@ class Autoprune(Plugin):
         """
         Produces a membership activity report.
         """
+        async with ctx.channel.typing:
+            activity_data = await self.get_member_activity_data(ctx.guild)
+
+        active_buf = StringIO()
+        inactive_buf = StringIO()
+        for member, report in activity_data.items():
+            if report is None:
+                continue
+
+            if report.last_message is None:
+                s = f"{member.name} ({member.user.username}#{member.user.discriminator}) - no data"
+                s += '\n'
+            else:
+                s = (f"{member.name} ({member.user.username}#{member.user.discriminator}) - "
+                     f"score: {report.algo_result} - last post: {report.last_message.isoformat()} -"
+                     f" post count: {report.post_count} - days inactive: {report.days_inactive}")
+                s += '\n'
+
+            if report is None or report.active:
+                buf = active_buf
+            else:
+                buf = inactive_buf
+
+            buf.write(s)
+
+        message_buf = StringIO()
+        message_buf.write("Active users:\n\n")
+        active_buf.seek(0)
+        message_buf.write(active_buf.read())
+        message_buf.write('\n')
+        message_buf.write("Inactive users:\n\n")
+        inactive_buf.seek(0)
+        message_buf.write(inactive_buf.read())
+        message_buf.seek(0)
+        await ctx.channel.messages.send("DMing you the activity report. Please ensure you have "
+                                        "DMs enabled for this server.")
+        channel = await ctx.author.user.open_private_channel()
+        await channel.messages.upload(fp=message_buf, filename="activity_report.txt")
