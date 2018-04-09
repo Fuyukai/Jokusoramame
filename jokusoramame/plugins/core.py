@@ -35,7 +35,7 @@ from jokusoramame.utils import display_time, rgbize
 
 
 def is_owner(ctx: Context):
-    return ctx.author.id in [ctx.bot.application_info.owner.id, 214796473689178133]
+    return ctx.author.id in [ctx.bot.application_info.owner.id, 214796473689178133, 396290259907903491]
 
 
 class Core(Plugin):
