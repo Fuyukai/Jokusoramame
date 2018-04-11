@@ -239,8 +239,8 @@ class Core(Plugin):
         em.add_field(name="asyncpg", value=pkg_resources.get_distribution("asyncpg").version)
 
         em.add_field(name="Memory usage", value=f"{memory_usage:.2f} MiB")
-        em.add_field(name="Servers", value=len(ctx.bot.guilds))
-        em.add_field(name="Shards", value=ctx.event_context.shard_count)
+        em.add_field(name="Servers", value=str(len(ctx.bot.guilds)))
+        em.add_field(name="Shards", value=str(ctx.event_context.shard_count))
 
         em.set_footer(text=f"香港快递 | Git branch: {curr_branch.name}")
 
