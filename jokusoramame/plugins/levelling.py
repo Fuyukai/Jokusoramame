@@ -14,6 +14,7 @@ from numpy.ma import floor
 from numpy.polynomial import Polynomial as P
 
 from jokusoramame.db.tables import UserXP
+from jokusoramame.utils import chunked
 
 INCREASING_FACTOR = 75
 
@@ -184,7 +185,7 @@ class Levelling(Plugin):
         em.title = str(member.nickname)
         em.add_field(name="Level", value=user.level, inline=True)
         em.add_field(name="XP", value=user.xp)
-        em.add_field(name="XP required for next level", value=get_next_exp_required(user.xp)[1])
+        em.add_field(name="XP required for next level", value=str(get_next_exp_required(user.xp)[1]))
         em.add_field(name="Ranking", value=f"{index + 1} / {len(users)}")
         em.colour = member.colour
         em.thumbnail.url = member.user.static_avatar_url
@@ -198,8 +199,7 @@ class Levelling(Plugin):
         sess: Session = ctx.bot.db.get_session()
         async with sess:
             query = sess.select(UserXP).where(UserXP.guild_id.eq(ctx.guild.id))
-            print(ctx.tokens, ctx.command_name)
-            if len(ctx.tokens) >= 1 and ctx.tokens[0] == "bottom":
+            if mode == "bottom":
                 query = query.order_by(UserXP.xp.asc())
             else:
                 query = query.order_by(UserXP.xp.desc())
@@ -207,10 +207,9 @@ class Levelling(Plugin):
             rows: List[UserXP] = await rows.flatten()
 
         # paginate into chunks
-        chunks = [rows[i:i + 10] for i in range(0, len(rows), 10)]
         messages = []
         position = 0
-        for chunk in chunks:
+        for chunk in chunked(rows, 10):
             rows = []
 
             for row in chunk:
@@ -247,7 +246,7 @@ class Levelling(Plugin):
         sess: Session = ctx.bot.db.get_session()
         async with sess:
             row: UserXP = await sess.select.from_(UserXP) \
-                .where((UserXP.user_id == target.id) & (UserXP.guild_id == target.guild_id))\
+                .where((UserXP.user_id == target.id) & (UserXP.guild_id == target.guild_id)) \
                 .first()
 
         xp = row.xp if row is not None else 0
@@ -266,7 +265,7 @@ class Levelling(Plugin):
         sess: Session = ctx.bot.db.get_session()
         async with sess:
             row: UserXP = await sess.select.from_(UserXP) \
-                .where((UserXP.user_id == target.id) & (UserXP.guild_id == target.guild_id))\
+                .where((UserXP.user_id == target.id) & (UserXP.guild_id == target.guild_id)) \
                 .first()
 
         if row is None:
