@@ -134,5 +134,4 @@ class Jokusoramame(Client):
         """
         Runs the bot.
         """
-        token = self.config.get("token")
         return super().run()
