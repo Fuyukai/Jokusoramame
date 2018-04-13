@@ -123,7 +123,7 @@ class Autoprune(Plugin):
 
             last_post = datetime.datetime.fromtimestamp(first_message['dt'])
             days_inactive = (now - last_post).days
-            algorithm = (11 * np.math.pow(1.07, days_inactive) - 30)
+            algorithm = (1.8 * np.math.pow(1.09, days_inactive) - 26)
             # print(member.name, len(messages), algorithm, last_post.isoformat())
             report = ActivityReport(active=len(messages) > algorithm,
                                     algo_result=algorithm, post_count=len(messages),
