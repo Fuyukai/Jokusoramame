@@ -30,17 +30,18 @@ from curious.commands.ratelimit import BucketNamer
 from curious.exc import HTTPException, PermissionsError
 
 from jokusoramame.bot import Jokusoramame
-from jokusoramame.utils import display_time, rgbize
-
-
-def is_owner(ctx: Context):
-    return ctx.author.id in [ctx.bot.application_info.owner.id, 214796473689178133, 396290259907903491]
+from jokusoramame.utils import display_time, rgbize, is_owner
 
 
 class Core(Plugin):
     """
     Joku v2 core plugin.
     """
+
+    @command()
+    @is_owner()
+    async def gay(self, ctx: Context):
+        await ctx.channel.messages.send('BIG GAY ' * 10)
 
     @event("channel_create")
     async def first(self, ctx: EventContext, channel: Channel):
@@ -102,7 +103,7 @@ class Core(Plugin):
         await ctx.channel.messages.send(f"{uptime_str} (total: {int(seconds_booted)}s)")
 
     @command()
-    @condition(is_owner)
+    @is_owner()
     async def eval(self, ctx: Context, *, code: str):
         """
         Evaluates some code.
@@ -140,7 +141,7 @@ class Core(Plugin):
         await ctx.channel.messages.send(fmt)
 
     @command()
-    @condition(is_owner)
+    @is_owner()
     async def sql(self, ctx: Context, *, sql: str):
         """
         Executes some SQL.
@@ -172,7 +173,7 @@ class Core(Plugin):
         await ctx.channel.messages.send(fmt)
 
     @command()
-    @condition(is_owner)
+    @is_owner()
     async def changename(self, ctx: Context, *, name: str):
         """
         Changes the name of the bot.
@@ -181,7 +182,7 @@ class Core(Plugin):
         await ctx.channel.messages.send(":heavy_check_mark: Changed name.")
 
     @command()
-    @condition(is_owner)
+    @is_owner()
     async def changeavatar(self, ctx: Context, *, link: str):
         """
         Changes the name of the bot.
@@ -282,7 +283,7 @@ class Core(Plugin):
         await ctx.channel.messages.upload(data, filename="stats.png")
 
     @command()
-    @condition(is_owner)
+    @is_owner()
     async def reload(self, ctx: Context, *, module_name: str):
         """
         Reloads a plugin.
@@ -293,7 +294,7 @@ class Core(Plugin):
         await ctx.channel.messages.send(f":heavy_check_mark: Reloaded {module_name}.")
 
     @command(name="load")
-    @condition(is_owner)
+    @is_owner()
     async def _load(self, ctx: Context, *, module_name: str):
         """
         Loads a plugin.
@@ -303,7 +304,7 @@ class Core(Plugin):
         await ctx.channel.messages.send(f":heavy_check_mark: Loaded {module_name}.")
 
     @command()
-    @condition(is_owner)
+    @is_owner()
     async def update(self, ctx):
         """
         Updates the bot from git.

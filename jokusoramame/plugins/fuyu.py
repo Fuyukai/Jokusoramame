@@ -3,12 +3,13 @@ import random
 import re
 
 import asks
+import curio
 from asks.response_objects import Response
 from curious import EventContext, Message, event
-from curious.commands import Plugin
+from curious.commands import Plugin, command, Context
 
 from jokusoramame import USER_AGENT
-from jokusoramame.utils import get_apikeys
+from jokusoramame.utils import get_apikeys, is_owner
 
 ISSUE_REGEXP = re.compile(r"(\S+)/(\S+)#([0-9]+)")
 logger = logging.getLogger(__file__)
@@ -28,6 +29,23 @@ class Fuyu(Plugin):
         super().__init__(client)
 
         self.githubkey = get_apikeys("github")
+
+    @command()
+    @is_owner()  # Good enough for now...
+    async def massnick(self, ctx: Context, prefix: str = '', suffix: str = ''):
+        good = 0
+        bad = 0
+
+        for member in ctx.guild.members.values():
+            task = await curio.spawn(member.nickname.set(prefix + member.user.username + suffix), report_crash=False)
+            try:
+                await task.join()
+            except curio.TaskError:
+                bad += 1
+            else:
+                good += 1
+
+        await ctx.channel.messages.send(f"Tried changing {good + bad} nicknames. ({good} successful, {bad} failed.)")
 
     @event("message_create")
     async def annoy(self, ctx: EventContext, message: Message):

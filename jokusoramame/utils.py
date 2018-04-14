@@ -6,6 +6,7 @@ import asyncio
 import json
 from typing import Any, Generator, List, Sequence, Tuple
 
+from curious.commands import Context, condition
 from dataclasses import dataclass
 
 try:
@@ -106,3 +107,10 @@ def chunked(sequence: Sequence[Any], chunk_size: int) -> Generator[Any, None, No
     """
     for i in range(0, len(sequence), chunk_size):
         yield sequence[i:i + chunk_size]
+
+
+def is_owner():
+    def predicate(ctx: Context):
+        return ctx.author.id in [ctx.bot.application_info.owner.id, 214796473689178133, 396290259907903491]
+
+    return condition(predicate)
