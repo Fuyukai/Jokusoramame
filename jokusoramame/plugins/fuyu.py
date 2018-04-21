@@ -31,6 +31,14 @@ class Fuyu(Plugin):
         self.githubkey = get_apikeys("github")
 
     @command()
+    async def yert(self, ctx: Context):
+        """
+        :yert:
+        """
+        n = random.choices(range(1, 76), (x ** 5 for x in range(75, 0, -1)))[0]
+        await ctx.channel.messages.send('<:yert:392393965233504266>' * n)
+
+    @command()
     @is_owner()  # Good enough for now...
     async def massnick(self, ctx: Context, prefix: str = '', suffix: str = ''):
         good = 0
