@@ -1,24 +1,23 @@
 """
 Core plugin.
 """
-import contextlib
-import platform
 import sys
 import time
-import traceback
-from io import BytesIO, StringIO
 from itertools import cycle
 
 import asks
 import asyncqlio
+import contextlib
 import curio
 import curious
 import git
 import matplotlib.pyplot as plt
 import numpy as np
 import pkg_resources
+import platform
 import psutil
 import tabulate
+import traceback
 from asks.response_objects import Response
 from curio import subprocess
 from curio.thread import spawn_thread
@@ -28,6 +27,7 @@ from curious.commands.context import Context
 from curious.commands.decorators import ratelimit
 from curious.commands.ratelimit import BucketNamer
 from curious.exc import HTTPException, PermissionsError
+from io import BytesIO, StringIO
 
 from jokusoramame.bot import Jokusoramame
 from jokusoramame.utils import display_time, rgbize, is_owner
@@ -113,7 +113,9 @@ class Core(Plugin):
         lines = ["    " + i for i in lines]
         lines = '\n'.join(lines)
 
-        f_code = f"async def _():\n{lines}"
+        _no_return = object()
+
+        f_code = f"async def _():\n{lines}\n    return _no_return"
         stdout = StringIO()
 
         try:
@@ -124,6 +126,7 @@ class Core(Plugin):
                 "channel": ctx.message.channel,
                 "author": ctx.message.author,
                 "bot": ctx.bot,
+                "_no_return": _no_return,
                 **sys.modules
             }
             exec(f_code, namespace, namespace)
@@ -136,6 +139,9 @@ class Core(Plugin):
             result = ''.join(traceback.format_exception(None, e, e.__traceback__))
         finally:
             stdout.seek(0)
+
+        if result is _no_return:
+            result = "(Eval returned nothing)"
 
         fmt = f"```py\n{stdout.read()}\n{result}\n```"
         await ctx.channel.messages.send(fmt)
