@@ -230,22 +230,19 @@ class Analytics(Plugin):
         p_embed = Embed()
         personality = response_data.get("personality", [])
         for core_trait in personality:
-            p_embed.add_field(name="Trait Name", value=core_trait['name'])
-            p_embed.add_field(name="Percentage",
+            p_embed.add_field(name=core_trait['name'],
                               value=_format_trait(core_trait))
 
         n_embed = Embed()
         needs = response_data.get("needs", [])
         for need in needs:
-            n_embed.add_field(name="Trait name", value=need['name'])
-            n_embed.add_field(name="Percentage",
+            n_embed.add_field(name=need['name'],
                               value=_format_trait(need))
 
         v_embed = Embed()
         values = response_data.get("values", [])
         for value in values:
-            v_embed.add_field(name="Trait name", value=value['name'])
-            v_embed.add_field(name="Percentage",
+            v_embed.add_field(name=value['name'],
                               value=_format_trait(value))
 
         embeds = (p_embed, n_embed, v_embed)
