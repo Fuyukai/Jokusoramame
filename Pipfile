@@ -1,11 +1,16 @@
 [[source]]
+
 url = "https://pypi.python.org/simple"
 verify_ssl = true
 
+
 [requires]
+
 python_version = "3.6"
 
+
 [packages]
+
 "ruamel.yaml" = "*"
 lru-dict = "*"
 logbook = "*"
@@ -18,7 +23,7 @@ numpy = "*"
 psutil = "*"
 gitpython = "*"
 multio = {git = "https://github.com/theelous3/multio.git"}
-discord-curious = "*"
+discord-curious = ">=0.7.7,<1.0.0"
 curio = {git = "https://github.com/dabeaz/curio.git"}
 uvloop = "*"
 asks = {git = "https://github.com/theelous3/asks.git"}
@@ -34,3 +39,5 @@ clarifai = "*"
 prettyprinter = "*"
 dataclasses = "*"
 matplotlib = "*"
+scipy = "*"
+pandas = "*"
