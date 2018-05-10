@@ -1,10 +1,9 @@
 import operator
-from typing import List
-
 from asyncqlio import Session
 from curious import Embed, EventContext, Guild, Member, Role, event
 from curious.commands import Context, Plugin, command, condition
 from curious.exc import NotFound
+from typing import List
 
 from jokusoramame.db.tables import GuildSetting as tbl_gsetting, Rolestate as tbl_rolestate
 

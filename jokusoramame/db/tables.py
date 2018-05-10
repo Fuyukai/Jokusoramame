@@ -77,6 +77,9 @@ class RolemeRole(Table, table_name="roleme_role"):
     #: If this role can be self-assigned.
     self_assignable = Column(Boolean(), default=True, nullable=False)
 
+    #: If this role is a colourme role.
+    colourme = Column(Boolean(), default=False, nullable=False)
+
 
 class UserBalance(Table, table_name="user_balance"):
     """
