@@ -16,9 +16,9 @@ class ColourMe(Plugin):
         self.impl = RolemeShared(client)
 
     @command()
-    async def roleme(self, ctx: Context, *, role: Role = None):
+    async def colourme(self, ctx: Context, *, role: Role = None):
         """
-        Adds a role to your list of roles.
+        Adds a colour role to your list of roles.
         """
         roles = await self.impl.get_all_roleme_roles(ctx.guild, colourme=True)
 
@@ -42,27 +42,27 @@ class ColourMe(Plugin):
             return await ctx.channel.messages.send(f":pencil: **Colours you can give yourself:**"
                                                    f"\n\n{role_list}")
 
-    @roleme.subcommand()
+    @colourme.subcommand()
     @condition(lambda ctx: ctx.author.guild_permissions.manage_roles)
     async def add(self, ctx: Context, *, role: Role = None):
         """
-        Adds a role as a roleme role.
+        Adds a role as a colourme role.
         """
         await self.impl.add_roleme_role(role, is_colourme=True)
         await ctx.channel.messages.send(f":heavy_check_mark: Added {role.name} as a colourme role.")
 
-    @roleme.subcommand()
+    @colourme.subcommand()
     @condition(lambda ctx: ctx.author.guild_permissions.manage_roles)
     async def remove(self, ctx: Context, *, role: Role = None):
         """
-        Removes a role as a roleme role.
+        Removes a role as a colourme role.
         """
         await self.impl.remove_roleme_role(role)
         await ctx.channel.messages.send(f":heavy_check_mark: Removed {role.name} as a colourme "
                                         f"role.")
 
-    @roleme.subcommand()
-    async def unroleme(self, ctx: Context, *, role: Role):
+    @colourme.subcommand()
+    async def uncolourme(self, ctx: Context, *, role: Role):
         """
         Removes a role from you.
         """
@@ -72,6 +72,6 @@ class ColourMe(Plugin):
 
         await ctx.channel.messages.send(":heavy_check_mark: Removed you from this colour.")
 
-    @command(name="unroleme")
-    async def unroleme_toplevel(self, ctx: Context, *, role: Role):
-        return await self.unroleme(ctx, role=role)
+    @command(name="uncolourme")
+    async def uncolourme_toplevel(self, ctx: Context, *, role: Role):
+        return await self.uncolourme(ctx, role=role)
