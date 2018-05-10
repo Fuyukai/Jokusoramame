@@ -55,6 +55,9 @@ class RolemeShared(object):
                 .where(RolemeRole.id.eq(role.id))\
                 .first()
 
+            if not roleme:
+                return RolemeResult.ERR_NOT_ASSIGNABLE
+
             if not roleme.self_assignable:
                 return RolemeResult.ERR_NOT_ASSIGNABLE
 
@@ -70,6 +73,9 @@ class RolemeShared(object):
             roleme: RolemeRole = await sess.select(RolemeRole) \
                 .where(RolemeRole.id.eq(role.id)) \
                 .first()
+
+            if not roleme:
+                return RolemeResult.ERR_NOT_ASSIGNABLE
 
             if not roleme.self_assignable:
                 return RolemeResult.ERR_NOT_ASSIGNABLE
