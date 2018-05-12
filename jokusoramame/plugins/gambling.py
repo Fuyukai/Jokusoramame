@@ -4,16 +4,16 @@
 #   - use
 #   - inventory
 
-import random
 from collections import namedtuple
-from typing import List
 
 import numpy as np
+import random
 import tabulate
 from curious import Embed, Guild, Member
 from curious.commands import Context, Plugin, command
 from curious.commands.decorators import ratelimit
 from curious.ext.paginator import ReactionsPaginator
+from typing import List
 
 from jokusoramame.db.tables import UserBalance
 from jokusoramame.utils import chunked
@@ -139,9 +139,12 @@ class Gambling(Plugin):
             return
 
         if balance.money < price:
-            return await ctx.channel.messages.send("\N{CROSS MARK} Don't gamble with money you don't have, dum-dum...")
+            return await ctx.channel.messages.send(
+                "\N{CROSS MARK} Don't gamble with money you don't have, dum-dum..."
+            )
 
         amount = int(((price * 10) * np.random.randn()) + price)  # weight slightly towards positive
+        amount = amount % 2**32
 
         if amount < 0:
             response = random.choice(BAD_RESPONSES)
@@ -161,7 +164,9 @@ class Gambling(Plugin):
         # Rounds to nearest 5
         amount = int(5 * round(amount * 50 / 5))
 
-        await ctx.channel.messages.send(f'\N{MONEY BAG} You have earned **{amount} :̶.̶|̶:̶;̶** today.')
+        await ctx.channel.messages.send(
+            f'\N{MONEY BAG} You have earned **{amount} :̶.̶|̶:̶;̶** today.'
+        )
         await self.ensure_balance(ctx.author)
         await self.update_balance(ctx.author, amount)
 
@@ -173,7 +178,9 @@ class Gambling(Plugin):
         pages = await self.construct_leaderboard(ctx.guild, mode='top')
 
         if not pages:
-            return await ctx.channel.messages.send('\N{CROSS MARK} No entries found for this guild.')
+            return await ctx.channel.messages.send(
+                '\N{CROSS MARK} No entries found for this guild.'
+            )
 
         paginator = ReactionsPaginator(content=pages, channel=ctx.channel, respond_to=ctx.author)
         await paginator.paginate()
@@ -186,7 +193,9 @@ class Gambling(Plugin):
         pages = await self.construct_leaderboard(ctx.guild, mode='bottom')
 
         if not pages:
-            return await ctx.channel.messages.send('\N{CROSS MARK} No entries found for this guild.')
+            return await ctx.channel.messages.send(
+                '\N{CROSS MARK} No entries found for this guild.'
+            )
 
         paginator = ReactionsPaginator(content=pages, channel=ctx.channel, respond_to=ctx.author)
         await paginator.paginate()
