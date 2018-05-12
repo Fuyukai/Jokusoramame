@@ -26,7 +26,8 @@ BAD_RESPONSES = [
 ]
 
 GOOD_RESPONSES = [
-    '\N{FIRST PLACE MEDAL} You win first place in the Money Making Race™ and gain **{0} :̶.̶|̶:̶;̶**.',
+    '\N{FIRST PLACE MEDAL} You win first place in the Money Making Race™ and gain '
+    '**{0} :̶.̶|̶:̶;̶**.',
     '\N{SLOT MACHINE} You have a gambling addiction and win **{0} :̶.̶|̶:̶;̶**.',
     '\N{GEM STONE} You find a diamond and sell it for **{0} :̶.̶|̶:̶;̶**.'
 ]
@@ -40,13 +41,15 @@ class Gambling(Plugin):
 
     async def ensure_balance(self, member: Member):
         """
-        Return a balance associated to the member and corresponding guild. If one does not exist it is created.
+        Return a balance associated to the member and corresponding guild. If one does not exist
+        it is created.
 
         :param member: Member to ensure balance for.
         """
         async with self.client.db.get_session() as sess:
             balance = await sess.select.from_(UserBalance) \
-                .where(UserBalance.user_id.eq(member.id) & UserBalance.guild_id.eq(member.guild.id)) \
+                .where(UserBalance.user_id.eq(member.id)
+                       & UserBalance.guild_id.eq(member.guild.id)) \
                 .first()
 
             if balance is None:
@@ -113,7 +116,8 @@ class Gambling(Plugin):
         """
         async with self.client.db.get_session() as sess:
             await sess.update(UserBalance) \
-                .where(UserBalance.guild_id.eq(member.guild_id) & UserBalance.user_id.eq(member.id)) \
+                .where(UserBalance.guild_id.eq(member.guild_id)
+                       & UserBalance.user_id.eq(member.id)) \
                 .set(UserBalance.money + amount) \
                 .run()
 
@@ -144,7 +148,8 @@ class Gambling(Plugin):
             )
 
         amount = int(((price * 10) * np.random.randn()) + price)  # weight slightly towards positive
-        amount = amount % 2**32
+        if amount + balance.money >= 2 ** 31 - 1:
+            amount = min(-(balance * np.log(amount)), -2**25)
 
         if amount < 0:
             response = random.choice(BAD_RESPONSES)
