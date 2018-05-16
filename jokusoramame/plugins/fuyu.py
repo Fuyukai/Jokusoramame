@@ -7,6 +7,7 @@ import curio
 from asks.response_objects import Response
 from curious import EventContext, Message, event
 from curious.commands import Plugin, command, Context
+from fractions import Fraction
 
 from jokusoramame import USER_AGENT
 from jokusoramame.utils import get_apikeys, is_owner
@@ -64,7 +65,11 @@ class Fuyu(Plugin):
         """
         Shows statistics about the results of the yert command
         """
-        await ctx.channel.messages.send(f'Average <:yert:392393965233504266>s: {self.averager.average}\n'
+        whole_part = int(self.averager.average)
+        fraction = Fraction(self.averager.average - whole_part)
+        approx = fraction.limit_denominator(50)
+        num = f'{whole_part} ' + str(approx) * bool(approx)
+        await ctx.channel.messages.send(f'Average <:yert:392393965233504266>s: {num}\n'
                                         f'Max <:yert:392393965233504266>s this session: {max(self.averager)}')
 
     @command()
