@@ -15,6 +15,24 @@ ISSUE_REGEXP = re.compile(r"(\S+)/(\S+)#([0-9]+)")
 logger = logging.getLogger(__file__)
 
 
+class AverageOverTime:
+    def __init__(self):
+        self.count = 0
+        self.items = []
+
+    def __iadd__(self, item):
+        self.count += 1
+        self.items.append(item)
+        return self
+
+    def __iter__(self):
+        yield from self.items
+
+    @property
+    def average(self):
+        return sum(self.items) / self.count
+
+
 class Fuyu(Plugin):
     """
     Plugin for my server.
@@ -30,13 +48,24 @@ class Fuyu(Plugin):
 
         self.githubkey = get_apikeys("github")
 
+        self.averager = AverageOverTime()
+
     @command()
     async def yert(self, ctx: Context):
         """
         :yert:
         """
         n = random.choices(range(1, 76), (x ** 5 for x in range(75, 0, -1)))[0]
+        self.averager += n
         await ctx.channel.messages.send('<:yert:392393965233504266>' * n)
+
+    @yert.subcommand()
+    async def stats(self, ctx: Context):
+        """
+        Shows statistics about the results of the yert command
+        """
+        await ctx.channel.messages.send(f'Average <:yert:392393965233504266>s: {self.averager.average}\n'
+                                        f'Max <:yert:392393965233504266>s this session: {max(self.averager)}')
 
     @command()
     @is_owner()  # Good enough for now...
