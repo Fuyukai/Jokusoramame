@@ -56,7 +56,7 @@ class Fuyu(Plugin):
         """
         :yert:
         """
-        n = random.choices(range(1, 76), (x ** 5 for x in range(75, 0, -1)))[0]
+        n = random.choices(range(1, 76), (x ** 1.5 for x in range(75, 0, -1)))[0]
         self.averager += n
         await ctx.channel.messages.send('<:yert:392393965233504266>' * n)
 
