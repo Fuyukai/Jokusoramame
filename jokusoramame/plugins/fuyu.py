@@ -1,14 +1,12 @@
 import asks
 import curio
-import curio
 import logging
 import random
 import re
 from asks.response_objects import Response
 from curious import EventContext, Message, event
-from curious.commands import Plugin, command, Context
-from fractions import Fraction
 from curious.commands import Context, Plugin, command
+from fractions import Fraction
 
 from jokusoramame import USER_AGENT
 from jokusoramame.utils import get_apikeys, is_owner
