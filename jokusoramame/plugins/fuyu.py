@@ -154,4 +154,11 @@ class Fuyu(Plugin):
         if len(message.attachments) <= 0:
             return
 
-        await message.channel.messages.send("Is that Sans from Undertale?")
+        messages = [
+            "Is that Sans the skeleton from Undertale?"
+            "Is that Sans undertale?"
+            "Is that Sans from Undertale?",
+            "Is that Ness the skeleton from Undertale?"
+        ]
+
+        await message.channel.messages.send(random.choice(messages))
