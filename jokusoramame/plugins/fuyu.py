@@ -69,7 +69,8 @@ class Fuyu(Plugin):
         approx = fraction.limit_denominator(50)
         num = f'{whole_part} ' + str(approx) * bool(approx)
         await ctx.channel.messages.send(f'Average <:yert:392393965233504266>s: {num}\n'
-                                        f'Max <:yert:392393965233504266>s this session: {max(self.averager)}')
+                                        f'Max <:yert:392393965233504266>s this session: '
+                                        f'{max(self.averager)}')
 
     @command()
     @is_owner()  # Good enough for now...
@@ -86,7 +87,8 @@ class Fuyu(Plugin):
             else:
                 good += 1
 
-        await ctx.channel.messages.send(f"Tried changing {good + bad} nicknames. ({good} successful, {bad} failed.)")
+        await ctx.channel.messages.send(f"Tried changing {good + bad} nicknames. "
+                                        f"({good} successful, {bad} failed.)")
 
     @event("message_create")
     async def annoy(self, ctx: EventContext, message: Message):
