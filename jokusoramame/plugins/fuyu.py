@@ -1,13 +1,14 @@
+import asks
+import curio
+import curio
 import logging
 import random
 import re
-
-import asks
-import curio
 from asks.response_objects import Response
 from curious import EventContext, Message, event
 from curious.commands import Plugin, command, Context
 from fractions import Fraction
+from curious.commands import Context, Plugin, command
 
 from jokusoramame import USER_AGENT
 from jokusoramame.utils import get_apikeys, is_owner
@@ -138,3 +139,19 @@ class Fuyu(Plugin):
         else:
             logger.warning(f"Got status code {request.status_code} from GitHub...\n"
                            f"{request.content}")
+
+    @event("message_create")
+    async def is_that_sans_undertale(self, ctx: EventContext, message: Message):
+        """
+        Is that Sans Undertale?
+        """
+        if message.guild_id != 198101180180594688:
+            return
+
+        if message.author_id != 95473026350452736:
+            return
+
+        if len(message.attachments) <= 0:
+            return
+
+        await message.channel.messages.send("Is that Sans from Undertale?")
