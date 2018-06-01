@@ -23,7 +23,6 @@ class CurioAsyncpgConnector(AsyncpgConnector):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.params["loop"] = bridge_loop
         self.params["max_size"] = 50
 
         # Monkeypatch some methods
