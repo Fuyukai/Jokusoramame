@@ -145,6 +145,8 @@ class Fuyu(Plugin):
         """
         Is that Sans Undertale?
         """
+        return
+
         if message.guild_id != 198101180180594688:
             return
 
