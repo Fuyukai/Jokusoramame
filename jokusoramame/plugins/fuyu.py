@@ -141,26 +141,16 @@ class Fuyu(Plugin):
                            f"{request.content}")
 
     @event("message_create")
-    async def is_that_sans_undertale(self, ctx: EventContext, message: Message):
-        """
-        Is that Sans Undertale?
-        """
-        return
-
-        if message.guild_id != 198101180180594688:
+    async def enemy_unknown(self, ctx, message: Message):
+        if message.channel_id != 273677434262519809:
             return
 
-        if message.author_id != 95473026350452736:
-            return
-
-        if len(message.attachments) <= 0:
+        if 'leftcom' not in message.content:
             return
 
         messages = [
-            "Is that Sans the skeleton from Undertale?",
-            "Is that Sans undertale?",
-            "Is that Sans from Undertale?",
-            "Is that Ness the skeleton from Undertale?",
+            "Leftcom: Enemy Unknown",
+            "Left Communism with Ideological Tendencies",
+            "Every ideology I don't like is leftcom"
         ]
-
         await message.channel.messages.send(random.choice(messages))
