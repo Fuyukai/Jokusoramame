@@ -142,7 +142,7 @@ class Fuyu(Plugin):
 
     @event("message_create")
     async def enemy_unknown(self, ctx, message: Message):
-        if message.channel_id != 273677434262519809:
+        if message.channel_id != 412749373131456512:
             return
 
         if 'leftcom' not in message.content.lower():
