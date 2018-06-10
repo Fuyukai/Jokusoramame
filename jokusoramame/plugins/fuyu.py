@@ -145,7 +145,7 @@ class Fuyu(Plugin):
         if message.channel_id != 273677434262519809:
             return
 
-        if 'leftcom' not in message.content:
+        if 'leftcom' not in message.content.lower():
             return
 
         messages = [
