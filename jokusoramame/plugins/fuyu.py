@@ -142,6 +142,9 @@ class Fuyu(Plugin):
 
     @event("message_create")
     async def enemy_unknown(self, ctx, message: Message):
+        if message.author_id == self.client.user.id:
+            return
+
         if message.channel_id != 412749373131456512:
             return
 
