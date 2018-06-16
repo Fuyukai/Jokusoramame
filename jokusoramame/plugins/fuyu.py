@@ -148,12 +148,7 @@ class Fuyu(Plugin):
         if message.channel_id != 412749373131456512:
             return
 
-        if 'leftcom' not in message.content.lower():
-            return
-
-        messages = [
-            "Leftcom: Enemy Unknown",
-            "Left Communism with Ideological Tendencies",
-            "Every ideology I don't like is leftcom"
-        ]
-        await message.channel.messages.send(random.choice(messages))
+        if 'leftcom' in message.content.lower():
+            await ctx.channel.messages.send("ultra*")
+        elif 'ultra' in message.content.lower():
+            await ctx.channel.messages.send("leftcom*")
