@@ -149,6 +149,6 @@ class Fuyu(Plugin):
             return
 
         if 'leftcom' in message.content.lower():
-            await ctx.channel.messages.send("ultra*")
+            await message.channel.messages.send("ultra*")
         elif 'ultra' in message.content.lower():
-            await ctx.channel.messages.send("leftcom*")
+            await message.channel.messages.send("leftcom*")
