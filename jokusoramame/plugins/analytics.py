@@ -1,19 +1,17 @@
 """
 Analytical work.
 """
-import base64
-import datetime
 import entropy
-import random
-import string
-from io import BytesIO
-from typing import Awaitable, Dict, Tuple
 
 import asks
+import base64
 import curio
+import datetime
 import matplotlib.pyplot as plt
 import numpy as np
+import random
 import seaborn as sns
+import string
 import tabulate
 from asks.response_objects import Response
 from clarifai.rest import ApiError, ClarifaiApp
@@ -23,7 +21,9 @@ from curious.commands import Context, Plugin
 from curious.commands.decorators import command, ratelimit
 from curious.commands.ratelimit import BucketNamer
 from curious.ext.paginator import ReactionsPaginator
+from io import BytesIO
 from matplotlib.axes import Axes
+from typing import Awaitable, Dict, Tuple
 
 from jokusoramame import USER_AGENT
 from jokusoramame.utils import get_apikeys
@@ -63,10 +63,7 @@ class Analytics(Plugin):
 
         clarifai_keys = get_apikeys("clarifai")
         # hot-patch
-        old_cu = ClarifaiApp.check_upgrade
-        ClarifaiApp.check_upgrade = lambda *args: None
         self.clarifai = ClarifaiApp(api_key=clarifai_keys.key)
-        ClarifaiApp.check_upgrade = old_cu
 
     @event("message_create")
     async def add_to_analytics(self, ctx: EventContext, message: Message):
@@ -290,6 +287,8 @@ class Analytics(Plugin):
         """
         Gets information about an image.
         """
+        # return ":x: Temporarily disabled"
+
         if url is None:
             try:
                 attachment = ctx.message.attachments[0]

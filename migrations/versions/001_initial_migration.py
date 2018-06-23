@@ -37,5 +37,5 @@ async def downgrade(session: Session):
     """
     await session.execute("""
     DROP TABLE user_xp CASCADE;
-    DROP TABLE "user" CASCADE;
+    DROP TABLE "user_xp" CASCADE;
     """)

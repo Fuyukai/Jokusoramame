@@ -2,8 +2,6 @@
 Plugin and utilities for levelling.
 """
 import random
-from typing import List
-
 import tabulate
 from asyncqlio import Session
 from curious import Embed, EventContext, Member, Message, event
@@ -12,6 +10,7 @@ from curious.exc import Forbidden, PermissionsError
 from curious.ext.paginator import ReactionsPaginator
 from numpy.ma import floor
 from numpy.polynomial import Polynomial as P
+from typing import List
 
 from jokusoramame.db.tables import UserXP
 from jokusoramame.utils import chunked
@@ -93,6 +92,11 @@ class Levelling(Plugin):
 
         sess: Session = ctx.bot.db.get_session()
         async with sess:
+            # results = await sess.execute("""
+            # SELECT * FROM (SELECT rank() OVER(ORDER BY xp DESC), user_xp.* FROM user_xp WHERE
+            # guild_id = ) t WHERE t.user_id = :user_id;
+            # """)
+
             # TODO: Move this into the database.
             users = await sess.select(UserXP) \
                 .where(UserXP.guild_id.eq(message.guild_id)) \
