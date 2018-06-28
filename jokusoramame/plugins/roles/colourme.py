@@ -24,6 +24,8 @@ class ColourMe(Plugin):
 
         # behaviour a, assign a role
         if role is not None:
+            await ctx.author.roles.remove(*[r for r in roles if r in ctx.author.roles])
+
             result = await self.impl.apply_roleme_role(role, ctx.author)
             if result is RolemeResult.ERR_NOT_ASSIGNABLE:
                 return await ctx.channel.messages.send(":x: This role is not self-assignable.")
