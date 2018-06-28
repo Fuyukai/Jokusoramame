@@ -44,7 +44,7 @@ class ColourMe(Plugin):
                                                        "assign yourself in this server currently.")
 
             fmts = []
-            for role in roles:
+            for role in sorted(roles, key=lambda r: r.name):
                 fmts.append(" - {}".format(role.name))
 
             role_list = '\n'.join(fmts)
