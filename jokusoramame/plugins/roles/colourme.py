@@ -16,6 +16,13 @@ class ColourMe(Plugin):
         self.impl = RolemeShared(client)
 
     @command()
+    async def colorme(self, ctx: Context):
+        """
+        No.
+        """
+        return await ctx.channel.messages.send("I don't speak :flag_us: Simplified English.")
+
+    @command()
     async def colourme(self, ctx: Context, *, role: Role = None):
         """
         Adds a colour role to your list of roles.
