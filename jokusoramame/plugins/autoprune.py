@@ -3,14 +3,13 @@ Autoprune functionality.
 """
 import collections
 import datetime
-import random
-from io import StringIO
-from typing import Dict
-
 import numpy as np
+import random
 from curious import Embed, Guild, Member
 from curious.commands import Context, Plugin, command, condition
 from dataclasses import dataclass
+from io import StringIO
+from typing import Dict
 
 from jokusoramame.redis import RedisInterface
 
@@ -99,6 +98,14 @@ class Autoprune(Plugin):
         # Okay, I think I have a "post total to beat" for someone to dodge the prune:
         # (11 * 1.07^DaysInactive - 30)
 
+        #
+        # Kaelin 💀 - Today at 19:40
+        # // Users are inactive if they've never posted and have been here for
+        #  a week. if (Posts == 0) and (DaysSinceJoin > 7) then [return inactive]; // Users are
+        # inactive if they haven't posted in a long time, with grace extended to "prolific"
+        # users.  PostCount capped at 5000 to protect the bot's sanity. if (1.8 * 1.09 ^
+        # DaysSinceLastPost - 26) > PostCount then [return inactive]; return active;
+
         # make it fair by pre-computing the date
         now = datetime.datetime.utcnow()
         for member in members:
@@ -112,12 +119,15 @@ class Autoprune(Plugin):
                 activity_data[member] = None
                 continue
 
+            days_joined = (now - member.joined_at).days
+
             messages = sorted(messages, key=lambda m: m['dt'], reverse=True)
             try:
                 first_message = messages[0]
             except IndexError:
                 # no messages
-                activity_data[member] = ActivityReport(active=False, algo_result=0.0,
+                active = days_joined < 7
+                activity_data[member] = ActivityReport(active=active, algo_result=0.0,
                                                        post_count=0, last_message=None)
                 continue
 
