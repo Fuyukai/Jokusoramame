@@ -139,16 +139,3 @@ class Fuyu(Plugin):
         else:
             logger.warning(f"Got status code {request.status_code} from GitHub...\n"
                            f"{request.content}")
-
-    @event("message_create")
-    async def enemy_unknown(self, ctx, message: Message):
-        if message.author_id == self.client.user.id:
-            return
-
-        if message.channel_id != 412749373131456512:
-            return
-
-        if 'leftcom' in message.content.lower():
-            await message.channel.messages.send("ultra*")
-        elif 'ultra' in message.content.lower():
-            await message.channel.messages.send("leftcom*")
