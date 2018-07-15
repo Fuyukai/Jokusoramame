@@ -1,16 +1,16 @@
+import asks
 import datetime
+import googlemaps
 import random
 import re
-from typing import Tuple
-
-import asks
-import googlemaps
 from asks.response_objects import Response
 from curio.thread import async_thread
 from curious import Embed
 from curious.commands import Context, Plugin
 from curious.commands.decorators import autoplugin
 from curious.ext.paginator import ReactionsPaginator
+from prettyprinter import pprint
+from typing import Tuple
 
 from jokusoramame import USER_AGENT
 from jokusoramame.bot import Jokusoramame
@@ -132,7 +132,11 @@ class Location(Plugin):
         """
         if not BUS_REGEX.match(stop):
             async with ctx.channel.typing:
-                atcos = await self.get_atco(stop)
+                try:
+                    atcos = await self.get_atco(stop)
+                except ValueError:
+                    return await ctx.channel.messages.send(":x: Could not find ATCO for this stop.")
+
                 if len(atcos['stops']) == 0:
                     return await ctx.channel.messages.send(":x: Could not find this stop.")
 
@@ -216,10 +220,47 @@ class Location(Plugin):
 
         await ctx.channel.messages.send(embed=embed)
 
+    async def try_find_crs(self, station: str):
+        """
+        Tries to find a CRS code for the specified station.
+        """
+        lat, long = await self.get_lat_long(station)
+        maxlat = lat - 1
+        maxlong = long - 1
+        minlat = lat + 1
+        minlong = long + 1
+
+        url = f"/train/stations/bbox.json"
+        params = {
+            "maxlat": maxlat,
+            "maxlon": maxlong,
+            "minlat": minlat,
+            "minlon": minlong
+        }
+        result = await self.make_transport_api_request(url, params)
+        result = result.json()
+        pprint(result)
+
+        station_results = result.get("stations", [])
+        for r_station in result.get("stations", []):
+            if r_station['name'].lower() == station.lower():
+                return r_station['station_code']
+        else:
+            if len(station_results) > 0:
+                return station_results[0]['station_code']
+
     async def command_trains(self, ctx: Context, *, station: str):
         """
         Shows information about the trains at a UK Train station.
         """
+        if len(station) != 3:
+            found_station = await self.try_find_crs(station)
+            if found_station is None:
+                # if all else fails, we can try a tiploc code
+                station = f"tiploc:{station}"
+            else:
+                station = found_station
+
         return await self.command_trains_departures(ctx, station=station)
 
     async def command_trains_departures(self, ctx: Context, *, station: str):
