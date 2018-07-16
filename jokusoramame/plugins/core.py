@@ -22,7 +22,7 @@ from asks.response_objects import Response
 from curio import subprocess
 from curio.thread import spawn_thread
 from curious import Channel, Embed, EventContext, event
-from curious.commands import Plugin, command, condition
+from curious.commands import Plugin, command
 from curious.commands.context import Context
 from curious.commands.decorators import ratelimit
 from curious.commands.ratelimit import BucketNamer
@@ -30,7 +30,7 @@ from curious.exc import HTTPException, PermissionsError
 from io import BytesIO, StringIO
 
 from jokusoramame.bot import Jokusoramame
-from jokusoramame.utils import display_time, rgbize, is_owner
+from jokusoramame.utils import display_time, is_owner, rgbize
 
 
 class Core(Plugin):
@@ -227,7 +227,8 @@ class Core(Plugin):
                 commit.message.split("\n")[0]
             )
 
-        d += "\n[Icon credit: @tofuvi](http://tofuvi.tumblr.com/)"
+        d += "\n[Icon credit](https://www.pixiv.net/member_illust.php?mode=medium&illust_id" \
+             "=69621921)"
 
         em = Embed()
         em.title = "Jokusoramame v2! New! Improved!"
