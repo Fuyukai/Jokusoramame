@@ -112,7 +112,7 @@ class Location(Plugin):
         Geocodes a location, getting it's latitude/longitude.
         """
         lat, long = await self.get_lat_long(location)
-        await ctx.channel.send(f"**Lat/long:** {lat} {long}")
+        await ctx.channel.messages.send(f"**Lat/long:** {lat} {long}")
 
     async def command_geodecode(self, ctx: Context, latitude: float, longitude: float):
         """
@@ -281,7 +281,7 @@ class Location(Plugin):
             em = Embed(title=f"Departures from {data['station_name']}")
             em.description = "There are currently no departures from this station."
             em.colour = random.randint(0, 0xffffff)
-            return await ctx.channel.send(embed=em)
+            return await ctx.channel.messages.send(embed=em)
 
         # used for pagination
         embeds = []
