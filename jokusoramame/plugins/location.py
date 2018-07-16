@@ -9,7 +9,6 @@ from curious import Embed
 from curious.commands import Context, Plugin
 from curious.commands.decorators import autoplugin
 from curious.ext.paginator import ReactionsPaginator
-from prettyprinter import pprint
 from typing import Tuple
 
 from jokusoramame import USER_AGENT
@@ -239,7 +238,6 @@ class Location(Plugin):
         }
         result = await self.make_transport_api_request(url, params)
         result = result.json()
-        pprint(result)
 
         station_results = result.get("stations", [])
         for r_station in result.get("stations", []):
@@ -294,7 +292,9 @@ class Location(Plugin):
 
             em = Embed()
             em.title = f"Departures from {data['station_name']}"
-            em.description = f"This train is currently {departure['status'].lower()}"
+            em.description = f"A {departure['operator_name']} service towards " \
+                             f"{departure['destination_name']}.\n" \
+                             f"This train is currently {departure['status'].lower()}"
             em.add_field(name="Origin", value=departure['origin_name'])
             em.add_field(name="Destination", value=dest)
             em.add_field(name="Expected arrival", value=departure['expected_arrival_time'])
