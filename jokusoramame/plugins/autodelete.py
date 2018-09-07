@@ -29,6 +29,9 @@ class AutoDelete(Plugin):
 
         self.task = await curio.spawn(self._do_delete())
 
+    async def unload(self):
+        await self.task.cancel()
+
     async def _do_delete(self):
         while True:
             before = (datetime.datetime.utcnow() - datetime.timedelta(weeks=1))
@@ -41,7 +44,7 @@ class AutoDelete(Plugin):
                 if m.created_at > before:
                     return True
 
-                return True
+                return False
 
             logger.info("Preparing to auto-purge messages.")
             try:
