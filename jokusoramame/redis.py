@@ -1,9 +1,9 @@
 """
 Redis interface.
 """
-import json
 import zlib
 
+import json
 import redis
 from curio.thread import async_thread
 from curious import Guild, Message, User

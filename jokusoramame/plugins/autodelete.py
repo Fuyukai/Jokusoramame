@@ -41,7 +41,7 @@ class AutoDelete(Plugin):
                 if m.id in self.EXCLUDED_MESSAGES:
                     return False
 
-                if m.created_at > before:
+                if m.created_at < before:
                     return True
 
                 return False
