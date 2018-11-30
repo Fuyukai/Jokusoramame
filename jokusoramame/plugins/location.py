@@ -164,9 +164,16 @@ class Location(Plugin):
             em = Embed()
             em.title = "Stop Search Results"
             em.description = f"Full name: {stop['name']}"
-            em.add_field(name="ATCO", value=stop['atcocode'])
-            em.add_field(name="Direction", value=bearing_map[stop['bearing']])
+            em.add_field(name="ATCO", value=stop['atcocode'], inline=False)
+
+            bearing = stop['bearing']
+            if bearing:
+                bearing = bearing_map[bearing]
+            else:
+                bearing = "??"
+            em.add_field(name="Direction", value=bearing)
             em.add_field(name="Indicator", value=stop['indicator'])
+            em.add_field(name="Locality", value=stop['locality'])
             em.set_footer(text="Powered by TransportAPI")
             em.timestamp = datetime.datetime.utcnow()
             em.colour = random.randint(0, 0xffffff)
