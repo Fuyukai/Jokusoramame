@@ -47,7 +47,6 @@ class Fuyu(Plugin):
         super().__init__(client)
 
         self.githubkey = get_apikeys("github")
-
         self.averager = AverageOverTime()
 
     @command()
@@ -79,7 +78,8 @@ class Fuyu(Plugin):
         bad = 0
 
         for member in ctx.guild.members.values():
-            task = await curio.spawn(member.nickname.set(prefix + member.user.username + suffix), report_crash=False)
+            task = await curio.spawn(member.nickname.set(prefix + member.user.username + suffix),
+                                     report_crash=False)
             try:
                 await task.join()
             except curio.TaskError:
