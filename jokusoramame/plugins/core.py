@@ -54,6 +54,13 @@ class Core(Plugin):
             pass
 
     @command()
+    async def invite(self, ctx: Context):
+        """
+        Gets an invite for this bot.
+        """
+        await ctx.channel.messages.send(f"<{ctx.bot.invite_url}>")
+
+    @command()
     async def ping(self, ctx: Context):
         """
         Ping!
