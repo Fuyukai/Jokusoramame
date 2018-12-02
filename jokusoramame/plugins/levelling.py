@@ -236,7 +236,8 @@ class Levelling(Plugin):
             for message in messages:
                 await ctx.channel.messages.send(message)
         else:
-            paginator = ReactionsPaginator(content=messages, channel=ctx.channel, respond_to=ctx.author)
+            paginator = ReactionsPaginator(content=messages, channel=ctx.channel,
+                                           respond_to=ctx.author)
             await paginator.paginate()
 
     @level.subcommand(name="next")

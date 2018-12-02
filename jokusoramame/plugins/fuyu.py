@@ -55,6 +55,21 @@ class Fuyu(Plugin):
         :yert:
         """
         n = random.choices(range(1, 76), (x ** 1.5 for x in range(75, 0, -1)))[0]
+        flavour = None
+        if 30 < n <= 40:
+            flavour = "Amazing! (4500 points)"
+        elif 40 < n <= 50:
+            flavour = "Brilliant! (6200 points)"
+        elif 50 < n <= 60:
+            flavour = "Fantastic! (9540 points)"
+        elif 60 < n <= 74:
+            flavour = "Exceptional! (12400 points)"
+        elif n == 75:
+            flavour = "@everyone <:yert:392393965233504266> (100000 points)"
+
+        if flavour:
+            await ctx.channel.messages.send(flavour)
+
         self.averager += n
         await ctx.channel.messages.send('<:yert:392393965233504266>' * n)
 
